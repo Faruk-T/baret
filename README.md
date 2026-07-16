@@ -86,4 +86,4 @@ Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi
 
 # Durum
 
-🚧 **Faz 1 — Gün 5/6** | Alıcı akışı UI mockup'ları tamamlandı, README vitrini güncelleniyor.
+✅ **Faz 1 — Gün 5/6 tamamlandı** | Alıcı akışı mockup'ları README vitrininde sergilendi. Sonraki: Gün 6 (Faz 1 kapanışı).
