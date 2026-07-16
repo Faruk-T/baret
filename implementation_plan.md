@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 15 Temmuz 2026 (Çarşamba)  
-> **Proje durumu:** Faz 1 devam ediyor — Gün 4/6 (4 görev tamamlandı)  
+> **Son güncelleme:** 16 Temmuz 2026 (Perşembe)  
+> **Proje durumu:** Faz 1 devam ediyor — Gün 5/6 (4 görev tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 4 (Çarşamba) — Sonraki: Gün 5 (README mockup vitrini)
+   ↑ Şu an: Gün 5 (Perşembe) — README mockup vitrini devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -997,7 +997,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün 2 (Pzt) | `implementation_plan.md` hazırlanması (4 fazlı yol haritası), Tech Stack belirlenmesi | ✅ Tamamlandı |
 | Gün 3 (Sal) | Supabase veritabanı mimarisi tasarımı, ER ilişkileri, `database.sql` şemasının yazılması | ✅ Tamamlandı |
 | Gün 4 (Çar) | AI/Figma ile temel ekran mockup'ları (Ana sayfa, Ürün Detay, Sepet) | ✅ Tamamlandı |
-| Gün 5 | Mockup'ların `assets/` klasörüne eklenmesi, README güncelleme | ⬜ Bekliyor |
+| Gün 5 (Per) | Mockup'ların `assets/` klasörüne eklenmesi, README güncelleme | 🔄 Devam Ediyor (Bugün) |
 | Gün 6 | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | ⬜ Bekliyor |
 
 --------------------------------------------------------------------------------
