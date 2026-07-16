@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 14 Temmuz 2026 (Salı)  
-> **Proje durumu:** Faz 1 devam ediyor — Gün 3/6 (2 görev tamamlandı, 1 görev devam ediyor)  
+> **Son güncelleme:** 15 Temmuz 2026 (Çarşamba)  
+> **Proje durumu:** Faz 1 devam ediyor — Gün 4/6 (4 görev tamamlandı)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -50,12 +50,12 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ███░░░░░░░  33%             │
+│  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ███████░░░  67%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ░░░░░░░░░░   0%             │
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Şu an: Gün 3 (Salı) — Faz 1'in 3. görevi devam ediyor
+   ↑ Son tamamlanan: Gün 4 (Çarşamba) — Sonraki: Gün 5 (README mockup vitrini)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -995,8 +995,8 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | ------ | ------ | ------ |
 | Gün 1 (Pzt) | Proje fikri onayı, hedef kitle analizi, GitHub repo + Issues/Milestones panel kurulumu | ✅ Tamamlandı |
 | Gün 2 (Pzt) | `implementation_plan.md` hazırlanması (4 fazlı yol haritası), Tech Stack belirlenmesi | ✅ Tamamlandı |
-| Gün 3 (Sal) | Supabase veritabanı mimarisi tasarımı, ER ilişkileri, `database.sql` şemasının yazılması | 🔄 Devam Ediyor (Bugün) |
-| Gün 4 | AI/Figma ile temel ekran mockup'ları (Ana sayfa, Ürün Detay, Sepet) | ⬜ Bekliyor |
+| Gün 3 (Sal) | Supabase veritabanı mimarisi tasarımı, ER ilişkileri, `database.sql` şemasının yazılması | ✅ Tamamlandı |
+| Gün 4 (Çar) | AI/Figma ile temel ekran mockup'ları (Ana sayfa, Ürün Detay, Sepet) | ✅ Tamamlandı |
 | Gün 5 | Mockup'ların `assets/` klasörüne eklenmesi, README güncelleme | ⬜ Bekliyor |
 | Gün 6 | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | ⬜ Bekliyor |
 
@@ -1041,15 +1041,15 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ### İlerleme Özeti
 
 ```
-Faz 1: ███░░░░░░░  33%  (2/6 gün tamamlandı, 1 gün devam ediyor)
+Faz 1: ███████░░░  67%  (4/6 gün tamamlandı)
 Faz 2: ░░░░░░░░░░   0%  (0/5 gün)
 Faz 3: ░░░░░░░░░░   0%  (0/5 gün)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: ██░░░░░░░░░░░░░░░░░░  10%  (2/20 gün tamamlandı)
+Toplam: ████░░░░░░░░░░░░░░░░  20%  (4/20 gün tamamlandı)
 ```
 
-> **Bugün (Salı, Gün 3):** Faz 1'in 3. görevi (`database.sql` şeması) aktif olarak yürütülüyor. Bu görev ✅ olmadan Gün 4 başlatılmaz; Faz 1 tamamen bitmeden (Gün 6 ✅ olmadan) Faz 2'nin hiçbir günü işaretlenmez.
+> **Gün 4 tamamlandı (Çarşamba):** Ana Sayfa, Ürün Detay ve Sepet ekranları için AI mockup'ları `assets/mockups/` klasörüne eklendi. Sonraki görev (Gün 5): mockup'ları README'de sergileme. Faz 1 tamamen bitmeden (Gün 6 ✅ olmadan) Faz 2'nin hiçbir günü işaretlenmez.
 
 ---
 
