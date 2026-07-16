@@ -70,6 +70,18 @@ Arama çubuğu, kategori chip'leri, yakındaki nalburlar ve popüler ürünler g
 
 ![Ana Sayfa Mockup](assets/mockups/home-screen-mockup.png)
 
+## Ürün Detay
+
+Ürün galerisi, fiyat, mağaza bilgisi, stok durumu, teslimat seçenekleri ve sepete ekleme butonu.
+
+![Ürün Detay Mockup](assets/mockups/product-detail-mockup.png)
+
+## Sepet
+
+Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi tamamla butonu.
+
+![Sepet Mockup](assets/mockups/cart-screen-mockup.png)
+
 ---
 
 # Durum
