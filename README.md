@@ -50,6 +50,40 @@ Projenin ayrıntılı geliştirme planı aşağıdaki dosyada bulunmaktadır.
 
 ---
 
+# UI Mockups (Alıcı Akışı)
+
+Faz 1 kapsamında alıcı tarafının temel ekranları AI destekli olarak tasarlandı. Görseller `assets/mockups/` klasöründe saklanmaktadır.
+
+## Tasarım Dili
+
+| Öğe | Değer |
+|-----|-------|
+| Birincil renk | Safety Orange `#FF6B00` |
+| Arka plan | Beyaz / açık gri |
+| Kart stili | Yuvarlak köşeler, hafif gölge |
+| Tipografi | Modern sans-serif |
+| Navigasyon | Alt tab bar (Ana Sayfa, Kategoriler, Sepet, Profil) |
+
+## Ana Sayfa
+
+Arama çubuğu, kategori chip'leri, yakındaki nalburlar ve popüler ürünler grid'i.
+
+![Ana Sayfa Mockup](assets/mockups/home-screen-mockup.png)
+
+## Ürün Detay
+
+Ürün galerisi, fiyat, mağaza bilgisi, stok durumu, teslimat seçenekleri ve sepete ekleme butonu.
+
+![Ürün Detay Mockup](assets/mockups/product-detail-mockup.png)
+
+## Sepet
+
+Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi tamamla butonu.
+
+![Sepet Mockup](assets/mockups/cart-screen-mockup.png)
+
+---
+
 # Durum
 
-🚧 Aktif olarak geliştirilmektedir.
+✅ **Faz 1 — Gün 5/6 tamamlandı** | Alıcı akışı mockup'ları README vitrininde sergilendi. Sonraki: Gün 6 (Faz 1 kapanışı).
