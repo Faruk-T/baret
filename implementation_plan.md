@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 16 Temmuz 2026 (Perşembe)  
-> **Proje durumu:** Faz 1 devam ediyor — Gün 5/6 (5 görev tamamlandı)  
+> **Son güncelleme:** 17 Temmuz 2026 (Cuma)  
+> **Proje durumu:** Faz 1 tamamlandı ✅ — Gün 6/6 (6/6 görev tamamlandı) | Sonraki: Faz 2, Gün 7  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -50,12 +50,12 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  FAZ 1 (Gün 1-6)     Analiz & Tasarım        █████████░  83%             │
+│  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ░░░░░░░░░░   0%             │
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 5 (Perşembe) — Sonraki: Gün 6 (Faz 1 kapanışı)
+   ↑ Faz 1 tamamlandı (Cuma) — Sonraki: Faz 2, Gün 7 (Pazartesi)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -998,7 +998,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün 3 (Sal) | Supabase veritabanı mimarisi tasarımı, ER ilişkileri, `database.sql` şemasının yazılması | ✅ Tamamlandı |
 | Gün 4 (Çar) | AI/Figma ile temel ekran mockup'ları (Ana sayfa, Ürün Detay, Sepet) | ✅ Tamamlandı |
 | Gün 5 (Per) | Mockup'ların `assets/` klasörüne eklenmesi, README güncelleme | ✅ Tamamlandı |
-| Gün 6 | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | ⬜ Bekliyor |
+| Gün 6 (Cum) | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | ✅ Tamamlandı |
 
 --------------------------------------------------------------------------------
 
@@ -1041,15 +1041,39 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ### İlerleme Özeti
 
 ```
-Faz 1: █████████░  83%  (5/6 gün tamamlandı)
+Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ░░░░░░░░░░   0%  (0/5 gün)
 Faz 3: ░░░░░░░░░░   0%  (0/5 gün)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: █████░░░░░░░░░░░░░░░  25%  (5/20 gün tamamlandı)
+Toplam: ██████░░░░░░░░░░░░░░  30%  (6/20 gün tamamlandı)
 ```
 
-> **Gün 5 tamamlandı (Perşembe):** Alıcı akışı mockup'ları (Ana Sayfa, Ürün Detay, Sepet) README'de sergilendi. Proje vitrini güncellendi. Sonraki görev (Gün 6): Faz 1 kapanışı. Faz 1 tamamen bitmeden (Gün 6 ✅ olmadan) Faz 2'nin hiçbir günü işaretlenmez.
+> **Gün 6 tamamlandı (Cuma):** Faz 1 resmen kapandı. Teslim tablosu, kapanış özeti ve plan finalizasyonu tamamlandı. Pazartesi (Gün 7) Faz 2 başlıyor: Expo, Supabase ve Auth altyapısı.
+
+### Faz 1 Kapanış Özeti
+
+Faz 1 boyunca kod yazılmadan projenin analiz, tasarım ve dokümantasyon temelleri atıldı. Aşağıda gün bazlı özet ve teslim edilen çıktılar yer alır.
+
+| Gün | Tamamlanan İş | Çıktı |
+|-----|---------------|-------|
+| Gün 1 | Proje fikri onayı, hedef kitle analizi, GitHub repo + Issues/Milestones kurulumu | GitHub repo, Kanban panel |
+| Gün 2 | Kapsamlı geliştirme planı ve Tech Stack belirlenmesi | `implementation_plan.md` |
+| Gün 3 | Supabase veritabanı mimarisi, ER ilişkileri, RLS tasarımı | `database.sql` |
+| Gün 4 | Alıcı akışı UI mockup'ları (Ana Sayfa, Ürün Detay, Sepet) | `assets/mockups/*.png` |
+| Gün 5 | Mockup'ların README vitrininde sergilenmesi | `README.md` UI Mockups bölümü |
+| Gün 6 | Faz 1 kapanışı, teslim tablosu, plan finalizasyonu | Bu özet, PR, staj defteri |
+
+**Faz 1 teslim kontrol listesi:**
+
+- [x] `implementation_plan.md` — 4 fazlı 20 günlük yol haritası hazır
+- [x] `database.sql` — 5 tablo, ENUM, FK, trigger, RLS politikaları
+- [x] UI mockup'ları — Ana Sayfa, Ürün Detay, Sepet (`assets/mockups/`)
+- [x] README vitrini — mockup sergileme + tasarım dili tablosu
+- [x] GitHub Issues / Milestones / Kanban — proje takibi aktif
+- [x] Gün 6 PR açıldı — Ümit Bey review bekliyor
+
+**Faz 2'ye geçiş notu:** Pazartesi (Gün 7) itibarıyla Expo projesi, Supabase entegrasyonu ve Auth altyapısına geçilecektir. Faz 1'de hazırlanan `database.sql` ve mockup'lar Faz 2 implementasyonunun referansı olacaktır.
 
 ---
 
