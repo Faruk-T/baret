@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 16 Temmuz 2026 (Perşembe)  
-> **Proje durumu:** Faz 1 devam ediyor — Gün 5/6 (5 görev tamamlandı)  
+> **Son güncelleme:** 17 Temmuz 2026 (Cuma)  
+> **Proje durumu:** Faz 1 devam ediyor — Gün 6/6 (5 görev tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 5 (Perşembe) — Sonraki: Gün 6 (Faz 1 kapanışı)
+   ↑ Şu an: Gün 6 (Cuma) — Faz 1 kapanışı devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -998,7 +998,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün 3 (Sal) | Supabase veritabanı mimarisi tasarımı, ER ilişkileri, `database.sql` şemasının yazılması | ✅ Tamamlandı |
 | Gün 4 (Çar) | AI/Figma ile temel ekran mockup'ları (Ana sayfa, Ürün Detay, Sepet) | ✅ Tamamlandı |
 | Gün 5 (Per) | Mockup'ların `assets/` klasörüne eklenmesi, README güncelleme | ✅ Tamamlandı |
-| Gün 6 | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | ⬜ Bekliyor |
+| Gün 6 (Cum) | Faz 1 kapanışı: Issue'ları güncelleme, PR açıp Ümit Bey'i reviewer ekleme, staj defterine Faz 1 özeti kaydetme | 🔄 Devam Ediyor (Bugün) |
 
 --------------------------------------------------------------------------------
 

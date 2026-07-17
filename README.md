@@ -84,6 +84,19 @@ Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi
 
 ---
 
+# Faz 1 Teslim Edilenler
+
+Faz 1 (Proje Hazırlığı, Analiz ve Tasarım) kapsamında aşağıdaki çıktılar tamamlandı:
+
+| Çıktı | Dosya / Konum | Açıklama |
+|-------|---------------|----------|
+| Geliştirme planı | `implementation_plan.md` | 4 fazlı 20 günlük yol haritası, teknik mimari, ekran envanteri |
+| Veritabanı şeması | `database.sql` | 5 tablo, ENUM tipleri, FK ilişkileri, RLS politikaları, trigger'lar |
+| UI mockup'ları | `assets/mockups/` | Ana Sayfa, Ürün Detay, Sepet ekranları |
+| Proje vitrini | `README.md` | Mockup sergileme, tech stack, proje durumu |
+
+---
+
 # Durum
 
-✅ **Faz 1 — Gün 5/6 tamamlandı** | Alıcı akışı mockup'ları README vitrininde sergilendi. Sonraki: Gün 6 (Faz 1 kapanışı).
+🔄 **Faz 1 — Gün 6/6** | Faz 1 kapanışı devam ediyor. Sonraki: Faz 2 (Altyapı kurulumu).
