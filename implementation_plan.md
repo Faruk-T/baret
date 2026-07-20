@@ -2,7 +2,7 @@
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
 > **Son güncelleme:** 20 Temmuz 2026 (Pazartesi)  
-> **Proje durumu:** Faz 2 devam ediyor — Gün 7/11 (Faz 1 tamamlandı, 1 görev devam ediyor)  
+> **Proje durumu:** Faz 2 devam ediyor — Gün 7/11 (1 görev tamamlandı) | Sonraki: Gün 8 (Supabase)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -51,11 +51,11 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
-│  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ░░░░░░░░░░   0%             │
+│  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ██░░░░░░░░  20%             │
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Şu an: Gün 7 (Pazartesi) — Faz 2: Expo + NativeWind kurulumu devam ediyor
+   ↑ Son tamamlanan: Gün 7 (Pazartesi) — Sonraki: Gün 8 (Supabase entegrasyonu)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1007,7 +1007,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
-| Gün 7 (Pzt) | Expo projesi başlatma, klasör mimarisi, NativeWind kurulumu | 🔄 Devam Ediyor (Bugün) |
+| Gün 7 (Pzt) | Expo projesi başlatma, klasör mimarisi, NativeWind kurulumu | ✅ Tamamlandı |
 | Gün 8 | Supabase projesi, SQL tabloları ve Enum tipleri entegrasyonu | ⬜ Bekliyor |
 | Gün 9 | RLS politikaları ve Trigger'lar (`database.sql`) | ⬜ Bekliyor |
 | Gün 10 | React Navigation kurulumu, boş ekran taslakları, yönlendirme testi | ⬜ Bekliyor |
@@ -1042,14 +1042,14 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 ```
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
-Faz 2: ░░░░░░░░░░   0%  (0/5 gün)
+Faz 2: ██░░░░░░░░  20%  (1/5 gün tamamlandı)
 Faz 3: ░░░░░░░░░░   0%  (0/5 gün)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: ██████░░░░░░░░░░░░░░  30%  (6/20 gün tamamlandı)
+Toplam: ███████░░░░░░░░░░░░░  35%  (7/20 gün tamamlandı)
 ```
 
-> **Bugün (Pazartesi, Gün 7):** Faz 2 başladı. NativeWind ve TailwindCSS bağımlılıkları kuruluyor, Expo projesi styling altyapısına hazırlanıyor.
+> **Gün 7 tamamlandı (Pazartesi):** NativeWind + TailwindCSS kurulumu, Metro/Babel config, `src/constants/colors.ts` ve App.tsx smoke test tamamlandı. Sonraki: Gün 8 — Supabase projesi ve SQL tabloları entegrasyonu.
 
 ### Faz 1 Kapanış Özeti
 
