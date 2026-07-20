@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 17 Temmuz 2026 (Cuma)  
-> **Proje durumu:** Faz 1 tamamlandı ✅ — Gün 6/6 (6/6 görev tamamlandı) | Sonraki: Faz 2, Gün 7  
+> **Son güncelleme:** 20 Temmuz 2026 (Pazartesi)  
+> **Proje durumu:** Faz 2 devam ediyor — Gün 7/11 (Faz 1 tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Faz 1 tamamlandı (Cuma) — Sonraki: Faz 2, Gün 7 (Pazartesi)
+   ↑ Şu an: Gün 7 (Pazartesi) — Faz 2: Expo + NativeWind kurulumu devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1007,7 +1007,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
-| Gün 7 | Expo projesi başlatma, klasör mimarisi, NativeWind kurulumu | ⬜ Bekliyor |
+| Gün 7 (Pzt) | Expo projesi başlatma, klasör mimarisi, NativeWind kurulumu | 🔄 Devam Ediyor (Bugün) |
 | Gün 8 | Supabase projesi, SQL tabloları ve Enum tipleri entegrasyonu | ⬜ Bekliyor |
 | Gün 9 | RLS politikaları ve Trigger'lar (`database.sql`) | ⬜ Bekliyor |
 | Gün 10 | React Navigation kurulumu, boş ekran taslakları, yönlendirme testi | ⬜ Bekliyor |
@@ -1049,7 +1049,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ██████░░░░░░░░░░░░░░  30%  (6/20 gün tamamlandı)
 ```
 
-> **Gün 6 tamamlandı (Cuma):** Faz 1 resmen kapandı. Teslim tablosu, kapanış özeti ve plan finalizasyonu tamamlandı. Pazartesi (Gün 7) Faz 2 başlıyor: Expo, Supabase ve Auth altyapısı.
+> **Bugün (Pazartesi, Gün 7):** Faz 2 başladı. NativeWind ve TailwindCSS bağımlılıkları kuruluyor, Expo projesi styling altyapısına hazırlanıyor.
 
 ### Faz 1 Kapanış Özeti
 
