@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 20 Temmuz 2026 (Pazartesi)  
-> **Proje durumu:** Faz 2 devam ediyor — Gün 7/11 (1 görev tamamlandı) | Sonraki: Gün 8 (Supabase)  
+> **Son güncelleme:** 21 Temmuz 2026 (Salı)  
+> **Proje durumu:** Faz 2 devam ediyor — Gün 8/11 (1 görev tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 7 (Pazartesi) — Sonraki: Gün 8 (Supabase entegrasyonu)
+   ↑ Şu an: Gün 8 (Salı) — Supabase client + tablolar/ENUM entegrasyonu devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1008,7 +1008,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
 | Gün 7 (Pzt) | Expo projesi başlatma, klasör mimarisi, NativeWind kurulumu | ✅ Tamamlandı |
-| Gün 8 | Supabase projesi, SQL tabloları ve Enum tipleri entegrasyonu | ⬜ Bekliyor |
+| Gün 8 (Sal) | Supabase projesi, SQL tabloları ve Enum tipleri entegrasyonu | 🔄 Devam Ediyor (Bugün) |
 | Gün 9 | RLS politikaları ve Trigger'lar (`database.sql`) | ⬜ Bekliyor |
 | Gün 10 | React Navigation kurulumu, boş ekran taslakları, yönlendirme testi | ⬜ Bekliyor |
 | Gün 11 | Supabase Auth: Login/Register ekranları (Alıcı + Satıcı rolleri) | ⬜ Bekliyor |
@@ -1049,7 +1049,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ███████░░░░░░░░░░░░░  35%  (7/20 gün tamamlandı)
 ```
 
-> **Gün 7 tamamlandı (Pazartesi):** NativeWind + TailwindCSS kurulumu, Metro/Babel config, `src/constants/colors.ts` ve App.tsx smoke test tamamlandı. Sonraki: Gün 8 — Supabase projesi ve SQL tabloları entegrasyonu.
+> **Bugün (Salı, Gün 8):** Faz 2'nin 2. görevi aktif. Supabase client kurulumu, ortam değişkenleri ve `database.sql` tabloları/ENUM tiplerinin uygulamaya bağlanması yürütülüyor.
 
 ### Faz 1 Kapanış Özeti
 
