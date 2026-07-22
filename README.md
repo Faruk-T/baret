@@ -137,10 +137,10 @@ cp .env.example .env
 
 Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa client ayağa kalkıyor mu.
 
-> **Gün 9 notu:** RLS ve trigger detayları yarın ayrıca doğrulanıp dokümante edilecek.
+> **Güvenlik referansı:** Trigger, yardımcı fonksiyon ve RLS politika açıklamaları için bkz. [`docs/rls-and-triggers.md`](docs/rls-and-triggers.md).
 
 ---
 
 # Durum
 
-✅ **Faz 2 — Gün 8/11 tamamlandı** | Supabase client + şema tipleri hazır. **Sonraki: Gün 9** RLS politikaları ve Trigger'lar.
+✅ **Faz 2 — Gün 9/11 tamamlandı** | RLS + Trigger referansı hazır (`docs/rls-and-triggers.md`). **Sonraki paket: Gün 10** React Navigation.
