@@ -103,7 +103,51 @@ Tüm tablolarda RLS **açıktır**. Politika yoksa erişim reddedilir.
 
 ---
 
-## 4. RLS politikaları — `orders`, `reviews` (sonraki kısım)
+## 4. RLS politikaları — `orders`, `reviews`
 
-Sipariş ve değerlendirme politikaları (stok kontrolü, iptal kuralı, `delivered` zorunluluğu) bir sonraki commit’te bu dokümana eklenecektir.
+### 4.1 `orders`
+
+| Policy | Komut | Kim | Kural |
+|--------|-------|-----|-------|
+| `orders_select_buyer` | SELECT | authenticated | Kendi siparişleri (`buyer_id = auth.uid()`) veya admin |
+| `orders_select_seller` | SELECT | authenticated | `is_store_owner(store_id)` — mağaza siparişlerini görür |
+| `orders_insert_buyer` | INSERT | authenticated | `buyer_id` kendisi; rol `buyer`; ürün aktif; stok yeterli; mağaza onaylı+aktif; `store_id` ürünün mağazasıyla uyumlu |
+| `orders_update_buyer_cancel` | UPDATE | authenticated | Alıcı yalnızca `pending` siparişi `cancelled` yapabilir |
+| `orders_update_seller` | UPDATE | authenticated | Mağaza sahibi sipariş durumunu güncelleyebilir |
+| `orders_update_admin` | UPDATE | authenticated | Admin tüm siparişleri güncelleyebilir |
+
+**Kritik iş kuralları:**
+1. Sipariş oluştururken stok kontrolü RLS `WITH CHECK` içinde zorlanır (`stock >= quantity`)
+2. Alıcı rastgele iptal edemez; sadece beklemedeki sipariş iptal edilir
+3. Anonim kullanıcı sipariş göremez / oluşturamaz
+
+### 4.2 `reviews`
+
+| Policy | Komut | Kim | Kural |
+|--------|-------|-----|-------|
+| `reviews_select_public` | SELECT | anon + authenticated | Tüm yorumlar okunabilir |
+| `reviews_insert_buyer` | INSERT | authenticated | `buyer_id` kendisi; `order_id` dolu; sipariş kendisine ait; aynı `store_id`; sipariş durumu `delivered` |
+| `reviews_update_own` | UPDATE | authenticated | Kendi yorumu veya admin |
+| `reviews_delete_own_or_admin` | DELETE | authenticated | Kendi yorumu veya admin |
+
+**Kritik iş kuralları:**
+1. Yalnızca teslim edilmiş (`delivered`) siparişler değerlendirilebilir
+2. Şema tarafında `UNIQUE (buyer_id, order_id)` — sipariş başına tek yorum
+3. Teslim edilmemiş siparişe yorum INSERT’i RLS tarafından reddedilir
+
+---
+
+## 5. Doğrulama kontrol listesi
+
+Şema `database.sql` ile uygulandıktan sonra SQL Editor / Table Editor’de kontrol et:
+
+- [ ] Beş tabloda da RLS enabled
+- [ ] Auth kaydı sonrası `public.users` satırı oluşuyor (`handle_new_user`)
+- [ ] Onaysız mağaza anon SELECT’te görünmüyor
+- [ ] Satıcı olmayan kullanıcı mağaza INSERT edemiyor
+- [ ] Yetersiz stokla sipariş INSERT reddediliyor
+- [ ] `pending` dışındaki siparişte alıcı iptali reddediliyor
+- [ ] `delivered` olmayan siparişe review INSERT reddediliyor
+
+Bu paket (Gün 9) tamamlandığında uygulama geliştirme sırasında Auth ve CRUD ekranları bu kurallara göre yazılmalıdır.
 
