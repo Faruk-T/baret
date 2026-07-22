@@ -143,4 +143,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 2 — Gün 9/11 tamamlandı** | RLS + Trigger referansı hazır (`docs/rls-and-triggers.md`). **Sonraki paket: Gün 10** React Navigation.
+✅ **Faz 2 — Gün 10/11 tamamlandı** | React Navigation iskeleti hazır. **Sonraki paket: Gün 11** Supabase Auth (Login/Register).
