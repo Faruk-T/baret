@@ -2,7 +2,7 @@
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
 > **Son güncelleme:** 23 Temmuz 2026 (Perşembe)  
-> **Proje durumu:** Faz 2 tamamlandı ✅ — Gün 11/11 | Sonraki: Faz 3, Gün 12 (Satıcı CRUD)  
+> **Proje durumu:** Faz 3 devam ediyor — Gün 12/16 (Faz 2 tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Faz 2 tamamlandı — Sonraki paket: Gün 12 (Satıcı mağaza + ürün CRUD)
+   ↑ Şu an: Gün 12 — Satıcı mağaza profili + ürün CRUD devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1020,7 +1020,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
-| Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ⬜ Bekliyor |
+| Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | 🔄 Devam Ediyor |
 | Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ⬜ Bekliyor |
 | Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | ⬜ Bekliyor |
 | Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | ⬜ Bekliyor |
@@ -1049,7 +1049,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ███████████░░░░░░░░░  55%  (11/20 gün tamamlandı)
 ```
 
-> **Gün 11 tamamlandı / Faz 2 kapandı:** AuthContext, Login/Register/Rol seçimi, oturum+role göre RootNavigator yönlendirmesi ve çıkış eklendi. Sonraki paket: Gün 12 — satıcı mağaza profili + ürün CRUD.
+> **Gün 12 devam ediyor:** Satıcı mağaza profil formu ve ürün CRUD ekranları ekleniyor.
 
 ### Faz 1 Kapanış Özeti
 
