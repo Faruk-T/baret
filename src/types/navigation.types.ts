@@ -1,6 +1,6 @@
 export type AuthStackParamList = {
   Login: undefined;
-  Register: undefined;
+  Register: { role: 'buyer' | 'seller' };
   RoleSelect: undefined;
 };
 
