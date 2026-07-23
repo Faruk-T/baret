@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 22 Temmuz 2026 (Çarşamba)  
-> **Proje durumu:** Faz 2 devam ediyor — Gün 10/11 (4 görev tamamlandı) | Sonraki: Gün 11 (Auth)  
+> **Son güncelleme:** 23 Temmuz 2026 (Perşembe)  
+> **Proje durumu:** Faz 2 devam ediyor — Gün 11/11 (4 görev tamamlandı, 1 görev devam ediyor)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 10 — Sonraki paket: Gün 11 (Supabase Auth)
+   ↑ Şu an: Gün 11 — Supabase Auth (Login/Register) devam ediyor
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1011,7 +1011,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün 8 (Sal) | Supabase projesi, SQL tabloları ve Enum tipleri entegrasyonu | ✅ Tamamlandı |
 | Gün 9 (Çar) | RLS politikaları ve Trigger'lar (`database.sql`) | ✅ Tamamlandı |
 | Gün 10 | React Navigation kurulumu, boş ekran taslakları, yönlendirme testi | ✅ Tamamlandı |
-| Gün 11 | Supabase Auth: Login/Register ekranları (Alıcı + Satıcı rolleri) | ⬜ Bekliyor |
+| Gün 11 | Supabase Auth: Login/Register ekranları (Alıcı + Satıcı rolleri) | 🔄 Devam Ediyor |
 
 --------------------------------------------------------------------------------
 
@@ -1049,7 +1049,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ██████████░░░░░░░░░░  50%  (10/20 gün tamamlandı)
 ```
 
-> **Gün 10 tamamlandı:** React Navigation iskeleti kuruldu (Auth / Buyer / Seller / Admin). Boş ekran taslakları eklendi. RootNavigator Auth’tan başlıyor; oturum/rol yönlendirmesi Gün 11’de yapılacak.
+> **Gün 11 devam ediyor:** AuthContext, session persistence ve Login/Register akışı kuruluyor.
 
 ### Faz 1 Kapanış Özeti
 
