@@ -18,6 +18,11 @@ export type SellerTabParamList = {
   StoreSettings: undefined;
 };
 
+export type SellerProductsStackParamList = {
+  ProductList: undefined;
+  ProductForm: { productId?: string } | undefined;
+};
+
 export type AdminStackParamList = {
   SellerApprovals: undefined;
   UserManagement: undefined;

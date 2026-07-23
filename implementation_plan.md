@@ -2,7 +2,7 @@
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
 > **Son güncelleme:** 23 Temmuz 2026 (Perşembe)  
-> **Proje durumu:** Faz 2 tamamlandı ✅ — Gün 11/11 | Sonraki: Faz 3, Gün 12 (Satıcı CRUD)  
+> **Proje durumu:** Faz 3 devam ediyor — Gün 12/16 (1 görev tamamlandı) | Sonraki: Gün 13 (Storage)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -52,10 +52,10 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ██████████ 100%             │
-│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ░░░░░░░░░░   0%             │
+│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ██░░░░░░░░  20%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Faz 2 tamamlandı — Sonraki paket: Gün 12 (Satıcı mağaza + ürün CRUD)
+   ↑ Son tamamlanan: Gün 12 — Sonraki: Gün 13 (Supabase Storage / ürün görseli)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1020,7 +1020,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
-| Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ⬜ Bekliyor |
+| Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ✅ Tamamlandı |
 | Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ⬜ Bekliyor |
 | Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | ⬜ Bekliyor |
 | Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | ⬜ Bekliyor |
@@ -1043,13 +1043,13 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ```
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ██████████ 100%  (5/5 gün tamamlandı)
-Faz 3: ░░░░░░░░░░   0%  (0/5 gün)
+Faz 3: ██░░░░░░░░  20%  (1/5 gün tamamlandı)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: ███████████░░░░░░░░░  55%  (11/20 gün tamamlandı)
+Toplam: ████████████░░░░░░░░  60%  (12/20 gün tamamlandı)
 ```
 
-> **Gün 11 tamamlandı / Faz 2 kapandı:** AuthContext, Login/Register/Rol seçimi, oturum+role göre RootNavigator yönlendirmesi ve çıkış eklendi. Sonraki paket: Gün 12 — satıcı mağaza profili + ürün CRUD.
+> **Gün 12 tamamlandı:** Satıcı mağaza profil formu ve ürün CRUD (liste / ekle / düzenle / sil) hazır. Görsel yükleme Gün 13’te (Storage).
 
 ### Faz 1 Kapanış Özeti
 
