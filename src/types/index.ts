@@ -14,6 +14,7 @@ export type {
   AuthStackParamList,
   BuyerTabParamList,
   SellerTabParamList,
+  SellerProductsStackParamList,
   AdminStackParamList,
   RootStackParamList,
 } from './navigation.types';

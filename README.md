@@ -143,4 +143,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-🚧 **Faz 3 — Gün 12/16** | Satıcı mağaza profili ve ürün CRUD geliştiriliyor.
+✅ **Faz 3 — Gün 12/16 tamamlandı** | Satıcı mağaza + ürün CRUD hazır. **Sonraki: Gün 13** ürün görseli (Supabase Storage).
