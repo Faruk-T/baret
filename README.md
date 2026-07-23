@@ -143,4 +143,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 2 — Gün 10/11 tamamlandı** | React Navigation iskeleti hazır. **Sonraki paket: Gün 11** Supabase Auth (Login/Register).
+✅ **Faz 2 tamamlandı (Gün 11/11)** | Auth + Navigation hazır. **Sonraki: Faz 3 — Gün 12** Satıcı mağaza profili ve ürün CRUD.
