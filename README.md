@@ -84,6 +84,26 @@ Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi
 
 ---
 
+# Cihaz Ekran Görüntüleri (Çalışan Uygulama)
+
+Expo Go üzerinde alınan gerçek ekranlar (auth + satıcı paneli).
+
+### Auth (Gün 11)
+
+| Ekran | Dosya |
+|-------|--------|
+| Giriş | `assets/screenshots/auth-login.png` |
+| Rol seçimi | `assets/screenshots/auth-role-select.png` |
+| Kayıt | `assets/screenshots/auth-register.png` |
+
+### Satıcı — ürün listesi (Gün 12–13)
+
+Satıcı hesabıyla giriş sonrası **Ürünlerim**: ürün kartları (ad, fiyat, stok, teslimat, düzenle/sil). Görsel yükleme için Storage bucket + policy gerekir; Android’de galeri URI’leri `expo-file-system` ile okunur.
+
+![Satıcı ürün listesi](assets/screenshots/seller-product-list.png)
+
+---
+
 # Faz 1 Teslim Edilenler
 
 Faz 1 (Proje Hazırlığı, Analiz ve Tasarım) kapsamında aşağıdaki çıktılar tamamlandı:
@@ -139,8 +159,14 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 > **Güvenlik referansı:** Trigger, yardımcı fonksiyon ve RLS politika açıklamaları için bkz. [`docs/rls-and-triggers.md`](docs/rls-and-triggers.md).
 
+## 4. Storage (ürün görselleri — Gün 13)
+
+1. Dashboard → Storage → `product-images` bucket (public)
+2. Policy SQL ve adımlar: [`docs/storage-setup.md`](docs/storage-setup.md)
+3. Uygulama: `src/services/storage.ts` + ürün formunda galeri yükleme
+
 ---
 
 # Durum
 
-✅ **Faz 3 — Gün 12/16 tamamlandı** | Satıcı mağaza + ürün CRUD hazır. **Sonraki: Gün 13** ürün görseli (Supabase Storage).
+✅ **Faz 3 — Gün 13/16 tamamlandı** | Satıcı mağaza + ürün CRUD + ürün görseli (Storage). **Sonraki: Gün 14** alıcı ana sayfa ürün akışı.
