@@ -1049,7 +1049,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ████████████░░░░░░░░  60%  (12/20 gün tamamlandı; 13 devam)
 ```
 
-> **Gün 13 devam ediyor:** `expo-image-picker` + `storage` servisi ve bucket kurulum dokümanı eklendi. Sırada ürün formuna görsel seçimi ve `image_url` bağlama.
+> **Gün 13 devam ediyor:** Storage servisi + ürün formunda görsel seçimi/`image_url` bağlama eklendi. Cihaz testi ve PR akşam.
 
 ### Faz 1 Kapanış Özeti
 

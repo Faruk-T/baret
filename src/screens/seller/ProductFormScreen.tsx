@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,11 +12,13 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useAuth } from '../../context/AuthContext';
 import { DELIVERY_OPTION_LABELS, DELIVERY_OPTIONS } from '../../constants/enums';
 import { createProduct, getProduct, updateProduct } from '../../services/products';
 import { getMyStore } from '../../services/stores';
+import { uploadProductImage } from '../../services/storage';
 import type { DeliveryOption } from '../../types/database';
 import type { SellerProductsStackParamList } from '../../types/navigation.types';
 
@@ -33,6 +36,8 @@ export function ProductFormScreen({ navigation, route }: Props) {
   const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>(['gel_al']);
   const [isActive, setIsActive] = useState(true);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [localImageUri, setLocalImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,6 +72,7 @@ export function ProductFormScreen({ navigation, route }: Props) {
           setStock(String(product.stock));
           setDeliveryOptions(product.delivery_options);
           setIsActive(product.is_active);
+          setImageUrl(product.image_url);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Form yüklenemedi.';
@@ -91,6 +97,20 @@ export function ProductFormScreen({ navigation, route }: Props) {
       return [...prev, option];
     });
   };
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+    setLocalImageUri(result.assets[0].uri);
+  };
+
+  const previewUri = localImageUri ?? imageUrl;
 
   const handleSave = async () => {
     if (!storeId) return;
@@ -124,13 +144,26 @@ export function ProductFormScreen({ navigation, route }: Props) {
         stock: parsedStock,
         delivery_options: deliveryOptions,
         is_active: isActive,
+        image_url: imageUrl,
       };
+
+      let savedId = productId;
 
       if (isEdit && productId) {
         await updateProduct(productId, payload);
       } else {
-        await createProduct(storeId, payload);
+        const created = await createProduct(storeId, payload);
+        savedId = created.id;
       }
+
+      if (localImageUri && savedId) {
+        const publicUrl = await uploadProductImage(storeId, savedId, localImageUri);
+        await updateProduct(savedId, {
+          ...payload,
+          image_url: publicUrl,
+        });
+      }
+
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün kaydedilemedi.';
@@ -154,6 +187,24 @@ export function ProductFormScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView className="flex-1 px-6 pt-4" keyboardShouldPersistTaps="handled">
+        <Text className="mb-2 text-sm font-medium text-gray-700">Ürün görseli</Text>
+        <Pressable
+          className="mb-4 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-gray-50"
+          onPress={handlePickImage}
+          style={{ height: 180 }}
+        >
+          {previewUri ? (
+            <Image source={{ uri: previewUri }} className="h-full w-full" resizeMode="cover" />
+          ) : (
+            <Text className="text-sm text-gray-500">Galeriden görsel seç</Text>
+          )}
+        </Pressable>
+        {previewUri ? (
+          <Pressable className="mb-4" onPress={handlePickImage}>
+            <Text className="text-center text-sm font-medium text-brand">Görseli değiştir</Text>
+          </Pressable>
+        ) : null}
+
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün adı *</Text>
         <TextInput
           className="mb-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"

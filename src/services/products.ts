@@ -9,6 +9,7 @@ export type ProductFormInput = {
   delivery_options: DeliveryOption[];
   expiry_date?: string | null;
   is_active?: boolean;
+  image_url?: string | null;
 };
 
 export async function listStoreProducts(storeId: string): Promise<Product[]> {
@@ -43,6 +44,7 @@ export async function createProduct(
       store_id: storeId,
       name: input.name.trim(),
       description: input.description?.trim() || null,
+      image_url: input.image_url ?? null,
       price: input.price,
       stock: input.stock,
       delivery_options: input.delivery_options,
@@ -60,17 +62,23 @@ export async function updateProduct(
   productId: string,
   input: ProductFormInput
 ): Promise<Product> {
+  const patch: Record<string, unknown> = {
+    name: input.name.trim(),
+    description: input.description?.trim() || null,
+    price: input.price,
+    stock: input.stock,
+    delivery_options: input.delivery_options,
+    expiry_date: input.expiry_date || null,
+    is_active: input.is_active ?? true,
+  };
+
+  if (input.image_url !== undefined) {
+    patch.image_url = input.image_url;
+  }
+
   const { data, error } = await supabase
     .from('products')
-    .update({
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      price: input.price,
-      stock: input.stock,
-      delivery_options: input.delivery_options,
-      expiry_date: input.expiry_date || null,
-      is_active: input.is_active ?? true,
-    })
+    .update(patch)
     .eq('id', productId)
     .select('*')
     .single();
