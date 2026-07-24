@@ -38,6 +38,7 @@ export function ProductFormScreen({ navigation, route }: Props) {
   const [storeId, setStoreId] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+  const [localImageMime, setLocalImageMime] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -107,7 +108,9 @@ export function ProductFormScreen({ navigation, route }: Props) {
     });
 
     if (result.canceled || !result.assets[0]) return;
-    setLocalImageUri(result.assets[0].uri);
+    const asset = result.assets[0];
+    setLocalImageUri(asset.uri);
+    setLocalImageMime(asset.mimeType ?? null);
   };
 
   const previewUri = localImageUri ?? imageUrl;
@@ -157,7 +160,12 @@ export function ProductFormScreen({ navigation, route }: Props) {
       }
 
       if (localImageUri && savedId) {
-        const publicUrl = await uploadProductImage(storeId, savedId, localImageUri);
+        const publicUrl = await uploadProductImage(
+          storeId,
+          savedId,
+          localImageUri,
+          localImageMime
+        );
         await updateProduct(savedId, {
           ...payload,
           image_url: publicUrl,

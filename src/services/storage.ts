@@ -1,11 +1,18 @@
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system/legacy';
+
 import { supabase } from './supabase';
 
 export const PRODUCT_IMAGES_BUCKET = 'product-images';
 
-function extensionFromUri(uri: string): string {
+function extensionFromUri(uri: string, mimeType?: string | null): string {
+  if (mimeType?.includes('png')) return 'png';
+  if (mimeType?.includes('webp')) return 'webp';
+  if (mimeType?.includes('gif')) return 'gif';
+
   const clean = uri.split('?')[0] ?? uri;
   const ext = clean.split('.').pop()?.toLowerCase();
-  if (!ext || ext.length > 5) return 'jpg';
+  if (!ext || ext.length > 5 || ext.includes('/')) return 'jpg';
   return ext;
 }
 
@@ -31,6 +38,31 @@ export function getPublicUrl(bucket: string, path: string): string {
 }
 
 /**
+ * Read a local gallery URI (file:// or content://) into an ArrayBuffer.
+ * Android cannot reliably fetch() local URIs — use FileSystem instead.
+ */
+async function readLocalImageAsArrayBuffer(localUri: string): Promise<ArrayBuffer> {
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) {
+    throw new Error('Görsel okunamadı. Önbellek kullanılamıyor.');
+  }
+
+  const tempPath = `${cacheDir}product-upload-${Date.now()}`;
+
+  try {
+    await FileSystem.copyAsync({ from: localUri, to: tempPath });
+    const base64 = await FileSystem.readAsStringAsync(tempPath, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return decode(base64);
+  } catch {
+    throw new Error('Görsel okunamadı. Lütfen tekrar seçin.');
+  } finally {
+    await FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => undefined);
+  }
+}
+
+/**
  * Upload a local image URI to `product-images`.
  * Path: `{store_id}/{product_id}/{timestamp}.{ext}`
  * Returns the public URL for `products.image_url`.
@@ -38,18 +70,16 @@ export function getPublicUrl(bucket: string, path: string): string {
 export async function uploadProductImage(
   storeId: string,
   productId: string,
-  localUri: string
+  localUri: string,
+  mimeType?: string | null
 ): Promise<string> {
-  const ext = extensionFromUri(localUri);
-  const contentType = contentTypeFromExt(ext);
+  const ext = extensionFromUri(localUri, mimeType);
+  const contentType = mimeType?.startsWith('image/')
+    ? mimeType
+    : contentTypeFromExt(ext);
   const path = `${storeId}/${productId}/${Date.now()}.${ext}`;
 
-  const response = await fetch(localUri);
-  if (!response.ok) {
-    throw new Error('Görsel okunamadı. Lütfen tekrar seçin.');
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
+  const arrayBuffer = await readLocalImageAsArrayBuffer(localUri);
 
   const { error } = await supabase.storage
     .from(PRODUCT_IMAGES_BUCKET)
