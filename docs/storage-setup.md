@@ -84,4 +84,6 @@ USING (bucket_id = 'product-images');
 3. `uploadProductImage(storeId, productId, uri)` Storage’a yükler.
 4. Dönen public URL `products.image_url` alanına yazılır.
 
+**Android notu:** Galeri URI’leri (`content://`) `fetch` ile okunamaz. Kod, dosyayı geçici olarak cache’e kopyalayıp `expo-file-system/legacy` + `base64-arraybuffer` ile okur.
+
 `store-logos` ve `avatars` bucket’ları sonraki iş paketlerinde eklenebilir; bu kısım yalnızca ürün görseline odaklanır.

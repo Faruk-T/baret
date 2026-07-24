@@ -84,6 +84,26 @@ Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi
 
 ---
 
+# Cihaz Ekran Görüntüleri (Çalışan Uygulama)
+
+Expo Go üzerinde alınan gerçek ekranlar (auth + satıcı paneli).
+
+### Auth (Gün 11)
+
+| Ekran | Dosya |
+|-------|--------|
+| Giriş | `assets/screenshots/auth-login.png` |
+| Rol seçimi | `assets/screenshots/auth-role-select.png` |
+| Kayıt | `assets/screenshots/auth-register.png` |
+
+### Satıcı — ürün listesi (Gün 12–13)
+
+Satıcı hesabıyla giriş sonrası **Ürünlerim**: ürün kartları (ad, fiyat, stok, teslimat, düzenle/sil). Görsel yükleme için Storage bucket + policy gerekir; Android’de galeri URI’leri `expo-file-system` ile okunur.
+
+![Satıcı ürün listesi](assets/screenshots/seller-product-list.png)
+
+---
+
 # Faz 1 Teslim Edilenler
 
 Faz 1 (Proje Hazırlığı, Analiz ve Tasarım) kapsamında aşağıdaki çıktılar tamamlandı:
