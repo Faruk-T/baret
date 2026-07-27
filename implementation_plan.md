@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 23 Temmuz 2026 (Perşembe)  
-> **Proje durumu:** Faz 3 devam ediyor — Gün 12/16 (1 görev tamamlandı) | Sonraki: Gün 13 (Storage)  
+> **Son güncelleme:** 24 Temmuz 2026 (Cuma)  
+> **Proje durumu:** Faz 3 devam ediyor — Gün 13/16 tamamlandı | Sonraki: Gün 14 (Alıcı ana sayfa)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -52,10 +52,10 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ██████████ 100%             │
-│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ██░░░░░░░░  20%             │
+│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ████░░░░░░  40%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 12 — Sonraki: Gün 13 (Supabase Storage / ürün görseli)
+   ↑ Son tamamlanan: Gün 13 (Storage / ürün görseli) — Sonraki: Gün 14
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -539,12 +539,13 @@ Tüm tablolarda Row Level Security (RLS) **aktiftir**. Hiçbir istemci, politika
 | `store-logos` | Public read, authenticated write | Mağaza logoları | `{store_id}/logo.{ext}` |
 | `avatars` | Public read, authenticated write | Profil fotoğrafları | `{user_id}/avatar.{ext}` |
 
-### Storage RLS (Faz 2'de eklenecek)
+### Storage RLS
+
+Politikalar ve bucket adımları: `docs/storage-setup.md` (Gün 13).
 
 ```sql
 -- Satıcı yalnızca kendi mağaza klasörüne yükleyebilir
--- Alıcı yalnızca kendi avatar klasörüne yükleyebilir
--- Admin tüm bucket'lara erişebilir
+-- Public bucket: ürün görselleri herkese okunur
 ```
 
 ---
@@ -1021,7 +1022,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
 | Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ✅ Tamamlandı |
-| Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ⬜ Bekliyor |
+| Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ✅ Tamamlandı |
 | Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | ⬜ Bekliyor |
 | Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | ⬜ Bekliyor |
 | Gün 16 | Checkout, adres bilgisi, teslimat seçenekleri, sipariş oluşturma | ⬜ Bekliyor |
@@ -1043,13 +1044,13 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ```
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ██████████ 100%  (5/5 gün tamamlandı)
-Faz 3: ██░░░░░░░░  20%  (1/5 gün tamamlandı)
+Faz 3: ████░░░░░░  40%  (2/5 gün tamamlandı)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: ████████████░░░░░░░░  60%  (12/20 gün tamamlandı)
+Toplam: █████████████░░░░░░░  65%  (13/20 gün tamamlandı)
 ```
 
-> **Gün 12 tamamlandı:** Satıcı mağaza profil formu ve ürün CRUD (liste / ekle / düzenle / sil) hazır. Görsel yükleme Gün 13’te (Storage).
+> **Gün 13 tamamlandı:** `product-images` Storage servisi, bucket kurulum dokümanı, ürün formunda galeriden yükleme ve listede thumbnail. Alıcı ana sayfa ürün akışı Gün 14’te.
 
 ### Faz 1 Kapanış Özeti
 

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Pressable,
   Text,
   View,
@@ -117,8 +118,19 @@ export function ProductListScreen() {
         }
         renderItem={({ item }) => (
           <View className="mb-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-            <View className="mb-2 flex-row items-start justify-between">
-              <View className="flex-1 pr-3">
+            <View className="mb-2 flex-row items-start">
+              {item.image_url ? (
+                <Image
+                  source={{ uri: item.image_url }}
+                  className="mr-3 h-16 w-16 rounded-xl bg-gray-200"
+                  resizeMode="cover"
+                />
+              ) : (
+                <View className="mr-3 h-16 w-16 items-center justify-center rounded-xl bg-gray-200">
+                  <Text className="text-xs text-gray-500">Yok</Text>
+                </View>
+              )}
+              <View className="flex-1 pr-1">
                 <Text className="mb-1 text-base font-semibold text-gray-900">{item.name}</Text>
                 <Text className="text-sm text-brand">
                   ₺{Number(item.price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
