@@ -138,6 +138,8 @@ export function ProductFormScreen({ navigation, route }: Props) {
       return;
     }
 
+    let productSaved = false;
+
     try {
       setIsSaving(true);
       const payload = {
@@ -154,28 +156,49 @@ export function ProductFormScreen({ navigation, route }: Props) {
 
       if (isEdit && productId) {
         await updateProduct(productId, payload);
+        productSaved = true;
       } else {
         const created = await createProduct(storeId, payload);
         savedId = created.id;
+        productSaved = true;
       }
 
       if (localImageUri && savedId) {
-        const publicUrl = await uploadProductImage(
-          storeId,
-          savedId,
-          localImageUri,
-          localImageMime
-        );
-        await updateProduct(savedId, {
-          ...payload,
-          image_url: publicUrl,
-        });
+        try {
+          const publicUrl = await uploadProductImage(
+            storeId,
+            savedId,
+            localImageUri,
+            localImageMime
+          );
+          await updateProduct(savedId, {
+            ...payload,
+            image_url: publicUrl,
+          });
+        } catch (imageError) {
+          const imageMessage =
+            imageError instanceof Error
+              ? imageError.message
+              : 'Görsel yüklenemedi.';
+          Alert.alert(
+            'Ürün kaydedildi',
+            `Ürün listene eklendi ama görsel yüklenemedi.\n\n${imageMessage}\n\nSupabase Storage policy / bucket ayarını kontrol et; sonra Düzenle ile görseli tekrar yükleyebilirsin.`
+          );
+          navigation.goBack();
+          return;
+        }
       }
 
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün kaydedilemedi.';
-      Alert.alert('Hata', message);
+      Alert.alert(
+        productSaved ? 'Ürün kaydedildi' : 'Hata',
+        productSaved
+          ? `Ürün kaydı tamam ama sonraki adımda hata oluştu:\n${message}`
+          : message
+      );
+      if (productSaved) navigation.goBack();
     } finally {
       setIsSaving(false);
     }

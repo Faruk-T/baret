@@ -85,7 +85,7 @@ export async function uploadProductImage(
     .from(PRODUCT_IMAGES_BUCKET)
     .upload(path, arrayBuffer, {
       contentType,
-      upsert: true,
+      upsert: false,
     });
 
   if (error) throw error;
