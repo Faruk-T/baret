@@ -1050,7 +1050,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: █████████████░░░░░░░  65%  (13/20 gün tamamlandı; 14 devam)
 ```
 
-> **Gün 14 devam ediyor:** Alıcı `HomeScreen` katalog listesi + arama / kategori chip / şehir / teslimat filtresi ve `catalog` servisi eklendi.
+> **Gün 14 devam ediyor:** Katalog listesi + arama/kategori/şehir/teslimat; ilçe ve fiyat aralığı, filtre temizleme, pull-to-refresh ve `CatalogProductCard` eklendi.
 
 ### Faz 1 Kapanış Özeti
 
