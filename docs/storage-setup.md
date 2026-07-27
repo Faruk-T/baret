@@ -21,10 +21,17 @@ Yol yapısı (kod ile aynı):
 
 ## 2. Storage politikaları (SQL Editor)
 
-Aşağıdaki SQL’i Dashboard → **SQL Editor**’de çalıştır. Satıcı yalnızca kendi mağazasının klasörüne yazabilir; herkes public bucket’tan okuyabilir.
+Aşağıdaki SQL’i Dashboard → **SQL Editor**’de çalıştır. Klasör eşlemesi için `LIKE` kullanılır (`foldername` bazı projelerde sorun çıkarabiliyor).
 
 ```sql
--- product-images: authenticated sellers can upload under their store folder
+-- Reset old policies if re-running
+DROP POLICY IF EXISTS "product_images_insert_own_store" ON storage.objects;
+DROP POLICY IF EXISTS "product_images_update_own_store" ON storage.objects;
+DROP POLICY IF EXISTS "product_images_delete_own_store" ON storage.objects;
+DROP POLICY IF EXISTS "product_images_select_public" ON storage.objects;
+DROP POLICY IF EXISTS "product_images_insert_authenticated" ON storage.objects;
+
+-- INSERT: seller may upload under {store_id}/...
 CREATE POLICY "product_images_insert_own_store"
 ON storage.objects
 FOR INSERT
@@ -35,7 +42,7 @@ WITH CHECK (
     SELECT 1
     FROM public.stores s
     WHERE s.owner_id = auth.uid()
-      AND (storage.foldername(name))[1] = s.id::text
+      AND name LIKE (s.id::text || '/%')
   )
 );
 
@@ -49,7 +56,7 @@ USING (
     SELECT 1
     FROM public.stores s
     WHERE s.owner_id = auth.uid()
-      AND (storage.foldername(name))[1] = s.id::text
+      AND name LIKE (s.id::text || '/%')
   )
 );
 
@@ -63,11 +70,10 @@ USING (
     SELECT 1
     FROM public.stores s
     WHERE s.owner_id = auth.uid()
-      AND (storage.foldername(name))[1] = s.id::text
+      AND name LIKE (s.id::text || '/%')
   )
 );
 
--- Public read (bucket is public; policy still required in many projects)
 CREATE POLICY "product_images_select_public"
 ON storage.objects
 FOR SELECT
@@ -75,7 +81,13 @@ TO public
 USING (bucket_id = 'product-images');
 ```
 
-> Not: Bucket’ı Dashboard’dan public oluşturduysan SELECT policy yine de eklenebilir. Policy çakışması olursa mevcut policy’leri Storage → Policies ekranından kontrol et.
+> Geliştirme için geçici (her authenticated kullanıcıya INSERT): yalnızca yukarıdaki policy hâlâ RLS verirse kullan; sonra kaldır.
+>
+> ```sql
+> CREATE POLICY "product_images_insert_authenticated"
+> ON storage.objects FOR INSERT TO authenticated
+> WITH CHECK (bucket_id = 'product-images');
+> ```
 
 ## 3. Uygulama akışı
 

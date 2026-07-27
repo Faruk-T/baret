@@ -102,6 +102,14 @@ Satıcı hesabıyla giriş sonrası **Ürünlerim**: ürün kartları (ad, fiyat
 
 ![Satıcı ürün listesi](assets/screenshots/seller-product-list.png)
 
+![Satıcı ürün + görsel](assets/screenshots/seller-product-with-image.png)
+
+### Alıcı — ana sayfa katalog (Gün 14)
+
+Alıcı Ana Sayfa: onaylı mağazaların aktif ürünleri; arama, kategori chip’leri, şehir/ilçe, fiyat aralığı ve teslimat filtreleri (`src/services/catalog.ts`, `HomeScreen`). Onaysız mağaza veya eşleşmeyen filtrede boş durum gösterilir.
+
+![Alıcı filtreler](assets/screenshots/buyer-home-filters.png)
+
 ---
 
 # Faz 1 Teslim Edilenler
@@ -169,4 +177,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 3 — Gün 13/16 tamamlandı** | Satıcı mağaza + ürün CRUD + ürün görseli (Storage). **Sonraki: Gün 14** alıcı ana sayfa ürün akışı.
+✅ **Faz 3 — Gün 14/16 tamamlandı** | Satıcı panel + Storage + alıcı katalog/arama/filtre. **Sonraki: Gün 15** ürün detay + Sepet (CartContext).
