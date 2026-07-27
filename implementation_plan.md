@@ -1,8 +1,8 @@
 # Baret — İnşaat ve Nalbur Pazaryeri
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
-> **Son güncelleme:** 24 Temmuz 2026 (Cuma)  
-> **Proje durumu:** Faz 3 devam ediyor — Gün 13/16 tamamlandı | Sonraki: Gün 14 (Alıcı ana sayfa)  
+> **Son güncelleme:** 27 Temmuz 2026 (Pazartesi)  
+> **Proje durumu:** Faz 3 devam ediyor — Gün 14/16 (Alıcı katalog 🔄) | Sonraki: Gün 15 (Detay + Sepet)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -55,7 +55,7 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ████░░░░░░  40%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Son tamamlanan: Gün 13 (Storage / ürün görseli) — Sonraki: Gün 14
+   ↑ Aktif: Gün 14 (Alıcı ana sayfa / arama-filtre) — Sonraki: Gün 15
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1023,7 +1023,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | ------ | ------ | ------ |
 | Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ✅ Tamamlandı |
 | Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ✅ Tamamlandı |
-| Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | ⬜ Bekliyor |
+| Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | 🔄 Devam Ediyor |
 | Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | ⬜ Bekliyor |
 | Gün 16 | Checkout, adres bilgisi, teslimat seçenekleri, sipariş oluşturma | ⬜ Bekliyor |
 
@@ -1044,13 +1044,13 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ```
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ██████████ 100%  (5/5 gün tamamlandı)
-Faz 3: ████░░░░░░  40%  (2/5 gün tamamlandı)
+Faz 3: ████░░░░░░  40%  (2/5 gün tamamlandı, Gün 14 devam)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: █████████████░░░░░░░  65%  (13/20 gün tamamlandı)
+Toplam: █████████████░░░░░░░  65%  (13/20 gün tamamlandı; 14 devam)
 ```
 
-> **Gün 13 tamamlandı:** `product-images` Storage servisi, bucket kurulum dokümanı, ürün formunda galeriden yükleme ve listede thumbnail. Alıcı ana sayfa ürün akışı Gün 14’te.
+> **Gün 14 devam ediyor:** Alıcı `HomeScreen` katalog listesi + arama / kategori chip / şehir / teslimat filtresi ve `catalog` servisi eklendi.
 
 ### Faz 1 Kapanış Özeti
 
