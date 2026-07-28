@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,8 +9,13 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
-import { useCart } from '../../context/CartContext';
+import {
+  CartStoreConflictError,
+  useCart,
+  type CartProductInput,
+} from '../../context/CartContext';
 import { DELIVERY_OPTION_LABELS } from '../../constants/enums';
 import { getCatalogProduct, type CatalogProduct } from '../../services/catalog';
 import type { BuyerHomeStackParamList } from '../../types/navigation.types';
@@ -19,7 +24,7 @@ type Props = NativeStackScreenProps<BuyerHomeStackParamList, 'ProductDetail'>;
 
 export function ProductDetailScreen({ navigation, route }: Props) {
   const { productId } = route.params;
-  const { addItem } = useCart();
+  const { addItem, clearCart, items } = useCart();
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +39,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         return;
       }
       setProduct(row);
-      setQuantity(1);
+      setQuantity((q) => Math.min(Math.max(1, q), Math.max(1, row.stock)));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün yüklenemedi.';
       Alert.alert('Hata', message);
@@ -44,35 +49,66 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     }
   }, [productId, navigation]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
+
+  const inCartQty =
+    items.find((item) => item.productId === productId)?.quantity ?? 0;
+
+  const toCartInput = (row: CatalogProduct): CartProductInput => ({
+    id: row.id,
+    store_id: row.store_id,
+    storeName: row.store.name,
+    name: row.name,
+    price: Number(row.price),
+    image_url: row.image_url,
+    stock: row.stock,
+    delivery_options: row.delivery_options,
+  });
+
+  const confirmAdded = (name: string) => {
+    Alert.alert('Sepete eklendi', `${name} sepete eklendi.`, [
+      { text: 'Alışverişe devam', style: 'cancel' },
+      {
+        text: 'Sepete git',
+        onPress: () => navigation.getParent()?.navigate('Cart'),
+      },
+    ]);
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
+    const input = toCartInput(product);
 
     try {
-      addItem(
-        {
-          id: product.id,
-          store_id: product.store_id,
-          storeName: product.store.name,
-          name: product.name,
-          price: Number(product.price),
-          image_url: product.image_url,
-          stock: product.stock,
-          delivery_options: product.delivery_options,
-        },
-        quantity
-      );
-      Alert.alert('Sepete eklendi', `${product.name} sepete eklendi.`, [
-        { text: 'Alışverişe devam', style: 'cancel' },
-        {
-          text: 'Sepete git',
-          onPress: () => navigation.getParent()?.navigate('Cart'),
-        },
-      ]);
+      addItem(input, quantity);
+      confirmAdded(product.name);
     } catch (error) {
+      if (error instanceof CartStoreConflictError) {
+        Alert.alert('Farklı mağaza', error.message, [
+          { text: 'Vazgeç', style: 'cancel' },
+          {
+            text: 'Sepeti temizle ve ekle',
+            style: 'destructive',
+            onPress: () => {
+              clearCart();
+              try {
+                addItem(input, quantity);
+                confirmAdded(product.name);
+              } catch (inner) {
+                const message =
+                  inner instanceof Error ? inner.message : 'Sepete eklenemedi.';
+                Alert.alert('Sepet', message);
+              }
+            },
+          },
+        ]);
+        return;
+      }
+
       const message = error instanceof Error ? error.message : 'Sepete eklenemedi.';
       Alert.alert('Sepet', message);
     }
@@ -87,6 +123,7 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   }
 
   const outOfStock = product.stock < 1;
+  const linePreview = Number(product.price) * quantity;
 
   return (
     <View className="flex-1 bg-white">
@@ -112,9 +149,16 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             {product.store.name} · {product.store.city}
             {product.store.district ? ` / ${product.store.district}` : ''}
           </Text>
-          <Text className={`mb-4 text-sm ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
+          <Text className={`mb-2 text-sm ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
             {outOfStock ? 'Stokta yok' : `Stok: ${product.stock} adet`}
           </Text>
+          {inCartQty > 0 ? (
+            <Text className="mb-4 text-sm font-medium text-brand">
+              Sepette şu an {inCartQty} adet var
+            </Text>
+          ) : (
+            <View className="mb-4" />
+          )}
 
           {product.description ? (
             <Text className="mb-4 text-base leading-6 text-gray-700">{product.description}</Text>
@@ -128,23 +172,29 @@ export function ProductDetailScreen({ navigation, route }: Props) {
           ))}
 
           {!outOfStock ? (
-            <View className="mt-6 flex-row items-center">
-              <Text className="mr-4 text-sm font-medium text-gray-700">Adet</Text>
-              <Pressable
-                className="h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50"
-                onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-              >
-                <Text className="text-lg text-gray-800">−</Text>
-              </Pressable>
-              <Text className="mx-4 min-w-[28px] text-center text-base font-semibold text-gray-900">
-                {quantity}
+            <View className="mt-6">
+              <View className="flex-row items-center">
+                <Text className="mr-4 text-sm font-medium text-gray-700">Adet</Text>
+                <Pressable
+                  className="h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50"
+                  onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                >
+                  <Text className="text-lg text-gray-800">−</Text>
+                </Pressable>
+                <Text className="mx-4 min-w-[28px] text-center text-base font-semibold text-gray-900">
+                  {quantity}
+                </Text>
+                <Pressable
+                  className="h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50"
+                  onPress={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                >
+                  <Text className="text-lg text-gray-800">+</Text>
+                </Pressable>
+              </View>
+              <Text className="mt-3 text-sm text-gray-500">
+                Ara toplam: ₺
+                {linePreview.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
               </Text>
-              <Pressable
-                className="h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50"
-                onPress={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-              >
-                <Text className="text-lg text-gray-800">+</Text>
-              </Pressable>
             </View>
           ) : null}
         </View>

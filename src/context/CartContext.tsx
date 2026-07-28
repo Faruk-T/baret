@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -9,6 +11,8 @@ import {
 } from 'react';
 
 import type { DeliveryOption } from '../types/database';
+
+const CART_STORAGE_KEY = '@baret/cart_v1';
 
 export type CartItem = {
   productId: string;
@@ -33,8 +37,18 @@ export type CartProductInput = {
   delivery_options: DeliveryOption[];
 };
 
+export class CartStoreConflictError extends Error {
+  constructor() {
+    super(
+      'Sepette başka bir mağazanın ürünü var. Önce sepeti temizle veya aynı mağazadan devam et.'
+    );
+    this.name = 'CartStoreConflictError';
+  }
+}
+
 type CartContextValue = {
   items: CartItem[];
+  isReady: boolean;
   addItem: (product: CartProductInput, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -45,10 +59,54 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
+function buildCartItem(product: CartProductInput, quantity: number): CartItem {
+  return {
+    productId: product.id,
+    storeId: product.store_id,
+    storeName: product.storeName,
+    name: product.name,
+    price: Number(product.price),
+    quantity,
+    imageUrl: product.image_url,
+    stock: product.stock,
+    deliveryOptions: product.delivery_options,
+  };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isReady, setIsReady] = useState(false);
   const itemsRef = useRef(items);
   itemsRef.current = items;
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(CART_STORAGE_KEY);
+        if (raw && mounted) {
+          const parsed = JSON.parse(raw) as CartItem[];
+          if (Array.isArray(parsed)) {
+            setItems(parsed);
+          }
+        }
+      } catch {
+        // ignore corrupt cache
+      } finally {
+        if (mounted) setIsReady(true);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    void AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items, isReady]);
 
   const addItem = useCallback((product: CartProductInput, quantity = 1) => {
     const qty = Math.max(1, Math.floor(quantity));
@@ -59,9 +117,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     if (prev.length > 0 && prev[0].storeId !== product.store_id) {
-      throw new Error(
-        'Sepette başka bir mağazanın ürünü var. Önce sepeti temizle veya aynı mağazadan devam et.'
-      );
+      throw new CartStoreConflictError();
     }
 
     const existing = prev.find((item) => item.productId === product.id);
@@ -82,20 +138,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setItems([
-      ...prev,
-      {
-        productId: product.id,
-        storeId: product.store_id,
-        storeName: product.storeName,
-        name: product.name,
-        price: Number(product.price),
-        quantity: qty,
-        imageUrl: product.image_url,
-        stock: product.stock,
-        deliveryOptions: product.delivery_options,
-      },
-    ]);
+    setItems([...prev, buildCartItem(product, qty)]);
   }, []);
 
   const removeItem = useCallback((productId: string) => {
@@ -140,6 +183,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       items,
+      isReady,
       addItem,
       removeItem,
       updateQuantity,
@@ -147,7 +191,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       totalAmount,
       itemCount,
     }),
-    [items, addItem, removeItem, updateQuantity, clearCart, totalAmount, itemCount]
+    [items, isReady, addItem, removeItem, updateQuantity, clearCart, totalAmount, itemCount]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

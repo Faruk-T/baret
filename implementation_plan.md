@@ -1050,7 +1050,7 @@ Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 Toplam: ██████████████░░░░░░  70%  (14/20 gün tamamlandı; 15 devam)
 ```
 
-> **Gün 15 devam ediyor:** `CartContext` (tek mağaza kuralı + stok), ürün detay ekranı, Ana Sayfa → detay navigasyonu ve canlı Sepet sekmesi eklendi. Checkout Gün 16’da.
+> **Gün 15 devam ediyor:** CartContext + detay + sepet; AsyncStorage ile sepet kalıcılığı, farklı mağaza uyarısı (temizle ve ekle), sepet satır toplamları ve boş sepet CTA eklendi. Checkout Gün 16’da.
 
 ### Faz 1 Kapanış Özeti
 
