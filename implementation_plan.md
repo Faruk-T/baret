@@ -2,7 +2,7 @@
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
 > **Son güncelleme:** 28 Temmuz 2026 (Salı)  
-> **Proje durumu:** Faz 3 devam ediyor — Gün 15/16 (Detay + Sepet 🔄) | Sonraki: Gün 16 (Checkout)  
+> **Proje durumu:** Faz 3 devam ediyor — Gün 15 ✅ | Sonraki: Gün 16 (Checkout)  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -52,10 +52,10 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ██████████ 100%             │
-│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ██████░░░░  60%             │
+│  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ████████░░  80%             │
 │  FAZ 4 (Gün 17-20)   Admin & Kapanış         ░░░░░░░░░░   0%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Aktif: Gün 15 (Ürün detay + CartContext) — Sonraki: Gün 16
+   ↑ Sonraki aktif: Gün 16 (Checkout / sipariş)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1024,7 +1024,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 | Gün 12 | Satıcı mağaza profili oluşturma + ürün CRUD formları | ✅ Tamamlandı |
 | Gün 13 | Supabase Storage entegrasyonu, ürün görseli yükleme | ✅ Tamamlandı |
 | Gün 14 | Alıcı ana sayfa ürün akışı, kategori arama ve filtreleme | ✅ Tamamlandı |
-| Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | 🔄 Devam Ediyor |
+| Gün 15 | Ürün detay sayfası, stok kontrolü, Sepet state (CartContext) | ✅ Tamamlandı |
 | Gün 16 | Checkout, adres bilgisi, teslimat seçenekleri, sipariş oluşturma | ⬜ Bekliyor |
 
 --------------------------------------------------------------------------------
@@ -1044,13 +1044,13 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 ```
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ██████████ 100%  (5/5 gün tamamlandı)
-Faz 3: ██████░░░░  60%  (3/5 gün tamamlandı, Gün 15 devam)
+Faz 3: ████████░░  80%  (4/5 gün tamamlandı)
 Faz 4: ░░░░░░░░░░   0%  (0/4 gün)
 ────────────────────────────────────────
-Toplam: ██████████████░░░░░░  70%  (14/20 gün tamamlandı; 15 devam)
+Toplam: ███████████████░░░░░  75%  (15/20 gün tamamlandı)
 ```
 
-> **Gün 15 devam ediyor:** CartContext + detay + sepet; AsyncStorage ile sepet kalıcılığı, farklı mağaza uyarısı (temizle ve ekle), sepet satır toplamları ve boş sepet CTA eklendi. Checkout Gün 16’da.
+> **Gün 15 tamamlandı:** Ürün detay + `CartContext` (stok, adet, badge, AsyncStorage, tek mağaza kuralı). Kanıt SS: `assets/screenshots/product-detail*.png`, `cart-screen.png`, `buyer-home-approved-catalog.png`. Checkout Gün 16’da.
 
 ### Faz 1 Kapanış Özeti
 
