@@ -8,6 +8,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { CatalogProductCard } from '../../components/buyer/CatalogProductCard';
 import { PRODUCT_CATEGORIES } from '../../constants/categories';
@@ -17,6 +19,9 @@ import {
   type CatalogProduct,
 } from '../../services/catalog';
 import type { DeliveryOption } from '../../types/database';
+import type { BuyerHomeStackParamList } from '../../types/navigation.types';
+
+type HomeNav = NativeStackNavigationProp<BuyerHomeStackParamList, 'HomeList'>;
 
 function parseOptionalPrice(value: string): number | null {
   const trimmed = value.trim().replace(',', '.');
@@ -26,6 +31,7 @@ function parseOptionalPrice(value: string): number | null {
 }
 
 export function HomeScreen() {
+  const navigation = useNavigation<HomeNav>();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('');
@@ -261,7 +267,12 @@ export function HomeScreen() {
           ListHeaderComponent={
             <Text className="mb-3 text-sm text-gray-600">{products.length} ürün</Text>
           }
-          renderItem={({ item }) => <CatalogProductCard product={item} />}
+          renderItem={({ item }) => (
+            <CatalogProductCard
+              product={item}
+              onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+            />
+          )}
         />
       )}
     </View>

@@ -77,3 +77,32 @@ export async function listCatalogProducts(
 
   return (data ?? []) as CatalogProduct[];
 }
+
+/** Single catalog product with store (for detail screen). */
+export async function getCatalogProduct(
+  productId: string
+): Promise<CatalogProduct | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select(
+      `
+      *,
+      store:stores!inner (
+        id,
+        name,
+        city,
+        district,
+        is_approved,
+        is_active
+      )
+    `
+    )
+    .eq('id', productId)
+    .eq('is_active', true)
+    .eq('store.is_approved', true)
+    .eq('store.is_active', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as CatalogProduct | null;
+}

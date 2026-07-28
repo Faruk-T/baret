@@ -4,6 +4,11 @@ export type AuthStackParamList = {
   RoleSelect: undefined;
 };
 
+export type BuyerHomeStackParamList = {
+  HomeList: undefined;
+  ProductDetail: { productId: string };
+};
+
 export type BuyerTabParamList = {
   Home: undefined;
   Cart: undefined;

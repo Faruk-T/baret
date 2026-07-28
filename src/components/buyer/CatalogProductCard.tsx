@@ -1,15 +1,19 @@
-import { Image, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import { DELIVERY_OPTION_LABELS } from '../../constants/enums';
 import type { CatalogProduct } from '../../services/catalog';
 
 type Props = {
   product: CatalogProduct;
+  onPress?: () => void;
 };
 
-export function CatalogProductCard({ product }: Props) {
+export function CatalogProductCard({ product, onPress }: Props) {
   return (
-    <View className="mb-3 flex-row rounded-2xl border border-gray-100 bg-gray-50 p-3">
+    <Pressable
+      className="mb-3 flex-row rounded-2xl border border-gray-100 bg-gray-50 p-3"
+      onPress={onPress}
+    >
       {product.image_url ? (
         <Image
           source={{ uri: product.image_url }}
@@ -39,6 +43,6 @@ export function CatalogProductCard({ product }: Props) {
             : ''}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
