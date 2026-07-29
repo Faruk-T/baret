@@ -2,7 +2,7 @@
 ## Kapsamlı Proje Dokümantasyonu & 20 Günlük Implementation Plan
 
 > **Son güncelleme:** 29 Temmuz 2026 (Çarşamba)  
-> **Proje durumu:** Faz 3 tamamlandı — Gün 16 ✅ | Gün 17 admin onay ✅ (değerlendirme ⬜) | Sonraki: yıldız/yorum veya Gün 18 polish  
+> **Proje durumu:** Gün 17 ✅ (admin onay + değerlendirme) | Sonraki: Gün 18 polish  
 > **Repo:** [github.com/Faruk-T/baret](https://github.com/Faruk-T/baret)
 
 Bu doküman, Baret projesini hiç bilmeyen bir geliştiricinin bile uçtan uca anlayabilmesi için hazırlanmış **tek kaynak (single source of truth)** dokümantasyondur. İş modeli, teknik mimari, veritabanı şeması, ekran envanteri, kullanıcı akışları, güvenlik kuralları ve gün gün geliştirme planı burada yer alır.
@@ -53,9 +53,9 @@ Proje, **Trunçgil Teknoloji** staj prosedürüne uygun olarak **4 faza** ve top
 │  FAZ 1 (Gün 1-6)     Analiz & Tasarım        ██████████ 100%             │
 │  FAZ 2 (Gün 7-11)    Altyapı & Veritabanı    ██████████ 100%             │
 │  FAZ 3 (Gün 12-16)   Satıcı & Alıcı          ██████████ 100%             │
-│  FAZ 4 (Gün 17-20)   Admin & Kapanış         ██░░░░░░░░  25%             │
+│  FAZ 4 (Gün 17-20)   Admin & Kapanış         ████░░░░░░  40%             │
 └─────────────────────────────────────────────────────────────────────────┘
-   ↑ Aktif: Gün 17 değerlendirme (yıldız/yorum) — admin onay UI hazır
+   ↑ Sonraki: Gün 18 (bug fix / UI polish)
 ```
 
 > **KESİN KURAL — Gün Koordinasyonu:** Her fazda **aynı anda en fazla bir gün** ✅/🔄 olarak işaretlenebilir. Bir gün tamamlanmadan (✅ olmadan):
@@ -1034,7 +1034,7 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 
 | Gün | Görev | Durum |
 | ------ | ------ | ------ |
-| Gün 17 | Değerlendirme sistemi (1–5 yıldız + yorum) + Admin satıcı onay mekanizması (`is_approved`) | 🔄 Admin onay ✅ · değerlendirme ⬜ |
+| Gün 17 | Değerlendirme sistemi (1–5 yıldız + yorum) + Admin satıcı onay mekanizması (`is_approved`) | ✅ Tamamlandı |
 | Gün 18 | Bug fixing, performans optimizasyonu, gereksiz re-render önleme | ⬜ Bekliyor |
 | Gün 19 | Son testler, refactoring, dokümantasyon tamamlama | ⬜ Bekliyor |
 | Gün 20 | Canlı demo hazırlığı (APK/Simülatör), son PR → main merge | ⬜ Bekliyor |
@@ -1045,13 +1045,14 @@ Her mesai gününün **sonunda** aşağıdaki adımlar uygulanır:
 Faz 1: ██████████ 100%  (6/6 gün tamamlandı)
 Faz 2: ██████████ 100%  (5/5 gün tamamlandı)
 Faz 3: ██████████ 100%  (5/5 gün tamamlandı)
-Faz 4: ██░░░░░░░░  25%  (admin onay UI; değerlendirme + 18–20 açık)
+Faz 4: ████░░░░░░  40%  (Gün 17 tamam; 18–20 açık)
 ────────────────────────────────────────
-Toplam: ████████████████░░░░  80%  (16/20 gün + Gün 17 kısmi)
+Toplam: █████████████████░░░  85%  (17/20 gün)
 ```
 
-> **Gün 16 tamamlandı:** Checkout (adres/teslimat), `orders` insert (satır başına sipariş), alıcı Siparişlerim (iptal), satıcı Siparişler (durum ilerletme), tab ikonları. Kanıt: `checkout-screen.png`, `buyer-orders.png`, `seller-orders-*.png`.  
-> **Gün 17 kısmi:** Admin mağaza onay UI ✅. Kalan: 1–5 yıldız + yorum.
+> **Gün 17 tamamlandı:** Admin mağaza onay UI + teslim sonrası 1–5 yıldız/yorum (`reviews`), ürün detay puanı, satıcı dashboard yorum özeti. Kanıt: `buyer-orders-reviews.png`, `seller-dashboard-reviews*.png`.
+
+> **Gün 16 tamamlandı:** Checkout, sipariş listeleri, tab ikonları. Kanıt: `checkout-screen.png`, `buyer-orders.png`, `seller-orders-*.png`.
 
 ### Faz 1 Kapanış Özeti
 
