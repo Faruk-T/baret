@@ -12,6 +12,7 @@ export type {
 
 export type {
   AuthStackParamList,
+  BuyerHomeStackParamList,
   BuyerTabParamList,
   SellerTabParamList,
   SellerProductsStackParamList,

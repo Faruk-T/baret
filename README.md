@@ -110,6 +110,26 @@ Alıcı Ana Sayfa: onaylı mağazaların aktif ürünleri; arama, kategori chip�
 
 ![Alıcı filtreler](assets/screenshots/buyer-home-filters.png)
 
+### Alıcı — ürün detay + sepet (Gün 15)
+
+Mağaza `is_approved = true` olduktan sonra alıcı katalogda satıcı ürünlerini görür; ürün detayında stok/adet seçimi, sepete ekleme (badge), sepet satır toplamı ve cihaz içi kalıcılık (`CartContext` + AsyncStorage). Checkout **Gün 16**.
+
+| Ekran | Dosya |
+|-------|--------|
+| Onaylı katalog (5 ürün) | `assets/screenshots/buyer-home-approved-catalog.png` |
+| Ürün detay | `assets/screenshots/product-detail.png` |
+| Sepete eklendi diyaloğu | `assets/screenshots/product-detail-add-to-cart.png` |
+| Sepet | `assets/screenshots/cart-screen.png` |
+| Mağaza onayı (SQL — admin UI Gün 17) | `assets/screenshots/store-approve-sql.png` |
+
+![Onaylı alıcı katalog](assets/screenshots/buyer-home-approved-catalog.png)
+
+![Ürün detay](assets/screenshots/product-detail.png)
+
+![Sepete eklendi](assets/screenshots/product-detail-add-to-cart.png)
+
+![Sepet](assets/screenshots/cart-screen.png)
+
 ---
 
 # Faz 1 Teslim Edilenler
@@ -177,4 +197,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 3 — Gün 14/16 tamamlandı** | Satıcı panel + Storage + alıcı katalog/arama/filtre. **Sonraki: Gün 15** ürün detay + Sepet (CartContext).
+✅ **Faz 3 — Gün 15/16 tamamlandı** | Satıcı panel + Storage + katalog + ürün detay + sepet (`CartContext`). **Sonraki: Gün 16** checkout / sipariş oluşturma.
