@@ -112,7 +112,7 @@ Alıcı Ana Sayfa: onaylı mağazaların aktif ürünleri; arama, kategori chip�
 
 ### Alıcı — ürün detay + sepet (Gün 15)
 
-Mağaza `is_approved = true` olduktan sonra alıcı katalogda satıcı ürünlerini görür; ürün detayında stok/adet seçimi, sepete ekleme (badge), sepet satır toplamı ve cihaz içi kalıcılık (`CartContext` + AsyncStorage). Checkout **Gün 16**.
+Mağaza `is_approved = true` olduktan sonra alıcı katalogda satıcı ürünlerini görür; ürün detayında stok/adet seçimi, sepete ekleme (badge), sepet satır toplamı ve cihaz içi kalıcılık (`CartContext` + AsyncStorage). Checkout → Gün 16 bölümü.
 
 | Ekran | Dosya |
 |-------|--------|
@@ -145,6 +145,31 @@ Admin hesabı (`users.role = 'admin'`) ile giriş: ana panel (çıkış, menü),
 ![Satıcı onayları — tümü](assets/screenshots/admin-seller-approvals-all.png)
 
 ![Satıcı onayları — bekleyen](assets/screenshots/admin-seller-approvals-pending.png)
+
+### Alıcı / satıcı — checkout & sipariş (Gün 16)
+
+Sepet → Siparişe geç → teslimat + adres → `orders` kaydı; alıcı Siparişlerim (iptal); satıcı durum: Beklemede → Hazırlanıyor → Kargoda → Teslim Edildi. Stok trigger: `docs/order-stock-trigger.sql`.
+
+| Ekran | Dosya |
+|-------|--------|
+| Sepet + Siparişe geç | `assets/screenshots/cart-checkout-cta.png` |
+| Checkout | `assets/screenshots/checkout-screen.png` |
+| Alıcı siparişler | `assets/screenshots/buyer-orders.png` |
+| Satıcı — beklemede | `assets/screenshots/seller-orders-pending.png` |
+| Satıcı — hazırlanıyor | `assets/screenshots/seller-orders-preparing.png` |
+| Satıcı — kargoda | `assets/screenshots/seller-orders-shipped.png` |
+
+![Sepet checkout CTA](assets/screenshots/cart-checkout-cta.png)
+
+![Checkout](assets/screenshots/checkout-screen.png)
+
+![Alıcı siparişler](assets/screenshots/buyer-orders.png)
+
+![Satıcı sipariş — beklemede](assets/screenshots/seller-orders-pending.png)
+
+![Satıcı sipariş — hazırlanıyor](assets/screenshots/seller-orders-preparing.png)
+
+![Satıcı sipariş — kargoda](assets/screenshots/seller-orders-shipped.png)
 
 ---
 
@@ -213,4 +238,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 3 — Gün 15/16 tamamlandı** | Satıcı panel + Storage + katalog + ürün detay + sepet (`CartContext`). **Sonraki: Gün 16** checkout / sipariş oluşturma.
+✅ **Faz 3 — Gün 16/16 tamamlandı** | Checkout + sipariş listeleri + admin onay UI. **Sonraki: Gün 17** değerlendirme (yıldız/yorum) veya Gün 18 polish.
