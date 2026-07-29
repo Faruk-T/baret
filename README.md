@@ -120,7 +120,7 @@ Mağaza `is_approved = true` olduktan sonra alıcı katalogda satıcı ürünler
 | Ürün detay | `assets/screenshots/product-detail.png` |
 | Sepete eklendi diyaloğu | `assets/screenshots/product-detail-add-to-cart.png` |
 | Sepet | `assets/screenshots/cart-screen.png` |
-| Mağaza onayı (SQL — admin UI Gün 17) | `assets/screenshots/store-approve-sql.png` |
+| Mağaza onayı (eski SQL kanıtı; UI tercih edilir) | `assets/screenshots/store-approve-sql.png` |
 
 ![Onaylı alıcı katalog](assets/screenshots/buyer-home-approved-catalog.png)
 
@@ -129,6 +129,22 @@ Mağaza `is_approved = true` olduktan sonra alıcı katalogda satıcı ürünler
 ![Sepete eklendi](assets/screenshots/product-detail-add-to-cart.png)
 
 ![Sepet](assets/screenshots/cart-screen.png)
+
+### Admin — mağaza onayı (Gün 17 lite)
+
+Admin hesabı (`users.role = 'admin'`) ile giriş: ana panel (çıkış, menü), Satıcı Onayları (Bekleyen / Onaylı / Tümü, onayla / geri al / pasife al). SQL onayı artık zorunlu değil.
+
+| Ekran | Dosya |
+|-------|--------|
+| Admin ana sayfa | `assets/screenshots/admin-home.png` |
+| Onaylı mağazalar | `assets/screenshots/admin-seller-approvals-all.png` |
+| Bekleyen (boş durum) | `assets/screenshots/admin-seller-approvals-pending.png` |
+
+![Admin ana sayfa](assets/screenshots/admin-home.png)
+
+![Satıcı onayları — tümü](assets/screenshots/admin-seller-approvals-all.png)
+
+![Satıcı onayları — bekleyen](assets/screenshots/admin-seller-approvals-pending.png)
 
 ---
 
