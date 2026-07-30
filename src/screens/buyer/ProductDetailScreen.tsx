@@ -11,6 +11,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { StarRating } from '../../components/common/StarRating';
 import {
   CartStoreConflictError,
   useCart,
@@ -18,6 +19,11 @@ import {
 } from '../../context/CartContext';
 import { DELIVERY_OPTION_LABELS } from '../../constants/enums';
 import { getCatalogProduct, type CatalogProduct } from '../../services/catalog';
+import {
+  getStoreRatingSummary,
+  listStoreReviews,
+  type ReviewWithBuyer,
+} from '../../services/reviews';
 import type { BuyerHomeStackParamList } from '../../types/navigation.types';
 
 type Props = NativeStackScreenProps<BuyerHomeStackParamList, 'ProductDetail'>;
@@ -28,6 +34,8 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [ratingSummary, setRatingSummary] = useState({ average: 0, count: 0 });
+  const [storeReviews, setStoreReviews] = useState<ReviewWithBuyer[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +48,12 @@ export function ProductDetailScreen({ navigation, route }: Props) {
       }
       setProduct(row);
       setQuantity((q) => Math.min(Math.max(1, q), Math.max(1, row.stock)));
+      const [summary, reviews] = await Promise.all([
+        getStoreRatingSummary(row.store_id),
+        listStoreReviews(row.store_id),
+      ]);
+      setRatingSummary(summary);
+      setStoreReviews(reviews.slice(0, 5));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün yüklenemedi.';
       Alert.alert('Hata', message);
@@ -81,10 +95,8 @@ export function ProductDetailScreen({ navigation, route }: Props) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    const input = toCartInput(product);
-
     try {
-      addItem(input, quantity);
+      addItem(toCartInput(product), quantity);
       confirmAdded(product.name);
     } catch (error) {
       if (error instanceof CartStoreConflictError) {
@@ -94,9 +106,9 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             text: 'Sepeti temizle ve ekle',
             style: 'destructive',
             onPress: () => {
-              clearCart();
               try {
-                addItem(input, quantity);
+                clearCart();
+                addItem(toCartInput(product), quantity);
                 confirmAdded(product.name);
               } catch (inner) {
                 const message =
@@ -149,6 +161,16 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             {product.store.name} · {product.store.city}
             {product.store.district ? ` / ${product.store.district}` : ''}
           </Text>
+          {ratingSummary.count > 0 ? (
+            <View className="mb-2 flex-row items-center">
+              <StarRating value={Math.round(ratingSummary.average)} readonly size="sm" />
+              <Text className="ml-2 text-sm text-stone-600">
+                {ratingSummary.average} · {ratingSummary.count} değerlendirme
+              </Text>
+            </View>
+          ) : (
+            <Text className="mb-2 text-sm text-stone-400">Henüz değerlendirme yok</Text>
+          )}
           <Text className={`mb-2 text-sm ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
             {outOfStock ? 'Stokta yok' : `Stok: ${product.stock} adet`}
           </Text>
@@ -195,6 +217,28 @@ export function ProductDetailScreen({ navigation, route }: Props) {
                 Ara toplam: ₺
                 {linePreview.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
               </Text>
+            </View>
+          ) : null}
+
+          {storeReviews.length > 0 ? (
+            <View className="mt-8">
+              <Text className="mb-3 text-xs font-semibold uppercase text-gray-500">
+                Mağaza yorumları
+              </Text>
+              {storeReviews.map((review) => (
+                <View
+                  key={review.id}
+                  className="mb-3 rounded-xl border border-stone-100 bg-stone-50 p-3"
+                >
+                  <View className="mb-1 flex-row items-center justify-between">
+                    <Text className="text-sm font-medium text-stone-800">Alıcı</Text>
+                    <StarRating value={review.rating} readonly size="sm" />
+                  </View>
+                  {review.comment ? (
+                    <Text className="text-sm text-stone-600">{review.comment}</Text>
+                  ) : null}
+                </View>
+              ))}
             </View>
           ) : null}
         </View>

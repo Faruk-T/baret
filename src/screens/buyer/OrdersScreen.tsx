@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { OrderReviewBlock } from '../../components/buyer/OrderReviewBlock';
 import { DELIVERY_OPTION_LABELS, ORDER_STATUS_LABELS } from '../../constants/enums';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -18,22 +19,29 @@ import {
   listBuyerOrders,
   type OrderWithProduct,
 } from '../../services/orders';
+import { listReviewsForOrders } from '../../services/reviews';
+import type { Review } from '../../types/database';
 
 export function OrdersScreen() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<OrderWithProduct[]>([]);
+  const [reviewsByOrder, setReviewsByOrder] = useState<Record<string, Review>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) {
       setOrders([]);
+      setReviewsByOrder({});
       setLoading(false);
       return;
     }
     try {
       const data = await listBuyerOrders(user.id);
       setOrders(data);
+      const deliveredIds = data.filter((o) => o.status === 'delivered').map((o) => o.id);
+      const map = await listReviewsForOrders(deliveredIds, user.id);
+      setReviewsByOrder(map);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Siparişler yüklenemedi.';
       Alert.alert('Hata', message);
@@ -152,6 +160,15 @@ export function OrdersScreen() {
             <Pressable className="mt-3 self-start" onPress={() => onCancel(item)}>
               <Text className="text-sm font-medium text-red-600">İptal et</Text>
             </Pressable>
+          ) : null}
+          {item.status === 'delivered' && user ? (
+            <OrderReviewBlock
+              buyerId={user.id}
+              storeId={item.store_id}
+              orderId={item.id}
+              existing={reviewsByOrder[item.id] ?? null}
+              onSaved={() => void load()}
+            />
           ) : null}
         </View>
       )}

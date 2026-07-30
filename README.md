@@ -171,6 +171,22 @@ Sepet → Siparişe geç → teslimat + adres → `orders` kaydı; alıcı Sipar
 
 ![Satıcı sipariş — kargoda](assets/screenshots/seller-orders-shipped.png)
 
+### Değerlendirme — yıldız + yorum (Gün 17)
+
+Teslim edilen siparişte alıcı 1–5 yıldız + yorum bırakır; satıcı Dashboard’da ortalama ve son yorumları görür. Ürün detayda mağaza puanı listelenir.
+
+| Ekran | Dosya |
+|-------|--------|
+| Alıcı — değerlendirme | `assets/screenshots/buyer-orders-reviews.png` |
+| Satıcı dashboard (5★) | `assets/screenshots/seller-dashboard-reviews.png` |
+| Satıcı dashboard (2★) | `assets/screenshots/seller-dashboard-reviews-low.png` |
+
+![Alıcı değerlendirmeler](assets/screenshots/buyer-orders-reviews.png)
+
+![Satıcı dashboard yorumlar](assets/screenshots/seller-dashboard-reviews.png)
+
+![Satıcı dashboard düşük puan](assets/screenshots/seller-dashboard-reviews-low.png)
+
 ---
 
 # Faz 1 Teslim Edilenler
@@ -238,4 +254,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 3 — Gün 16/16 tamamlandı** | Checkout + sipariş listeleri + admin onay UI. **Sonraki: Gün 17** değerlendirme (yıldız/yorum) veya Gün 18 polish.
+✅ **Faz 4 — Gün 17/20 tamamlandı** | Admin onay + değerlendirme (yıldız/yorum). **Sonraki: Gün 18** bug fix / UI polish.
