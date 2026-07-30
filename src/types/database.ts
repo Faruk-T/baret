@@ -99,6 +99,24 @@ export interface Review {
   updated_at: string;
 }
 
+export interface PlatformSettings {
+  id: number;
+  commission_rate: number;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+export interface OrderCommission {
+  id: string;
+  order_id: string;
+  store_id: string;
+  order_amount: number;
+  commission_rate: number;
+  commission_amount: number;
+  seller_net_amount: number;
+  created_at: string;
+}
+
 /** Supabase `Database` shape for typed client queries */
 export type Database = {
   public: {
@@ -205,6 +223,30 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Review, 'id'>>;
+      };
+      platform_settings: {
+        Row: PlatformSettings;
+        Insert: {
+          id?: number;
+          commission_rate?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: Partial<Omit<PlatformSettings, 'id'>>;
+      };
+      order_commissions: {
+        Row: OrderCommission;
+        Insert: {
+          id?: string;
+          order_id: string;
+          store_id: string;
+          order_amount: number;
+          commission_rate: number;
+          commission_amount: number;
+          seller_net_amount: number;
+          created_at?: string;
+        };
+        Update: Partial<Omit<OrderCommission, 'id'>>;
       };
     };
     Enums: {

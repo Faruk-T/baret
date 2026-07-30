@@ -39,6 +39,7 @@ export type AdminStackParamList = {
   UserManagement: undefined;
   PlatformStats: undefined;
   LicenseKeys: undefined;
+  Commission: undefined;
 };
 
 export type RootStackParamList = {

@@ -12,6 +12,12 @@ export type OrderWithProduct = Order & {
     city: string;
     district: string | null;
   } | null;
+  order_commissions: {
+    commission_rate: number;
+    commission_amount: number;
+    seller_net_amount: number;
+    order_amount: number;
+  } | null;
 };
 
 export type CheckoutInput = {
@@ -100,7 +106,8 @@ export async function listStoreOrders(storeId: string): Promise<OrderWithProduct
       `
       *,
       products ( name, image_url ),
-      stores ( name, city, district )
+      stores ( name, city, district ),
+      order_commissions ( commission_rate, commission_amount, seller_net_amount, order_amount )
     `
     )
     .eq('store_id', storeId)

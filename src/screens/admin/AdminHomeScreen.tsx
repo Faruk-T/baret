@@ -126,6 +126,16 @@ export function AdminHomeScreen() {
       </Pressable>
 
       <Pressable
+        className="mb-3 rounded-2xl border border-stone-200 bg-white p-4"
+        onPress={() => navigation.navigate('Commission')}
+      >
+        <Text className="text-base font-semibold text-stone-900">Komisyon</Text>
+        <Text className="mt-1 text-sm text-stone-500">
+          Oranı ayarla, platform gelir özetini gör
+        </Text>
+      </Pressable>
+
+      <Pressable
         className="mb-6 rounded-2xl border border-stone-200 bg-white p-4"
         onPress={() => navigation.navigate('PlatformStats')}
       >

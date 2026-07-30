@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
+import { CommissionScreen } from '../screens/admin/CommissionScreen';
 import { LicenseKeysScreen } from '../screens/admin/LicenseKeysScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
@@ -42,6 +43,11 @@ export function AdminNavigator() {
         name="LicenseKeys"
         component={LicenseKeysScreen}
         options={{ title: 'Lisans Anahtarları' }}
+      />
+      <Stack.Screen
+        name="Commission"
+        component={CommissionScreen}
+        options={{ title: 'Komisyon' }}
       />
     </Stack.Navigator>
   );

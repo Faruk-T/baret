@@ -168,6 +168,20 @@ export function SellerOrdersScreen() {
                   })}{' '}
                   · {item.quantity} adet
                 </Text>
+                {item.order_commissions ? (
+                  <Text className="mt-1 text-xs text-stone-500">
+                    Komisyon %{Number(item.order_commissions.commission_rate)} · −₺
+                    {Number(item.order_commissions.commission_amount).toLocaleString(
+                      'tr-TR',
+                      { minimumFractionDigits: 2 }
+                    )}{' '}
+                    · Net ₺
+                    {Number(item.order_commissions.seller_net_amount).toLocaleString(
+                      'tr-TR',
+                      { minimumFractionDigits: 2 }
+                    )}
+                  </Text>
+                ) : null}
                 <Text className="mt-1 text-sm text-stone-600">
                   {ORDER_STATUS_LABELS[item.status]}
                 </Text>
