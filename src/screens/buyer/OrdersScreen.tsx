@@ -235,6 +235,26 @@ export function OrdersScreen() {
               unlocked={canRevealStoreContact(item.status)}
             />
 
+            {item.status === 'shipped' && item.pickup_code ? (
+              <View className="mt-3 rounded-2xl border border-brand bg-orange-50 p-4">
+                <Text className="mb-1 text-xs font-bold uppercase tracking-wide text-brand">
+                  Teslim kodun
+                </Text>
+                <Text className="text-center font-mono text-3xl font-bold tracking-[6px] text-stone-900">
+                  {item.pickup_code}
+                </Text>
+                <Text className="mt-2 text-center text-xs leading-4 text-stone-600">
+                  {item.delivery_option === 'gel_al'
+                    ? 'Mağazaya gittiğinde bu kodu satıcıya göster. Okutulunca sipariş teslim edildi olur.'
+                    : 'Teslimatta bu kodu söyle / göster. Satıcı doğrulayınca sipariş tamamlanır.'}
+                </Text>
+              </View>
+            ) : item.status === 'preparing' ? (
+              <Text className="mt-3 text-xs text-stone-500">
+                Satıcı hazır işaretleyince teslim kodun burada görünecek.
+              </Text>
+            ) : null}
+
             <View className="mt-3 flex-row flex-wrap gap-3">
               {item.status === 'pending' ? (
                 <Pressable onPress={() => onCancel(item)}>

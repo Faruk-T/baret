@@ -114,7 +114,11 @@ export async function listStoreOrders(storeId: string): Promise<OrderWithProduct
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as OrderWithProduct[]) ?? [];
+  // Hide pickup codes from seller client — only buyer should display the code.
+  return ((data as OrderWithProduct[]) ?? []).map((row) => ({
+    ...row,
+    pickup_code: null,
+  }));
 }
 
 export async function countPendingStoreOrders(storeId: string): Promise<number> {
@@ -155,4 +159,15 @@ export async function updateSellerOrderStatus(
 
   if (error) throw error;
   return data;
+}
+
+/** Seller: buyer shows pickup code → mark delivered. */
+export async function confirmOrderPickup(code: string): Promise<Order> {
+  const { data, error } = await supabase.rpc('confirm_order_pickup', {
+    p_code: code.trim().toUpperCase(),
+  });
+
+  if (error) throw error;
+  if (!data) throw new Error('Teslim doğrulanamadı.');
+  return data as Order;
 }

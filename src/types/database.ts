@@ -84,6 +84,7 @@ export interface Order {
   delivery_option: DeliveryOption;
   delivery_address: string | null;
   notes: string | null;
+  pickup_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -221,6 +222,7 @@ export type Database = {
           delivery_option: DeliveryOption;
           delivery_address?: string | null;
           notes?: string | null;
+          pickup_code?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -307,6 +309,10 @@ export type Database = {
           latitude: number | null;
           longitude: number | null;
         }[];
+      };
+      confirm_order_pickup: {
+        Args: { p_code: string };
+        Returns: Order;
       };
     };
   };

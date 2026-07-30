@@ -7,6 +7,7 @@ import {
   Pressable,
   RefreshControl,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import { UiCard } from '../../components/ui/UiCard';
 import { useAuth } from '../../context/AuthContext';
 import { getMyStore } from '../../services/stores';
 import {
+  confirmOrderPickup,
   listStoreOrders,
   updateSellerOrderStatus,
   type OrderWithProduct,
@@ -25,13 +27,26 @@ import {
 import type { OrderStatus } from '../../types/database';
 import { ui } from '../../theme/ui';
 
+/** shipped → delivered only via pickup code verify */
 const SELLER_NEXT: Partial<
-  Record<OrderStatus, Exclude<OrderStatus, 'cancelled'>>
+  Record<OrderStatus, Exclude<OrderStatus, 'cancelled' | 'delivered'>>
 > = {
   pending: 'preparing',
   preparing: 'shipped',
-  shipped: 'delivered',
 };
+
+function nextStatusLabel(
+  order: OrderWithProduct,
+  next: Exclude<OrderStatus, 'cancelled' | 'delivered'>
+): string {
+  if (next === 'shipped' && order.delivery_option === 'gel_al') {
+    return 'Mağazada hazır (teslim kodu oluşur)';
+  }
+  if (next === 'shipped') {
+    return 'Yola çıktı / hazır (teslim kodu oluşur)';
+  }
+  return ORDER_STATUS_LABELS[next];
+}
 
 export function SellerOrdersScreen() {
   const { user } = useAuth();
@@ -39,6 +54,8 @@ export function SellerOrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [pickupInput, setPickupInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -75,28 +92,59 @@ export function SellerOrdersScreen() {
   const advance = (order: OrderWithProduct) => {
     const next = SELLER_NEXT[order.status];
     if (!next) return;
-    Alert.alert(
-      'Durum güncelle',
-      `Sipariş “${ORDER_STATUS_LABELS[next]}” olsun mu?`,
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Güncelle',
-          onPress: () => {
-            void (async () => {
-              try {
-                await updateSellerOrderStatus(order.id, next);
-                await load();
-              } catch (error) {
-                const message =
-                  error instanceof Error ? error.message : 'Güncellenemedi.';
-                Alert.alert('Hata', message);
+    Alert.alert('Durum güncelle', `Sipariş “${nextStatusLabel(order, next)}” olsun mu?`, [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Güncelle',
+        onPress: () => {
+          void (async () => {
+            try {
+              const updated = await updateSellerOrderStatus(order.id, next);
+              await load();
+              if (next === 'shipped') {
+                Alert.alert(
+                  'Teslim kodu oluştu',
+                  updated.pickup_code
+                    ? 'Alıcı kendi uygulamasında 6 haneli kodu görecek. Mağazaya gelince kodu senden doğrulatır — sen kodu burada girersin.'
+                    : 'Durum güncellendi. Kod görünmüyorsa pickup-code SQL’ini çalıştırıp yenile.'
+                );
               }
-            })();
-          },
+            } catch (error) {
+              const message =
+                error instanceof Error ? error.message : 'Güncellenemedi.';
+              Alert.alert('Hata', message);
+            }
+          })();
         },
-      ]
-    );
+      },
+    ]);
+  };
+
+  const verifyPickup = async () => {
+    const code = pickupInput.trim();
+    if (code.length < 4) {
+      Alert.alert('Kod', 'Alıcının gösterdiği 6 haneli teslim kodunu gir.');
+      return;
+    }
+    try {
+      setVerifying(true);
+      const order = await confirmOrderPickup(code);
+      setPickupInput('');
+      await load();
+      Alert.alert(
+        'Teslim alındı',
+        `Sipariş teslim edildi olarak işaretlendi.\nTutar: ₺${Number(order.total_amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`
+      );
+    } catch (error) {
+      Alert.alert(
+        'Doğrulama',
+        error instanceof Error
+          ? error.message
+          : 'Kod geçersiz. pickup-code SQL kuruldu mu?'
+      );
+    } finally {
+      setVerifying(false);
+    }
   };
 
   if (loading) {
@@ -131,12 +179,14 @@ export function SellerOrdersScreen() {
     );
   }
 
+  const readyCount = orders.filter((o) => o.status === 'shipped').length;
+
   return (
     <FlatList
       className="flex-1 bg-[#FFF8F3]"
       data={orders}
       keyExtractor={(item) => item.id}
-      contentContainerClassName="px-4 py-3"
+      contentContainerClassName="px-4 py-3 pb-10"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -157,9 +207,43 @@ export function SellerOrdersScreen() {
               {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
             </Text>
           ) : null}
-          <Text className="mt-2 text-xs leading-4 text-stone-500">
-            Siparişi “Hazırlanıyor” yaptığında alıcıya telefon/adres açılır. WhatsApp
-            ile dışarıda anlaşma platform kurallarına aykırıdır.
+
+          <View className="mt-3 rounded-2xl border border-brand bg-orange-50 p-4">
+            <Text className="mb-1 text-sm font-bold text-brand">
+              Teslim kodu doğrula
+            </Text>
+            <Text className="mb-3 text-xs leading-4 text-stone-600">
+              Alıcı mağazaya geldiğinde uygulamadaki 6 haneli kodu söyleyecek / gösterecek.
+              {readyCount > 0 ? ` Şu an ${readyCount} sipariş kod bekliyor.` : ''}
+            </Text>
+            <TextInput
+              className="mb-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-center font-mono text-xl font-bold tracking-[4px] text-stone-900"
+              placeholder="ABC123"
+              placeholderTextColor="#a8a29e"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={8}
+              value={pickupInput}
+              onChangeText={setPickupInput}
+            />
+            <Pressable
+              className={`items-center rounded-xl bg-brand py-3 ${
+                verifying ? 'opacity-70' : ''
+              }`}
+              disabled={verifying}
+              onPress={() => void verifyPickup()}
+            >
+              {verifying ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="font-bold text-white">Kodu okut / teslim et</Text>
+              )}
+            </Pressable>
+          </View>
+
+          <Text className="mt-3 text-xs leading-4 text-stone-500">
+            “Hazırlanıyor” → iletişim açılır. “Hazır” → teslim kodu oluşur. WhatsApp ile
+            dışarıda anlaşma yasaktır.
           </Text>
         </View>
       }
@@ -186,7 +270,8 @@ export function SellerOrdersScreen() {
                   <OrderStatusChip status={item.status} />
                 </View>
                 <Text className="text-sm font-bold text-brand">
-                  ₺{Number(item.total_amount).toLocaleString('tr-TR', {
+                  ₺
+                  {Number(item.total_amount).toLocaleString('tr-TR', {
                     minimumFractionDigits: 2,
                   })}{' '}
                   · {item.quantity} adet
@@ -218,13 +303,22 @@ export function SellerOrdersScreen() {
             <Text className="mt-1 text-xs text-stone-400">
               {new Date(item.created_at).toLocaleString('tr-TR')}
             </Text>
+
+            {item.status === 'shipped' ? (
+              <View className="mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                <Text className="text-xs font-bold text-green-800">
+                  Alıcıdaki teslim kodunu yukarıya gir → sipariş tamamlanır
+                </Text>
+              </View>
+            ) : null}
+
             {next ? (
               <Pressable
                 className="mt-3 self-start rounded-xl bg-brand px-4 py-2.5"
                 onPress={() => advance(item)}
               >
                 <Text className="font-bold text-white">
-                  → {ORDER_STATUS_LABELS[next]}
+                  → {nextStatusLabel(item, next)}
                 </Text>
               </Pressable>
             ) : null}
