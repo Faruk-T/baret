@@ -61,3 +61,69 @@ export async function updateStore(storeId: string, input: StoreFormInput): Promi
   if (error) throw error;
   return data;
 }
+
+/** Admin: pending stores (is_approved = false). Requires admin role + RLS. */
+export async function listPendingStores(): Promise<Store[]> {
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('is_approved', false)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Admin: all stores (pending + approved). */
+export async function listAllStoresAdmin(): Promise<Store[]> {
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function approveStore(storeId: string): Promise<Store> {
+  const { data, error } = await supabase
+    .from('stores')
+    .update({ is_approved: true, is_active: true })
+    .eq('id', storeId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function unapproveStore(storeId: string): Promise<Store> {
+  const { data, error } = await supabase
+    .from('stores')
+    .update({ is_approved: false })
+    .eq('id', storeId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function rejectStore(storeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('stores')
+    .update({ is_active: false })
+    .eq('id', storeId);
+
+  if (error) throw error;
+}
+
+export async function reactivateStore(storeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('stores')
+    .update({ is_active: true })
+    .eq('id', storeId);
+
+  if (error) throw error;
+}

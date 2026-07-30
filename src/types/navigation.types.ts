@@ -9,6 +9,11 @@ export type BuyerHomeStackParamList = {
   ProductDetail: { productId: string };
 };
 
+export type BuyerCartStackParamList = {
+  CartList: undefined;
+  Checkout: undefined;
+};
+
 export type BuyerTabParamList = {
   Home: undefined;
   Cart: undefined;
@@ -29,6 +34,7 @@ export type SellerProductsStackParamList = {
 };
 
 export type AdminStackParamList = {
+  AdminHome: undefined;
   SellerApprovals: undefined;
   UserManagement: undefined;
   PlatformStats: undefined;
