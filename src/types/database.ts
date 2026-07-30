@@ -40,8 +40,21 @@ export interface Store {
   logo_url: string | null;
   is_approved: boolean;
   is_active: boolean;
+  license_expires_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface LicenseKey {
+  id: string;
+  code: string;
+  duration_days: number;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  redeemed_by: string | null;
+  redeemed_at: string | null;
+  store_id: string | null;
 }
 
 export interface Product {
@@ -121,10 +134,26 @@ export type Database = {
           logo_url?: string | null;
           is_approved?: boolean;
           is_active?: boolean;
+          license_expires_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Omit<Store, 'id'>>;
+      };
+      license_keys: {
+        Row: LicenseKey;
+        Insert: {
+          id?: string;
+          code: string;
+          duration_days: number;
+          notes?: string | null;
+          created_by: string;
+          created_at?: string;
+          redeemed_by?: string | null;
+          redeemed_at?: string | null;
+          store_id?: string | null;
+        };
+        Update: Partial<Omit<LicenseKey, 'id'>>;
       };
       products: {
         Row: Product;
@@ -182,6 +211,12 @@ export type Database = {
       user_role: UserRole;
       order_status: OrderStatus;
       delivery_option: DeliveryOption;
+    };
+    Functions: {
+      redeem_license_key: {
+        Args: { p_code: string };
+        Returns: Store;
+      };
     };
   };
 };

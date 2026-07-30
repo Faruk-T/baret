@@ -116,6 +116,16 @@ export function AdminHomeScreen() {
       </Pressable>
 
       <Pressable
+        className="mb-3 rounded-2xl border border-stone-200 bg-white p-4"
+        onPress={() => navigation.navigate('LicenseKeys')}
+      >
+        <Text className="text-base font-semibold text-stone-900">Lisans anahtarları</Text>
+        <Text className="mt-1 text-sm text-stone-500">
+          Satıcıya verilecek süre kodu üret ve paylaş
+        </Text>
+      </Pressable>
+
+      <Pressable
         className="mb-6 rounded-2xl border border-stone-200 bg-white p-4"
         onPress={() => navigation.navigate('PlatformStats')}
       >

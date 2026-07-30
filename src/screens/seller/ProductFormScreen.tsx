@@ -21,6 +21,7 @@ import { getMyStore } from '../../services/stores';
 import { uploadProductImage } from '../../services/storage';
 import type { DeliveryOption } from '../../types/database';
 import type { SellerProductsStackParamList } from '../../types/navigation.types';
+import { isLicenseValid } from '../../utils/license';
 
 type Props = NativeStackScreenProps<SellerProductsStackParamList, 'ProductForm'>;
 
@@ -54,6 +55,14 @@ export function ProductFormScreen({ navigation, route }: Props) {
         if (!store) {
           Alert.alert('Mağaza yok', 'Önce Mağaza sekmesinden mağaza oluştur.');
           navigation.goBack();
+          return;
+        }
+        if (!productId && !isLicenseValid(store.license_expires_at)) {
+          Alert.alert(
+            'Lisans gerekli',
+            'Yeni ürün eklemek için geçerli bir satıcı lisansı gerekir. Mağaza sekmesinden anahtar aktive et.',
+            [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+          );
           return;
         }
         if (!mounted) return;

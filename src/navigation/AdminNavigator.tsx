@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
+import { LicenseKeysScreen } from '../screens/admin/LicenseKeysScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
 import type { AdminStackParamList } from '../types/navigation.types';
@@ -36,6 +37,11 @@ export function AdminNavigator() {
         name="PlatformStats"
         component={AdminDashboardScreen}
         options={{ title: 'İstatistikler' }}
+      />
+      <Stack.Screen
+        name="LicenseKeys"
+        component={LicenseKeysScreen}
+        options={{ title: 'Lisans Anahtarları' }}
       />
     </Stack.Navigator>
   );

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '../../context/AuthContext';
+import { redeemLicenseKey } from '../../services/licenses';
 import {
   createStore,
   getMyStore,
@@ -20,6 +21,10 @@ import {
 } from '../../services/stores';
 import type { Store } from '../../types/database';
 import { getCurrentCoords } from '../../utils/geo';
+import {
+  formatLicenseExpiry,
+  getLicenseStatus,
+} from '../../utils/license';
 
 const emptyForm: StoreFormInput = {
   name: '',
@@ -43,6 +48,8 @@ export function StoreSettingsScreen() {
     latitude: number | null;
     longitude: number | null;
   }>({ latitude: null, longitude: null });
+  const [licenseCode, setLicenseCode] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
 
   const loadStore = useCallback(async () => {
     if (!user?.id) return;
@@ -152,6 +159,35 @@ export function StoreSettingsScreen() {
     }
   };
 
+  const handleRedeemLicense = async () => {
+    if (!store) {
+      Alert.alert('Mağaza', 'Önce mağazayı kaydet, sonra lisansı aktive et.');
+      return;
+    }
+    if (!licenseCode.trim()) {
+      Alert.alert('Lisans', 'Anahtar kodunu gir.');
+      return;
+    }
+    try {
+      setIsRedeeming(true);
+      const updated = await redeemLicenseKey(licenseCode);
+      setStore(updated);
+      setLicenseCode('');
+      Alert.alert(
+        'Lisans aktif',
+        updated.license_expires_at
+          ? `Geçerlilik: ${formatLicenseExpiry(updated.license_expires_at)}`
+          : 'Lisans uygulandı.'
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Lisans aktive edilemedi.';
+      Alert.alert('Lisans', message);
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -179,6 +215,74 @@ export function StoreSettingsScreen() {
                 {store.is_approved ? 'Onaylandı' : 'Onay bekliyor'}
               </Text>
             </Text>
+          </View>
+        ) : null}
+
+        {store ? (
+          <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700">Satıcı lisansı</Text>
+            {(() => {
+              const status = getLicenseStatus(store.license_expires_at);
+              if (status === 'missing') {
+                return (
+                  <Text className="mb-3 text-sm text-amber-700">
+                    Henüz lisans yok. Admin’den anahtar alıp aşağıya gir.
+                  </Text>
+                );
+              }
+              if (status === 'expired') {
+                return (
+                  <Text className="mb-3 text-sm text-red-700">
+                    Lisans süresi dolmuş
+                    {store.license_expires_at
+                      ? ` (${formatLicenseExpiry(store.license_expires_at)})`
+                      : ''}
+                    .
+                  </Text>
+                );
+              }
+              if (status === 'expiring_soon') {
+                return (
+                  <Text className="mb-3 text-sm text-amber-700">
+                    Lisans yakında bitiyor:{' '}
+                    {store.license_expires_at
+                      ? formatLicenseExpiry(store.license_expires_at)
+                      : ''}
+                  </Text>
+                );
+              }
+              return (
+                <Text className="mb-3 text-sm text-green-700">
+                  Aktif —{' '}
+                  {store.license_expires_at
+                    ? formatLicenseExpiry(store.license_expires_at)
+                    : ''}{' '}
+                    tarihine kadar
+                </Text>
+              );
+            })()}
+            <TextInput
+              className="mb-3 rounded-xl border border-gray-200 bg-white px-4 py-3 font-mono text-base text-gray-900"
+              placeholder="BARET-XXXX-XXXX"
+              placeholderTextColor="#a8a29e"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              value={licenseCode}
+              onChangeText={setLicenseCode}
+            />
+            <Pressable
+              className={`items-center rounded-xl bg-brand py-3 ${
+                isRedeeming ? 'opacity-70' : ''
+              }`}
+              disabled={isRedeeming}
+              onPress={() => void handleRedeemLicense()}
+            >
+              {isRedeeming ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="font-semibold text-white">Lisansı aktive et</Text>
+              )}
+            </Pressable>
           </View>
         ) : null}
 

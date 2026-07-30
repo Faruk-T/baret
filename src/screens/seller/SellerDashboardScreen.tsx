@@ -22,6 +22,11 @@ import {
 } from '../../services/reviews';
 import type { Product } from '../../types/database';
 import type { SellerTabParamList } from '../../types/navigation.types';
+import {
+  formatLicenseExpiry,
+  getLicenseStatus,
+  type LicenseStatus,
+} from '../../utils/license';
 
 type TabNav = BottomTabNavigationProp<SellerTabParamList>;
 
@@ -29,6 +34,7 @@ export function SellerDashboardScreen() {
   const navigation = useNavigation<TabNav>();
   const { user } = useAuth();
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
   const [summary, setSummary] = useState({ average: 0, count: 0 });
   const [reviews, setReviews] = useState<ReviewWithBuyer[]>([]);
   const [lowStock, setLowStock] = useState<Product[]>([]);
@@ -44,12 +50,14 @@ export function SellerDashboardScreen() {
       const store = await getMyStore(user.id);
       if (!store) {
         setStoreName(null);
+        setLicenseExpiresAt(null);
         setReviews([]);
         setSummary({ average: 0, count: 0 });
         setLowStock([]);
         return;
       }
       setStoreName(store.name);
+      setLicenseExpiresAt(store.license_expires_at);
       const [rating, rows, products] = await Promise.all([
         getStoreRatingSummary(store.id),
         listStoreReviews(store.id),
@@ -110,6 +118,56 @@ export function SellerDashboardScreen() {
     >
       <Text className="mb-1 text-xl font-bold text-stone-900">{storeName}</Text>
       <Text className="mb-4 text-sm text-stone-500">Mağaza özeti</Text>
+
+      {(() => {
+        const status: LicenseStatus = getLicenseStatus(licenseExpiresAt);
+        if (status === 'active') return null;
+        const isExpired = status === 'expired' || status === 'missing';
+        return (
+          <View
+            className={`mb-4 rounded-2xl border p-4 ${
+              isExpired
+                ? 'border-red-200 bg-red-50'
+                : 'border-amber-200 bg-amber-50'
+            }`}
+          >
+            <Text
+              className={`mb-1 text-sm font-bold ${
+                isExpired ? 'text-red-900' : 'text-amber-900'
+              }`}
+            >
+              {status === 'missing'
+                ? 'Lisans gerekli'
+                : status === 'expired'
+                  ? 'Lisans süresi doldu'
+                  : 'Lisans yakında bitiyor'}
+            </Text>
+            <Text
+              className={`mb-3 text-xs ${
+                isExpired ? 'text-red-800' : 'text-amber-800'
+              }`}
+            >
+              {status === 'missing'
+                ? 'Yeni ürün eklemek için admin’den lisans anahtarı alıp Mağaza sekmesinde aktive et.'
+                : status === 'expired'
+                  ? 'Süreyi uzatmak için yeni bir anahtar gir. Mevcut ürünler görünür kalır.'
+                  : `Bitiş: ${
+                      licenseExpiresAt
+                        ? formatLicenseExpiry(licenseExpiresAt)
+                        : ''
+                    }. Yenilemeyi unutma.`}
+            </Text>
+            <Pressable
+              className={`items-center rounded-xl py-2.5 ${
+                isExpired ? 'bg-red-600' : 'bg-amber-600'
+              }`}
+              onPress={() => navigation.navigate('StoreSettings')}
+            >
+              <Text className="font-semibold text-white">Lisansı yönet</Text>
+            </Pressable>
+          </View>
+        );
+      })()}
 
       {lowStock.length > 0 ? (
         <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
