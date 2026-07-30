@@ -8,7 +8,15 @@ const Stack = createNativeStackNavigator<BuyerHomeStackParamList>();
 
 export function BuyerHomeNavigator() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#FFF8F3' },
+        headerShadowVisible: false,
+        headerTintColor: '#FF6B00',
+        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
+        contentStyle: { backgroundColor: '#FFF8F3' },
+      }}
+    >
       <Stack.Screen
         name="HomeList"
         component={HomeScreen}

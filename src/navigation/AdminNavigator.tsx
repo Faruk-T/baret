@@ -17,12 +17,16 @@ export function AdminNavigator() {
       screenOptions={{
         headerShown: true,
         headerTintColor: '#FF6B00',
+        headerStyle: { backgroundColor: '#FFF8F3' },
+        headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
+        contentStyle: { backgroundColor: '#FFF8F3' },
       }}
     >
       <Stack.Screen
         name="AdminHome"
         component={AdminHomeScreen}
-        options={{ title: 'Admin' }}
+        options={{ title: 'Admin', headerShown: false }}
       />
       <Stack.Screen
         name="SellerApprovals"

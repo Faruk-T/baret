@@ -76,7 +76,7 @@ export function CommissionScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
         <ActivityIndicator color="#FF6B00" />
       </View>
     );
@@ -84,7 +84,7 @@ export function CommissionScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       contentContainerClassName="px-4 py-4 pb-10"
       refreshControl={
         <RefreshControl
@@ -112,7 +112,7 @@ export function CommissionScreen() {
           Oran (%)
         </Text>
         <TextInput
-          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+          className="mb-3 rounded-xl border border-stone-200 bg-[#FFF8F3] px-4 py-3 text-base text-stone-900"
           keyboardType="decimal-pad"
           value={rateInput}
           onChangeText={setRateInput}

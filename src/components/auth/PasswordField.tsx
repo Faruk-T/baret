@@ -15,13 +15,14 @@ export function PasswordField({ label, ...rest }: Props) {
   return (
     <View className="mb-6">
       <Text className="mb-2 text-sm font-medium text-stone-700">{label}</Text>
-      <View className="flex-row items-center rounded-xl border border-stone-200 bg-stone-50 px-3">
+      <View className="flex-row items-center rounded-2xl border border-stone-200 bg-white px-3">
         <TextInput
-          className="flex-1 py-3 pr-2 text-base text-stone-900"
+          className="flex-1 py-3.5 pr-2 text-base text-stone-900"
           secureTextEntry={!visible}
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="password"
+          placeholderTextColor="#a8a29e"
           {...rest}
         />
         <Pressable

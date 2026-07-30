@@ -211,23 +211,23 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const linePreview = Number(product.price) * quantity;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-[#FFF8F3]">
       <ScrollView className="flex-1">
         {product.image_url ? (
           <Image
             source={{ uri: product.image_url }}
-            className="h-64 w-full bg-gray-100"
+            className="h-72 w-full bg-stone-100"
             resizeMode="cover"
           />
         ) : (
-          <View className="h-64 w-full items-center justify-center bg-gray-100">
-            <Text className="text-sm text-gray-500">Görsel yok</Text>
+          <View className="h-72 w-full items-center justify-center bg-orange-50">
+            <Text className="text-sm font-medium text-brand">Görsel yok</Text>
           </View>
         )}
 
-        <View className="px-6 py-4">
-          <Text className="mb-2 text-2xl font-bold text-gray-900">{product.name}</Text>
-          <Text className="mb-3 text-xl font-semibold text-brand">
+        <View className="px-5 py-5">
+          <Text className="mb-2 text-2xl font-bold text-stone-900">{product.name}</Text>
+          <Text className="mb-3 text-2xl font-bold text-brand">
             ₺{Number(product.price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </Text>
           <Text className="mb-1 text-sm text-gray-600">
@@ -366,13 +366,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
 
-      <View className="border-t border-gray-100 px-6 py-4">
+      <View className="border-t border-orange-100 bg-white px-5 py-4">
         <Pressable
-          className={`items-center rounded-xl py-3.5 ${outOfStock ? 'bg-gray-300' : 'bg-brand'}`}
+          className={`items-center rounded-2xl py-4 ${outOfStock ? 'bg-stone-300' : 'bg-brand'}`}
           disabled={outOfStock}
           onPress={handleAddToCart}
         >
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-bold text-white">
             {outOfStock ? 'Stokta yok' : 'Sepete Ekle'}
           </Text>
         </Pressable>

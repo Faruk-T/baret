@@ -49,7 +49,17 @@ export function SellerNavigator() {
         headerShown: true,
         tabBarActiveTintColor: '#FF6B00',
         tabBarInactiveTintColor: '#78716c',
-        tabBarStyle: { backgroundColor: '#fffaf7', borderTopColor: '#e7e5e4' },
+        tabBarStyle: {
+          backgroundColor: '#fffaf7',
+          borderTopColor: '#fed7aa',
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 4,
+        },
+        headerStyle: { backgroundColor: '#FFF8F3' },
+        headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
       screenListeners={{
         focus: () => {

@@ -12,6 +12,9 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 
 import { DELIVERY_OPTION_LABELS, ORDER_STATUS_LABELS } from '../../constants/enums';
+import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { UiCard } from '../../components/ui/UiCard';
 import { useAuth } from '../../context/AuthContext';
 import { getMyStore } from '../../services/stores';
 import {
@@ -20,6 +23,7 @@ import {
   type OrderWithProduct,
 } from '../../services/orders';
 import type { OrderStatus } from '../../types/database';
+import { ui } from '../../theme/ui';
 
 const SELLER_NEXT: Partial<
   Record<OrderStatus, Exclude<OrderStatus, 'cancelled'>>
@@ -97,36 +101,39 @@ export function SellerOrdersScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
-        <ActivityIndicator color="#FF6B00" />
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
+        <ActivityIndicator color={ui.brand} />
       </View>
     );
   }
 
   if (!storeName) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-6">
-        <Text className="text-center text-stone-600">
-          Önce Mağaza sekmesinden mağaza profili oluştur.
-        </Text>
+      <View className="flex-1 bg-[#FFF8F3]">
+        <EmptyState
+          icon="storefront-outline"
+          title="Mağaza gerekli"
+          description="Önce Mağaza sekmesinden mağaza profili oluştur."
+        />
       </View>
     );
   }
 
   if (orders.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-6">
-        <Text className="mb-2 text-lg font-semibold text-stone-900">Gelen sipariş yok</Text>
-        <Text className="text-center text-sm text-stone-500">
-          Alıcılar checkout yapınca siparişler burada görünür.
-        </Text>
+      <View className="flex-1 bg-[#FFF8F3]">
+        <EmptyState
+          icon="receipt-outline"
+          title="Gelen sipariş yok"
+          description="Alıcılar checkout yapınca yeni siparişler burada bildirim rozetiyle görünür."
+        />
       </View>
     );
   }
 
   return (
     <FlatList
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       data={orders}
       keyExtractor={(item) => item.id}
       contentContainerClassName="px-4 py-3"
@@ -137,7 +144,7 @@ export function SellerOrdersScreen() {
             setRefreshing(true);
             void load();
           }}
-          tintColor="#FF6B00"
+          tintColor={ui.brand}
         />
       }
       ListHeaderComponent={
@@ -146,7 +153,7 @@ export function SellerOrdersScreen() {
             {storeName} · {orders.length} sipariş
           </Text>
           {orders.some((o) => o.status === 'pending') ? (
-            <Text className="mt-1 text-xs font-semibold text-brand">
+            <Text className="mt-1 text-xs font-bold text-brand">
               {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
             </Text>
           ) : null}
@@ -155,7 +162,7 @@ export function SellerOrdersScreen() {
       renderItem={({ item }) => {
         const next = SELLER_NEXT[item.status];
         return (
-          <View className="mb-3 rounded-2xl border border-stone-200 bg-white p-4">
+          <UiCard className="mb-3">
             <View className="mb-2 flex-row">
               {item.products?.image_url ? (
                 <Image
@@ -169,16 +176,12 @@ export function SellerOrdersScreen() {
               )}
               <View className="flex-1">
                 <View className="mb-1 flex-row items-start justify-between">
-                  <Text className="flex-1 pr-2 font-semibold text-stone-900" numberOfLines={2}>
+                  <Text className="flex-1 pr-2 font-bold text-stone-900" numberOfLines={2}>
                     {item.products?.name ?? 'Ürün'}
                   </Text>
-                  {item.status === 'pending' ? (
-                    <View className="rounded-full bg-brand px-2 py-0.5">
-                      <Text className="text-[10px] font-bold text-white">YENİ</Text>
-                    </View>
-                  ) : null}
+                  <OrderStatusChip status={item.status} />
                 </View>
-                <Text className="text-sm text-brand">
+                <Text className="text-sm font-bold text-brand">
                   ₺{Number(item.total_amount).toLocaleString('tr-TR', {
                     minimumFractionDigits: 2,
                   })}{' '}
@@ -198,9 +201,6 @@ export function SellerOrdersScreen() {
                     )}
                   </Text>
                 ) : null}
-                <Text className="mt-1 text-sm text-stone-600">
-                  {ORDER_STATUS_LABELS[item.status]}
-                </Text>
               </View>
             </View>
             <Text className="text-xs text-stone-500">
@@ -216,15 +216,15 @@ export function SellerOrdersScreen() {
             </Text>
             {next ? (
               <Pressable
-                className="mt-3 self-start rounded-xl bg-brand px-4 py-2"
+                className="mt-3 self-start rounded-xl bg-brand px-4 py-2.5"
                 onPress={() => advance(item)}
               >
-                <Text className="font-semibold text-white">
+                <Text className="font-bold text-white">
                   → {ORDER_STATUS_LABELS[next]}
                 </Text>
               </Pressable>
             ) : null}
-          </View>
+          </UiCard>
         );
       }}
     />

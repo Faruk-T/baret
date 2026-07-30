@@ -44,7 +44,7 @@ export function UserManagementScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
         <ActivityIndicator color="#FF6B00" />
       </View>
     );
@@ -52,7 +52,7 @@ export function UserManagementScreen() {
 
   return (
     <FlatList
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       data={users}
       keyExtractor={(item) => item.id}
       contentContainerClassName="px-4 py-3"

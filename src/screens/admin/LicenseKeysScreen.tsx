@@ -97,7 +97,7 @@ export function LicenseKeysScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
         <ActivityIndicator color="#FF6B00" />
       </View>
     );
@@ -105,7 +105,7 @@ export function LicenseKeysScreen() {
 
   return (
     <FlatList
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       data={keys}
       keyExtractor={(item) => item.id}
       contentContainerClassName="px-4 py-3 pb-10"
@@ -141,7 +141,7 @@ export function LicenseKeysScreen() {
                     className={`rounded-full px-3 py-2 ${
                       selected
                         ? 'bg-brand'
-                        : 'border border-stone-200 bg-stone-50'
+                        : 'border border-stone-200 bg-[#FFF8F3]'
                     }`}
                     onPress={() => setDurationDays(preset.days)}
                   >
@@ -161,7 +161,7 @@ export function LicenseKeysScreen() {
               Not (opsiyonel)
             </Text>
             <TextInput
-              className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900"
+              className="mb-3 rounded-xl border border-stone-200 bg-[#FFF8F3] px-3 py-2.5 text-sm text-stone-900"
               placeholder="Örn. Ahmet Usta — Mart kampanyası"
               placeholderTextColor="#a8a29e"
               value={notes}

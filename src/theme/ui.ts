@@ -1,0 +1,26 @@
+/** Shared visual tokens for Baret UI (construction / marketplace). */
+export const ui = {
+  bg: '#FFF8F3',
+  bgElevated: '#FFFFFF',
+  ink: '#1C1917',
+  muted: '#78716C',
+  line: '#E7E5E4',
+  brand: '#FF6B00',
+  brandDark: '#D45500',
+  brandSoft: '#FFF1E6',
+  success: '#15803D',
+  successSoft: '#DCFCE7',
+  warning: '#B45309',
+  warningSoft: '#FEF3C7',
+  danger: '#B91C1C',
+  dangerSoft: '#FEE2E2',
+  info: '#1D4ED8',
+  infoSoft: '#DBEAFE',
+  shadow: {
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+} as const;

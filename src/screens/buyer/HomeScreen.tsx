@@ -118,7 +118,7 @@ export function HomeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-stone-50">
+    <View className="flex-1 bg-[#FFF8F3]">
       <View className="border-b border-orange-100 bg-[#fffaf7] px-4 pb-3 pt-2">
         <Text className="mb-0.5 text-2xl font-bold text-stone-900">Baret</Text>
         <Text className="mb-3 text-sm text-stone-500">

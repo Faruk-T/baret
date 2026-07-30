@@ -9,8 +9,11 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 
 import { StarRating } from '../../components/common/StarRating';
+import { MenuTile } from '../../components/ui/MenuTile';
+import { UiCard } from '../../components/ui/UiCard';
 import { LOW_STOCK_THRESHOLD, isLowStock } from '../../constants/inventory';
 import { useAuth } from '../../context/AuthContext';
 import { listStoreProducts } from '../../services/products';
@@ -20,6 +23,7 @@ import {
   listStoreReviews,
   type ReviewWithBuyer,
 } from '../../services/reviews';
+import { countPendingStoreOrders } from '../../services/orders';
 import type { Product } from '../../types/database';
 import type { SellerTabParamList } from '../../types/navigation.types';
 import {
@@ -27,6 +31,7 @@ import {
   getLicenseStatus,
   type LicenseStatus,
 } from '../../utils/license';
+import { ui } from '../../theme/ui';
 
 type TabNav = BottomTabNavigationProp<SellerTabParamList>;
 
@@ -35,6 +40,7 @@ export function SellerDashboardScreen() {
   const { user } = useAuth();
   const [storeName, setStoreName] = useState<string | null>(null);
   const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
+  const [pendingOrders, setPendingOrders] = useState(0);
   const [summary, setSummary] = useState({ average: 0, count: 0 });
   const [reviews, setReviews] = useState<ReviewWithBuyer[]>([]);
   const [lowStock, setLowStock] = useState<Product[]>([]);
@@ -51,6 +57,7 @@ export function SellerDashboardScreen() {
       if (!store) {
         setStoreName(null);
         setLicenseExpiresAt(null);
+        setPendingOrders(0);
         setReviews([]);
         setSummary({ average: 0, count: 0 });
         setLowStock([]);
@@ -58,15 +65,19 @@ export function SellerDashboardScreen() {
       }
       setStoreName(store.name);
       setLicenseExpiresAt(store.license_expires_at);
-      const [rating, rows, products] = await Promise.all([
+      const [rating, rows, products, pending] = await Promise.all([
         getStoreRatingSummary(store.id),
         listStoreReviews(store.id),
         listStoreProducts(store.id),
+        countPendingStoreOrders(store.id),
       ]);
       setSummary(rating);
       setReviews(rows);
+      setPendingOrders(pending);
       setLowStock(
-        products.filter((p) => isLowStock(p.stock, p.is_active)).sort((a, b) => a.stock - b.stock)
+        products
+          .filter((p) => isLowStock(p.stock, p.is_active))
+          .sort((a, b) => a.stock - b.stock)
       );
     } catch {
       // keep previous
@@ -85,25 +96,40 @@ export function SellerDashboardScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
-        <ActivityIndicator color="#FF6B00" />
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
+        <ActivityIndicator color={ui.brand} />
       </View>
     );
   }
 
   if (!storeName) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-6">
-        <Text className="text-center text-stone-600">
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3] px-6">
+        <View
+          className="mb-4 h-16 w-16 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: ui.brandSoft }}
+        >
+          <Ionicons name="storefront-outline" size={32} color={ui.brand} />
+        </View>
+        <Text className="mb-2 text-center text-lg font-bold text-stone-900">
+          Mağaza henüz yok
+        </Text>
+        <Text className="mb-5 text-center text-sm text-stone-500">
           Önce Mağaza sekmesinden profil oluştur.
         </Text>
+        <Pressable
+          className="rounded-2xl bg-brand px-5 py-3"
+          onPress={() => navigation.navigate('StoreSettings')}
+        >
+          <Text className="font-bold text-white">Mağazaya git</Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
     <ScrollView
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       contentContainerClassName="px-4 py-4 pb-10"
       refreshControl={
         <RefreshControl
@@ -112,12 +138,43 @@ export function SellerDashboardScreen() {
             setRefreshing(true);
             void load();
           }}
-          tintColor="#FF6B00"
+          tintColor={ui.brand}
         />
       }
     >
       <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
-      <Text className="mb-4 text-sm text-stone-500">Mağaza paneli · stok, lisans ve yorumlar</Text>
+      <Text className="mb-4 text-sm text-stone-500">
+        Mağaza paneli · stok, lisans ve siparişler
+      </Text>
+
+      <View className="mb-4 flex-row gap-3">
+        <UiCard className="flex-1 items-center py-3">
+          <Text className="text-2xl font-bold text-brand">{pendingOrders}</Text>
+          <Text className="mt-1 text-center text-xs text-stone-500">Bekleyen</Text>
+        </UiCard>
+        <UiCard className="flex-1 items-center py-3">
+          <Text className="text-2xl font-bold text-stone-900">{summary.average || '—'}</Text>
+          <Text className="mt-1 text-center text-xs text-stone-500">Puan</Text>
+        </UiCard>
+        <UiCard className="flex-1 items-center py-3">
+          <Text className="text-2xl font-bold text-amber-700">{lowStock.length}</Text>
+          <Text className="mt-1 text-center text-xs text-stone-500">Düşük stok</Text>
+        </UiCard>
+      </View>
+
+      <MenuTile
+        title="Bekleyen siparişler"
+        subtitle="Yeni gelen siparişleri işle"
+        icon="receipt-outline"
+        badge={pendingOrders}
+        onPress={() => navigation.navigate('Orders')}
+      />
+      <MenuTile
+        title="Ürünlerim"
+        subtitle="Stok ve fiyat güncelle"
+        icon="cube-outline"
+        onPress={() => navigation.navigate('Products')}
+      />
 
       {(() => {
         const status: LicenseStatus = getLicenseStatus(licenseExpiresAt);
@@ -175,8 +232,7 @@ export function SellerDashboardScreen() {
             Düşük stok uyarısı
           </Text>
           <Text className="mb-3 text-xs text-amber-800">
-            {lowStock.length} aktif ürün stoku {LOW_STOCK_THRESHOLD} veya altında. Yeniden stok
-            eklemen önerilir.
+            {lowStock.length} aktif ürün stoku {LOW_STOCK_THRESHOLD} veya altında.
           </Text>
           {lowStock.slice(0, 5).map((p) => (
             <View
@@ -189,11 +245,6 @@ export function SellerDashboardScreen() {
               <Text className="text-sm font-bold text-amber-700">{p.stock} adet</Text>
             </View>
           ))}
-          {lowStock.length > 5 ? (
-            <Text className="mb-2 text-xs text-amber-700">
-              +{lowStock.length - 5} ürün daha…
-            </Text>
-          ) : null}
           <Pressable
             className="mt-1 items-center rounded-xl bg-amber-600 py-2.5"
             onPress={() => navigation.navigate('Products')}
@@ -203,17 +254,15 @@ export function SellerDashboardScreen() {
         </View>
       ) : (
         <View className="mb-4 rounded-2xl border border-green-100 bg-green-50 p-4">
-          <Text className="text-sm font-semibold text-green-800">
-            Stok durumu iyi
-          </Text>
+          <Text className="text-sm font-semibold text-green-800">Stok durumu iyi</Text>
           <Text className="mt-1 text-xs text-green-700">
             Aktif ürünlerde {LOW_STOCK_THRESHOLD} altı stok yok.
           </Text>
         </View>
       )}
 
-      <View className="mb-4 rounded-2xl border border-stone-200 bg-white p-4">
-        <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
+      <UiCard className="mb-4">
+        <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
           Değerlendirme
         </Text>
         {summary.count === 0 ? (
@@ -227,19 +276,16 @@ export function SellerDashboardScreen() {
             <Text className="ml-2 text-sm text-stone-500">({summary.count})</Text>
           </View>
         )}
-      </View>
+      </UiCard>
 
-      <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
+      <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
         Son yorumlar
       </Text>
       {reviews.length === 0 ? (
         <Text className="text-sm text-stone-500">Gösterilecek yorum yok.</Text>
       ) : (
         reviews.map((review) => (
-          <View
-            key={review.id}
-            className="mb-3 rounded-2xl border border-stone-200 bg-white p-4"
-          >
+          <UiCard key={review.id} className="mb-3">
             <View className="mb-1 flex-row items-center justify-between">
               <Text className="font-medium text-stone-800">Alıcı</Text>
               <StarRating value={review.rating} readonly size="sm" />
@@ -252,7 +298,7 @@ export function SellerDashboardScreen() {
             <Text className="mt-2 text-xs text-stone-400">
               {new Date(review.created_at).toLocaleString('tr-TR')}
             </Text>
-          </View>
+          </UiCard>
         ))
       )}
     </ScrollView>

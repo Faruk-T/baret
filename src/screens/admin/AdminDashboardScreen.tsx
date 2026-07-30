@@ -10,17 +10,19 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { UiCard } from '../../components/ui/UiCard';
 import { getPlatformStats, type PlatformStats } from '../../services/admin';
 import type { AdminStackParamList } from '../../types/navigation.types';
+import { ui } from '../../theme/ui';
 
 type Nav = NativeStackNavigationProp<AdminStackParamList, 'PlatformStats'>;
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <View className="mb-3 w-[48%] rounded-2xl border border-stone-200 bg-white p-4">
-      <Text className="text-2xl font-bold text-brand">{value}</Text>
+    <UiCard className="mb-3 w-[48%]">
+      <Text className="text-3xl font-bold text-brand">{value}</Text>
       <Text className="mt-1 text-sm text-stone-600">{label}</Text>
-    </View>
+    </UiCard>
   );
 }
 
@@ -53,15 +55,15 @@ export function AdminDashboardScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
-        <ActivityIndicator color="#FF6B00" />
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
+        <ActivityIndicator color={ui.brand} />
       </View>
     );
   }
 
   return (
     <ScrollView
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#FFF8F3]"
       contentContainerClassName="px-4 py-4 pb-10"
       refreshControl={
         <RefreshControl
@@ -70,12 +72,12 @@ export function AdminDashboardScreen() {
             setRefreshing(true);
             void load();
           }}
-          tintColor="#FF6B00"
+          tintColor={ui.brand}
         />
       }
     >
-      <Text className="mb-1 text-xl font-bold text-stone-900">Platform özeti</Text>
-      <Text className="mb-4 text-sm text-stone-500">Canlı sayılar (admin)</Text>
+      <Text className="mb-1 text-2xl font-bold text-stone-900">Platform özeti</Text>
+      <Text className="mb-4 text-sm text-stone-500">Canlı sayılar · yönetici paneli</Text>
 
       {error ? (
         <Text className="mb-4 text-sm text-red-600">{error}</Text>
@@ -96,9 +98,10 @@ export function AdminDashboardScreen() {
 
       <Pressable
         className="mt-2 items-center rounded-2xl bg-brand py-3.5"
+        style={ui.shadow}
         onPress={() => navigation.navigate('SellerApprovals')}
       >
-        <Text className="font-semibold text-white">Satıcı onaylarına git</Text>
+        <Text className="font-bold text-white">Satıcı onaylarına git</Text>
       </Pressable>
     </ScrollView>
   );
