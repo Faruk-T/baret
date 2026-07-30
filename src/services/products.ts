@@ -88,6 +88,18 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(productId: string): Promise<void> {
-  const { error } = await supabase.from('products').delete().eq('id', productId);
+  // Soft-delete: hide from catalog, keep history for orders/reviews
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: false })
+    .eq('id', productId);
+  if (error) throw error;
+}
+
+export async function reactivateProduct(productId: string): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ is_active: true })
+    .eq('id', productId);
   if (error) throw error;
 }
