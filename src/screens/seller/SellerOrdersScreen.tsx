@@ -141,7 +141,16 @@ export function SellerOrdersScreen() {
         />
       }
       ListHeaderComponent={
-        <Text className="mb-3 text-sm text-stone-500">{storeName} · {orders.length} sipariş</Text>
+        <View className="mb-3">
+          <Text className="text-sm text-stone-500">
+            {storeName} · {orders.length} sipariş
+          </Text>
+          {orders.some((o) => o.status === 'pending') ? (
+            <Text className="mt-1 text-xs font-semibold text-brand">
+              {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
+            </Text>
+          ) : null}
+        </View>
       }
       renderItem={({ item }) => {
         const next = SELLER_NEXT[item.status];
@@ -154,14 +163,21 @@ export function SellerOrdersScreen() {
                   className="mr-3 h-14 w-14 rounded-xl bg-stone-200"
                 />
               ) : (
-                <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-stone-200">
-                  <Text className="text-xs text-stone-500">Yok</Text>
+                <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-orange-50">
+                  <Text className="text-xs text-brand">Yok</Text>
                 </View>
               )}
               <View className="flex-1">
-                <Text className="font-semibold text-stone-900" numberOfLines={2}>
-                  {item.products?.name ?? 'Ürün'}
-                </Text>
+                <View className="mb-1 flex-row items-start justify-between">
+                  <Text className="flex-1 pr-2 font-semibold text-stone-900" numberOfLines={2}>
+                    {item.products?.name ?? 'Ürün'}
+                  </Text>
+                  {item.status === 'pending' ? (
+                    <View className="rounded-full bg-brand px-2 py-0.5">
+                      <Text className="text-[10px] font-bold text-white">YENİ</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text className="text-sm text-brand">
                   ₺{Number(item.total_amount).toLocaleString('tr-TR', {
                     minimumFractionDigits: 2,

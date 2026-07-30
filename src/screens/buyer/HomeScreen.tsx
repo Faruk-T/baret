@@ -118,11 +118,16 @@ export function HomeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="border-b border-gray-100 px-4 pb-3 pt-2">
+    <View className="flex-1 bg-stone-50">
+      <View className="border-b border-orange-100 bg-[#fffaf7] px-4 pb-3 pt-2">
+        <Text className="mb-0.5 text-2xl font-bold text-stone-900">Baret</Text>
+        <Text className="mb-3 text-sm text-stone-500">
+          Şantiye malzemesi · onaylı nalburlar
+        </Text>
         <TextInput
-          className="mb-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+          className="mb-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
           placeholder="Ürün ara (örn. çimento)"
+          placeholderTextColor="#a8a29e"
           value={search}
           onChangeText={(text) => {
             setSearch(text);
@@ -133,14 +138,16 @@ export function HomeScreen() {
 
         <View className="mb-2 flex-row gap-2">
           <TextInput
-            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
             placeholder="Şehir"
+            placeholderTextColor="#a8a29e"
             value={city}
             onChangeText={setCity}
           />
           <TextInput
-            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
             placeholder="İlçe"
+            placeholderTextColor="#a8a29e"
             value={district}
             onChangeText={setDistrict}
           />
@@ -148,22 +155,24 @@ export function HomeScreen() {
 
         <View className="mb-2 flex-row gap-2">
           <TextInput
-            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
             placeholder="Min ₺"
+            placeholderTextColor="#a8a29e"
             value={minPrice}
             onChangeText={setMinPrice}
             keyboardType="decimal-pad"
           />
           <TextInput
-            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
             placeholder="Max ₺"
+            placeholderTextColor="#a8a29e"
             value={maxPrice}
             onChangeText={setMaxPrice}
             keyboardType="decimal-pad"
           />
         </View>
 
-        <Text className="mb-2 text-xs font-semibold uppercase text-gray-500">
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
           Kategoriler
         </Text>
         <FlatList
@@ -177,12 +186,16 @@ export function HomeScreen() {
             return (
               <Pressable
                 className={`mr-2 rounded-full border px-3 py-1.5 ${
-                  active ? 'border-brand bg-orange-50' : 'border-gray-200 bg-gray-50'
+                  active
+                    ? 'border-brand bg-brand'
+                    : 'border-stone-200 bg-white'
                 }`}
                 onPress={() => toggleCategory(item)}
               >
                 <Text
-                  className={`text-sm ${active ? 'font-semibold text-brand' : 'text-gray-700'}`}
+                  className={`text-sm ${
+                    active ? 'font-semibold text-white' : 'text-stone-700'
+                  }`}
                 >
                   {item}
                 </Text>
@@ -191,7 +204,7 @@ export function HomeScreen() {
           }}
         />
 
-        <Text className="mb-2 text-xs font-semibold uppercase text-gray-500">
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
           Teslimat
         </Text>
         <View className="mb-2 flex-row flex-wrap">
@@ -201,12 +214,16 @@ export function HomeScreen() {
               <Pressable
                 key={option}
                 className={`mb-2 mr-2 rounded-full border px-3 py-1.5 ${
-                  active ? 'border-brand bg-orange-50' : 'border-gray-200 bg-gray-50'
+                  active
+                    ? 'border-brand bg-brand'
+                    : 'border-stone-200 bg-white'
                 }`}
                 onPress={() => toggleDelivery(option)}
               >
                 <Text
-                  className={`text-xs ${active ? 'font-semibold text-brand' : 'text-gray-700'}`}
+                  className={`text-xs ${
+                    active ? 'font-semibold text-white' : 'text-stone-700'
+                  }`}
                 >
                   {DELIVERY_OPTION_LABELS[option]}
                 </Text>
@@ -251,10 +268,10 @@ export function HomeScreen() {
           }
           ListEmptyComponent={
             <View className="mt-10 px-4">
-              <Text className="mb-2 text-center text-base font-semibold text-gray-900">
+              <Text className="mb-2 text-center text-base font-semibold text-stone-900">
                 Ürün bulunamadı
               </Text>
-              <Text className="text-center text-sm text-gray-500">
+              <Text className="text-center text-sm text-stone-500">
                 Onaylı mağazalarda eşleşen ürün yok. Filtreleri temizleyip tekrar dene.
               </Text>
               {hasActiveFilters ? (
@@ -265,7 +282,9 @@ export function HomeScreen() {
             </View>
           }
           ListHeaderComponent={
-            <Text className="mb-3 text-sm text-gray-600">{products.length} ürün</Text>
+            <Text className="mb-3 text-sm font-medium text-stone-600">
+              {products.length} ürün
+            </Text>
           }
           renderItem={({ item }) => (
             <CatalogProductCard

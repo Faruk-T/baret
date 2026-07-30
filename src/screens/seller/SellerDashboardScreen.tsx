@@ -116,8 +116,8 @@ export function SellerDashboardScreen() {
         />
       }
     >
-      <Text className="mb-1 text-xl font-bold text-stone-900">{storeName}</Text>
-      <Text className="mb-4 text-sm text-stone-500">Mağaza özeti</Text>
+      <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
+      <Text className="mb-4 text-sm text-stone-500">Mağaza paneli · stok, lisans ve yorumlar</Text>
 
       {(() => {
         const status: LicenseStatus = getLicenseStatus(licenseExpiresAt);

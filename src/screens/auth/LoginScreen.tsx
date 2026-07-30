@@ -45,12 +45,14 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-stone-50"
+      className="flex-1 bg-[#fffaf7]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-1 justify-center px-6">
-        <Text className="mb-2 text-3xl font-bold text-stone-900">Baret</Text>
-        <Text className="mb-8 text-base text-stone-500">Hesabına giriş yap</Text>
+        <View className="mb-8">
+          <Text className="mb-1 text-4xl font-bold text-brand">Baret</Text>
+          <Text className="text-base text-stone-500">Hesabına giriş yap</Text>
+        </View>
 
         <Text className="mb-2 text-sm font-medium text-stone-700">E-posta</Text>
         <TextInput
@@ -58,6 +60,7 @@ export function LoginScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="ornek@email.com"
+          placeholderTextColor="#a8a29e"
           value={email}
           onChangeText={setEmail}
         />

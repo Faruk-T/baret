@@ -12,7 +12,7 @@ export function BuyerHomeNavigator() {
       <Stack.Screen
         name="HomeList"
         component={HomeScreen}
-        options={{ title: 'Ana Sayfa' }}
+        options={{ title: 'Baret' }}
       />
       <Stack.Screen
         name="ProductDetail"

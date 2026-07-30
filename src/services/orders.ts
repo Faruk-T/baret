@@ -117,6 +117,17 @@ export async function listStoreOrders(storeId: string): Promise<OrderWithProduct
   return (data as OrderWithProduct[]) ?? [];
 }
 
+export async function countPendingStoreOrders(storeId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', storeId)
+    .eq('status', 'pending');
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function cancelBuyerOrder(orderId: string, buyerId: string): Promise<Order> {
   const { data, error } = await supabase
     .from('orders')
