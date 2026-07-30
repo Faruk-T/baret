@@ -1,14 +1,16 @@
-import { Alert, FlatList, Image, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 
+import { ProductThumb } from '../../components/common/ProductThumb';
 import { useCart } from '../../context/CartContext';
 import type {
   BuyerCartStackParamList,
   BuyerTabParamList,
 } from '../../types/navigation.types';
+import { formatTRY } from '../../utils/format';
 
 type CartNav = CompositeNavigationProp<
   NativeStackNavigationProp<BuyerCartStackParamList, 'CartList'>,
@@ -67,27 +69,16 @@ export function CartScreen() {
           const lineTotal = item.price * item.quantity;
           return (
             <View className="mb-3 flex-row rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
-              {item.imageUrl ? (
-                <Image
-                  source={{ uri: item.imageUrl }}
-                  className="mr-3 h-16 w-16 rounded-xl bg-stone-200"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="mr-3 h-16 w-16 items-center justify-center rounded-xl bg-stone-200">
-                  <Text className="text-xs text-stone-500">Yok</Text>
-                </View>
-              )}
+              <ProductThumb uri={item.imageUrl} />
               <View className="flex-1">
                 <Text className="mb-1 text-base font-semibold text-stone-900" numberOfLines={2}>
                   {item.name}
                 </Text>
                 <Text className="mb-1 text-sm text-brand">
-                  ₺{item.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ×{' '}
-                  {item.quantity}
+                  {formatTRY(item.price)} × {item.quantity}
                 </Text>
                 <Text className="mb-2 text-xs text-stone-500">
-                  Satır: ₺{lineTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                  Satır: {formatTRY(lineTotal)}
                 </Text>
                 <View className="flex-row items-center">
                   <Pressable
@@ -123,7 +114,7 @@ export function CartScreen() {
 
       <View className="border-t border-stone-200 bg-white px-4 py-4">
         <Text className="mb-3 text-lg font-semibold text-stone-900">
-          Toplam: ₺{totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          Toplam: {formatTRY(totalAmount)}
         </Text>
         <Pressable
           className="items-center rounded-2xl bg-brand py-4"

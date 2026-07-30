@@ -112,7 +112,7 @@ export function AdminHomeScreen() {
         onPress={() => navigation.navigate('UserManagement')}
       >
         <Text className="text-base font-semibold text-stone-900">Kullanıcılar</Text>
-        <Text className="mt-1 text-sm text-stone-500">Kullanıcı listesi (yakında detay)</Text>
+        <Text className="mt-1 text-sm text-stone-500">Kayıtlı kullanıcı listesi ve roller</Text>
       </Pressable>
 
       <Pressable
@@ -120,7 +120,7 @@ export function AdminHomeScreen() {
         onPress={() => navigation.navigate('PlatformStats')}
       >
         <Text className="text-base font-semibold text-stone-900">İstatistikler</Text>
-        <Text className="mt-1 text-sm text-stone-500">Platform özeti (yakında)</Text>
+        <Text className="mt-1 text-sm text-stone-500">Kullanıcı, mağaza, sipariş, yorum sayıları</Text>
       </Pressable>
 
       <Pressable
