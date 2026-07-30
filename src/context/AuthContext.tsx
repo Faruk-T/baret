@@ -10,6 +10,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '../services/supabase';
+import { updateUserProfile, type ProfileUpdateInput } from '../services/users';
 import type { User, UserRole } from '../types/database';
 
 type SignUpMetadata = {
@@ -26,6 +27,8 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, metadata: SignUpMetadata) => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfile: (input: ProfileUpdateInput) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -119,6 +122,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    await syncProfile(data.session);
+  }, [syncProfile]);
+
+  const updateProfile = useCallback(
+    async (input: ProfileUpdateInput) => {
+      if (!session?.user?.id) {
+        throw new Error('Oturum bulunamadı.');
+      }
+      const updated = await updateUserProfile(session.user.id, input);
+      setUser(updated);
+    },
+    [session?.user?.id]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -128,8 +147,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      updateProfile,
+      refreshProfile,
     }),
-    [user, session, isLoading, signIn, signUp, signOut]
+    [user, session, isLoading, signIn, signUp, signOut, updateProfile, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
