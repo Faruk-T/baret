@@ -47,7 +47,7 @@ export async function createStore(ownerId: string, input: StoreFormInput): Promi
 }
 
 export async function updateStore(storeId: string, input: StoreFormInput): Promise<Store> {
-  const patch: Record<string, unknown> = {
+  const patch: Partial<Omit<Store, 'id'>> = {
     name: input.name.trim(),
     description: input.description?.trim() || null,
     address: input.address.trim(),

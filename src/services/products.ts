@@ -62,7 +62,7 @@ export async function updateProduct(
   productId: string,
   input: ProductFormInput
 ): Promise<Product> {
-  const patch: Record<string, unknown> = {
+  const patch: Partial<Omit<Product, 'id'>> = {
     name: input.name.trim(),
     description: input.description?.trim() || null,
     price: input.price,

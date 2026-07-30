@@ -14,7 +14,8 @@ export type OrderStatus =
 
 export type DeliveryOption = 'kargo' | 'gel_al' | 'aracla_teslim';
 
-export interface User {
+/** Use `type` (not `interface`) so rows satisfy postgrest `Record<string, unknown>`. */
+export type User = {
   id: string;
   email: string;
   full_name: string | null;
@@ -23,9 +24,9 @@ export interface User {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Store {
+export type Store = {
   id: string;
   owner_id: string;
   name: string;
@@ -43,9 +44,9 @@ export interface Store {
   license_expires_at: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface LicenseKey {
+export type LicenseKey = {
   id: string;
   code: string;
   duration_days: number;
@@ -55,9 +56,9 @@ export interface LicenseKey {
   redeemed_by: string | null;
   redeemed_at: string | null;
   store_id: string | null;
-}
+};
 
-export interface Product {
+export type Product = {
   id: string;
   store_id: string;
   name: string;
@@ -70,9 +71,9 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Order {
+export type Order = {
   id: string;
   buyer_id: string;
   store_id: string;
@@ -87,9 +88,9 @@ export interface Order {
   pickup_code: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Review {
+export type Review = {
   id: string;
   buyer_id: string;
   store_id: string;
@@ -98,9 +99,9 @@ export interface Review {
   comment: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface PlatformSettings {
+export type PlatformSettings = {
   id: number;
   commission_rate: number;
   intro_commission_rate: number;
@@ -108,9 +109,9 @@ export interface PlatformSettings {
   high_rating_discount: number;
   updated_at: string;
   updated_by: string | null;
-}
+};
 
-export interface OrderCommission {
+export type OrderCommission = {
   id: string;
   order_id: string;
   store_id: string;
@@ -119,9 +120,9 @@ export interface OrderCommission {
   commission_amount: number;
   seller_net_amount: number;
   created_at: string;
-}
+};
 
-export interface PlatformReport {
+export type PlatformReport = {
   id: string;
   reporter_id: string;
   store_id: string;
@@ -132,9 +133,9 @@ export interface PlatformReport {
   admin_note: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-/** Supabase `Database` shape for typed client queries */
+/** Supabase `Database` shape for typed client queries (postgrest-js GenericTable). */
 export type Database = {
   public: {
     Tables: {
@@ -151,6 +152,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<User, 'id'>>;
+        Relationships: [];
       };
       stores: {
         Row: Store;
@@ -174,6 +176,15 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Store, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'stores_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       license_keys: {
         Row: LicenseKey;
@@ -189,6 +200,7 @@ export type Database = {
           store_id?: string | null;
         };
         Update: Partial<Omit<LicenseKey, 'id'>>;
+        Relationships: [];
       };
       products: {
         Row: Product;
@@ -207,6 +219,15 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Product, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'products_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       orders: {
         Row: Order;
@@ -227,6 +248,29 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Order, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'orders_buyer_id_fkey';
+            columns: ['buyer_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'orders_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'orders_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       reviews: {
         Row: Review;
@@ -241,6 +285,15 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Review, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'reviews_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       platform_settings: {
         Row: PlatformSettings;
@@ -254,6 +307,7 @@ export type Database = {
           updated_by?: string | null;
         };
         Update: Partial<Omit<PlatformSettings, 'id'>>;
+        Relationships: [];
       };
       order_commissions: {
         Row: OrderCommission;
@@ -268,6 +322,15 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Omit<OrderCommission, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'order_commissions_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: true;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       platform_reports: {
         Row: PlatformReport;
@@ -284,7 +347,11 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<PlatformReport, 'id'>>;
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
     };
     Enums: {
       user_role: UserRole;
@@ -314,6 +381,9 @@ export type Database = {
         Args: { p_code: string };
         Returns: Order;
       };
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 };
