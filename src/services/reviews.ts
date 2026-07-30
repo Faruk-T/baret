@@ -1,4 +1,5 @@
 import type { Review } from '../types/database';
+import { sanitizeContactLeak } from '../utils/contactFilter';
 import { supabase } from './supabase';
 
 export type ReviewWithBuyer = Review;
@@ -58,7 +59,9 @@ export async function createReview(input: {
       store_id: input.storeId,
       order_id: input.orderId,
       rating,
-      comment: input.comment?.trim() || null,
+      comment: input.comment?.trim()
+        ? sanitizeContactLeak(input.comment.trim())
+        : null,
     })
     .select('*')
     .single();
@@ -76,7 +79,10 @@ export async function listStoreReviews(storeId: string): Promise<ReviewWithBuyer
     .limit(20);
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    comment: row.comment ? sanitizeContactLeak(row.comment) : row.comment,
+  }));
 }
 
 export async function getStoreRatingSummary(

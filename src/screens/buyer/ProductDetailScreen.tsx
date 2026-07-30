@@ -29,7 +29,6 @@ import {
   distanceMeters,
   formatDistance,
   getCurrentCoords,
-  openMapsTo,
 } from '../../utils/geo';
 
 type Props = NativeStackScreenProps<BuyerHomeStackParamList, 'ProductDetail'>;
@@ -44,7 +43,6 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [storeReviews, setStoreReviews] = useState<ReviewWithBuyer[]>([]);
   const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -176,29 +174,6 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleOpenMaps = async () => {
-    if (product?.store.latitude == null || product?.store.longitude == null) {
-      Alert.alert('Harita', 'Bu mağaza henüz konum kaydetmemiş.');
-      return;
-    }
-    try {
-      setIsOpeningMaps(true);
-      await openMapsTo(
-        {
-          latitude: product.store.latitude,
-          longitude: product.store.longitude,
-        },
-        product.store.name
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Harita açılamadı.';
-      Alert.alert('Harita', message);
-    } finally {
-      setIsOpeningMaps(false);
-    }
-  };
-
   if (isLoading || !product) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -239,49 +214,45 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             <View className="mb-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
               <Text className="mb-2 text-sm text-stone-700">
                 {distanceLabel
-                  ? `Mağazaya uzaklık: ${distanceLabel}`
-                  : 'Konum izniyle uzaklığı görebilirsin'}
+                  ? `Yaklaşık uzaklık: ${distanceLabel}`
+                  : 'Konum izniyle yaklaşık uzaklığı görebilirsin'}
               </Text>
-              <View className="flex-row gap-2">
-                {!distanceLabel ? (
-                  <Pressable
-                    className={`flex-1 items-center rounded-xl border border-brand bg-orange-50 py-2.5 ${
-                      isLocating ? 'opacity-70' : ''
-                    }`}
-                    disabled={isLocating}
-                    onPress={() => void handleRefreshDistance()}
-                  >
-                    {isLocating ? (
-                      <ActivityIndicator color="#FF6B00" />
-                    ) : (
-                      <Text className="text-sm font-semibold text-brand">
-                        Uzaklığı hesapla
-                      </Text>
-                    )}
-                  </Pressable>
-                ) : null}
+              <Text className="mb-2 text-xs text-stone-500">
+                Tam adres ve harita yol tarifi, satıcı siparişi kabul ettikten sonra
+                Siparişlerim’de açılır.
+              </Text>
+              {!distanceLabel ? (
                 <Pressable
-                  className={`flex-1 items-center rounded-xl bg-brand py-2.5 ${
-                    isOpeningMaps ? 'opacity-70' : ''
+                  className={`items-center rounded-xl border border-brand bg-orange-50 py-2.5 ${
+                    isLocating ? 'opacity-70' : ''
                   }`}
-                  disabled={isOpeningMaps}
-                  onPress={() => void handleOpenMaps()}
+                  disabled={isLocating}
+                  onPress={() => void handleRefreshDistance()}
                 >
-                  {isOpeningMaps ? (
-                    <ActivityIndicator color="#fff" />
+                  {isLocating ? (
+                    <ActivityIndicator color="#FF6B00" />
                   ) : (
-                    <Text className="text-sm font-semibold text-white">
-                      Haritada aç
+                    <Text className="text-sm font-semibold text-brand">
+                      Uzaklığı hesapla
                     </Text>
                   )}
                 </Pressable>
-              </View>
+              ) : null}
             </View>
           ) : (
             <Text className="mb-3 text-xs text-stone-400">
               Bu mağaza harita konumu eklememiş
             </Text>
           )}
+
+          <View className="mb-3 rounded-xl border border-orange-100 bg-orange-50 p-3">
+            <Text className="text-xs font-bold text-brand">Platform güvencesi</Text>
+            <Text className="mt-1 text-xs leading-4 text-stone-600">
+              Telefon ve WhatsApp ürün sayfasında gösterilmez. Sipariş, stok ve
+              değerlendirme Baret üzerinden kalır — dışarıda anlaşma komisyon
+              kaçırma sayılır ve şikayet edilebilir.
+            </Text>
+          </View>
 
           {ratingSummary.count > 0 ? (
             <View className="mb-2 flex-row items-center">

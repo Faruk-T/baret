@@ -4,6 +4,7 @@ import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
 import { CommissionScreen } from '../screens/admin/CommissionScreen';
 import { LicenseKeysScreen } from '../screens/admin/LicenseKeysScreen';
+import { ReportsScreen } from '../screens/admin/ReportsScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
 import type { AdminStackParamList } from '../types/navigation.types';
@@ -52,6 +53,11 @@ export function AdminNavigator() {
         name="Commission"
         component={CommissionScreen}
         options={{ title: 'Komisyon' }}
+      />
+      <Stack.Screen
+        name="Reports"
+        component={ReportsScreen}
+        options={{ title: 'Şikayetler' }}
       />
     </Stack.Navigator>
   );

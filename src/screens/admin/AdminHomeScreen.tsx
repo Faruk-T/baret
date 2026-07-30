@@ -130,6 +130,12 @@ export function AdminHomeScreen() {
           onPress={() => navigation.navigate('LicenseKeys')}
         />
         <MenuTile
+          title="Şikayetler"
+          subtitle="Platform dışı anlaşma / sızıntı bildirimleri"
+          icon="warning-outline"
+          onPress={() => navigation.navigate('Reports')}
+        />
+        <MenuTile
           title="Komisyon"
           subtitle="Oranı ayarla, platform geliri"
           icon="cash-outline"

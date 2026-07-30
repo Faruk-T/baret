@@ -40,6 +40,7 @@ export type AdminStackParamList = {
   PlatformStats: undefined;
   LicenseKeys: undefined;
   Commission: undefined;
+  Reports: undefined;
 };
 
 export type RootStackParamList = {

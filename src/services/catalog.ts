@@ -11,7 +11,6 @@ export type CatalogStore = Pick<
   | 'is_active'
   | 'latitude'
   | 'longitude'
-  | 'address'
 >;
 
 export type CatalogProduct = Product & {
@@ -43,7 +42,6 @@ export async function listCatalogProducts(
         name,
         city,
         district,
-        address,
         latitude,
         longitude,
         is_approved,
@@ -103,7 +101,6 @@ export async function getCatalogProduct(
         name,
         city,
         district,
-        address,
         latitude,
         longitude,
         is_approved,

@@ -13,6 +13,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 import { OrderReviewBlock } from '../../components/buyer/OrderReviewBlock';
+import { OrderStoreContactCard } from '../../components/buyer/OrderStoreContactCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { UiCard } from '../../components/ui/UiCard';
@@ -23,9 +24,14 @@ import {
   listBuyerOrders,
   type OrderWithProduct,
 } from '../../services/orders';
+import {
+  REPORT_REASONS,
+  createPlatformReport,
+} from '../../services/reports';
 import { listReviewsForOrders } from '../../services/reviews';
 import type { Review } from '../../types/database';
 import type { BuyerTabParamList } from '../../types/navigation.types';
+import { canRevealStoreContact } from '../../utils/contactFilter';
 import { ui } from '../../theme/ui';
 
 export function OrdersScreen() {
@@ -87,6 +93,55 @@ export function OrdersScreen() {
         },
       },
     ]);
+  };
+
+  const onReport = (order: OrderWithProduct) => {
+    if (!user) return;
+
+    Alert.alert(
+      'Şikayet et',
+      'Neden bildiriyorsun? Platform dışı telefon / WhatsApp teklifleri komisyon kaçağıdır.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Telefon/WhatsApp paylaşımı',
+          onPress: () => void submitReport(order, REPORT_REASONS[0], null),
+        },
+        {
+          text: 'Dışarıda anlaşma teklifi',
+          onPress: () => void submitReport(order, REPORT_REASONS[1], null),
+        },
+        {
+          text: 'Diğer',
+          onPress: () => void submitReport(order, REPORT_REASONS[3], null),
+        },
+      ]
+    );
+  };
+
+  const submitReport = async (
+    order: OrderWithProduct,
+    reason: string,
+    details: string | null
+  ) => {
+    if (!user) return;
+    try {
+      await createPlatformReport({
+        reporterId: user.id,
+        storeId: order.store_id,
+        orderId: order.id,
+        reason,
+        details,
+      });
+      Alert.alert('Alındı', 'Şikayetin admin paneline iletildi. Teşekkürler.');
+    } catch (error) {
+      Alert.alert(
+        'Hata',
+        error instanceof Error
+          ? error.message
+          : 'Şikayet gönderilemedi. anti-leakage SQL kuruldu mu?'
+      );
+    }
   };
 
   if (loading) {
@@ -174,11 +229,25 @@ export function OrdersScreen() {
             <Text className="text-xs text-stone-400">
               {new Date(item.created_at).toLocaleString('tr-TR')}
             </Text>
-            {item.status === 'pending' ? (
-              <Pressable className="mt-3 self-start" onPress={() => onCancel(item)}>
-                <Text className="text-sm font-bold text-red-600">İptal et</Text>
-              </Pressable>
-            ) : null}
+
+            <OrderStoreContactCard
+              orderId={item.id}
+              unlocked={canRevealStoreContact(item.status)}
+            />
+
+            <View className="mt-3 flex-row flex-wrap gap-3">
+              {item.status === 'pending' ? (
+                <Pressable onPress={() => onCancel(item)}>
+                  <Text className="text-sm font-bold text-red-600">İptal et</Text>
+                </Pressable>
+              ) : null}
+              {item.status !== 'cancelled' ? (
+                <Pressable onPress={() => onReport(item)}>
+                  <Text className="text-sm font-bold text-stone-500">Şikayet et</Text>
+                </Pressable>
+              ) : null}
+            </View>
+
             {item.status === 'delivered' && user ? (
               <OrderReviewBlock
                 buyerId={user.id}

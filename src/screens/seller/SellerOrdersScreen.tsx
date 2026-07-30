@@ -157,6 +157,10 @@ export function SellerOrdersScreen() {
               {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
             </Text>
           ) : null}
+          <Text className="mt-2 text-xs leading-4 text-stone-500">
+            Siparişi “Hazırlanıyor” yaptığında alıcıya telefon/adres açılır. WhatsApp
+            ile dışarıda anlaşma platform kurallarına aykırıdır.
+          </Text>
         </View>
       }
       renderItem={({ item }) => {

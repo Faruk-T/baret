@@ -185,6 +185,11 @@ export function CheckoutScreen() {
       <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
         İletişim & adres
       </Text>
+      <Text className="mb-3 text-xs leading-4 text-stone-500">
+        Bu bilgiler teslimat içindir. Mağaza telefonu ürün sayfasında görünmez;
+        satıcı siparişi kabul edince Siparişlerim’de açılır. Platform dışı
+        WhatsApp anlaşması yasaktır.
+      </Text>
       <TextInput
         className="mb-3 rounded-xl border border-stone-200 bg-white px-3 py-3 text-stone-900"
         placeholder="Telefon *"

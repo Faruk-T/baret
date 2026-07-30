@@ -160,6 +160,8 @@ export function ProfileScreen() {
 
           <Text className="mb-4 px-1 text-sm leading-5 text-stone-500">
             Baret — inşaat & nalbur pazaryeri. Siparişlerin bu hesapla bağlıdır.
+            Platform dışı telefon / WhatsApp anlaşması kullanım şartlarına aykırıdır;
+            tekrarlayan ihlallerde hesap askıya alınabilir.
           </Text>
 
           <PrimaryButton

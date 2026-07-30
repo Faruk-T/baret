@@ -25,20 +25,37 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
   return data;
 }
 
-export async function updateCommissionRate(
-  rate: number,
+export async function updateCommissionSettings(
+  input: {
+    commissionRate: number;
+    introCommissionRate: number;
+    introOrderLimit: number;
+    highRatingDiscount: number;
+  },
   adminId: string
 ): Promise<PlatformSettings> {
-  if (Number.isNaN(rate) || rate < 0 || rate > 100) {
-    throw new Error('Komisyon oranı 0–100 arasında olmalı.');
+  const check = (rate: number, label: string) => {
+    if (Number.isNaN(rate) || rate < 0 || rate > 100) {
+      throw new Error(`${label} 0–100 arasında olmalı.`);
+    }
+  };
+  check(input.commissionRate, 'Komisyon oranı');
+  check(input.introCommissionRate, 'İlk sipariş oranı');
+  check(input.highRatingDiscount, 'Puan indirimi');
+  if (
+    !Number.isInteger(input.introOrderLimit) ||
+    input.introOrderLimit < 0
+  ) {
+    throw new Error('İlk sipariş limiti 0 veya üzeri tam sayı olmalı.');
   }
-
-  const rounded = Math.round(rate * 100) / 100;
 
   const { data, error } = await supabase
     .from('platform_settings')
     .update({
-      commission_rate: rounded,
+      commission_rate: Math.round(input.commissionRate * 100) / 100,
+      intro_commission_rate: Math.round(input.introCommissionRate * 100) / 100,
+      intro_order_limit: input.introOrderLimit,
+      high_rating_discount: Math.round(input.highRatingDiscount * 100) / 100,
       updated_at: new Date().toISOString(),
       updated_by: adminId,
     })
@@ -48,6 +65,23 @@ export async function updateCommissionRate(
 
   if (error) throw error;
   return data;
+}
+
+/** @deprecated use updateCommissionSettings */
+export async function updateCommissionRate(
+  rate: number,
+  adminId: string
+): Promise<PlatformSettings> {
+  const current = await getPlatformSettings();
+  return updateCommissionSettings(
+    {
+      commissionRate: rate,
+      introCommissionRate: Number(current.intro_commission_rate ?? 5),
+      introOrderLimit: Number(current.intro_order_limit ?? 10),
+      highRatingDiscount: Number(current.high_rating_discount ?? 1),
+    },
+    adminId
+  );
 }
 
 export async function getCommissionSummary(): Promise<CommissionSummary> {

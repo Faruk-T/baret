@@ -102,6 +102,9 @@ export interface Review {
 export interface PlatformSettings {
   id: number;
   commission_rate: number;
+  intro_commission_rate: number;
+  intro_order_limit: number;
+  high_rating_discount: number;
   updated_at: string;
   updated_by: string | null;
 }
@@ -115,6 +118,19 @@ export interface OrderCommission {
   commission_amount: number;
   seller_net_amount: number;
   created_at: string;
+}
+
+export interface PlatformReport {
+  id: string;
+  reporter_id: string;
+  store_id: string;
+  order_id: string | null;
+  reason: string;
+  details: string | null;
+  status: 'open' | 'reviewed' | 'closed';
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /** Supabase `Database` shape for typed client queries */
@@ -229,6 +245,9 @@ export type Database = {
         Insert: {
           id?: number;
           commission_rate?: number;
+          intro_commission_rate?: number;
+          intro_order_limit?: number;
+          high_rating_discount?: number;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -248,6 +267,22 @@ export type Database = {
         };
         Update: Partial<Omit<OrderCommission, 'id'>>;
       };
+      platform_reports: {
+        Row: PlatformReport;
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          store_id: string;
+          order_id?: string | null;
+          reason: string;
+          details?: string | null;
+          status?: PlatformReport['status'];
+          admin_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<PlatformReport, 'id'>>;
+      };
     };
     Enums: {
       user_role: UserRole;
@@ -258,6 +293,20 @@ export type Database = {
       redeem_license_key: {
         Args: { p_code: string };
         Returns: Store;
+      };
+      get_order_store_contact: {
+        Args: { p_order_id: string };
+        Returns: {
+          store_id: string;
+          store_name: string;
+          phone: string;
+          email: string | null;
+          address: string;
+          city: string;
+          district: string | null;
+          latitude: number | null;
+          longitude: number | null;
+        }[];
       };
     };
   };

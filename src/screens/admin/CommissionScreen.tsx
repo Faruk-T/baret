@@ -14,9 +14,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import {
   getCommissionSummary,
-  updateCommissionRate,
+  getPlatformSettings,
+  updateCommissionSettings,
   type CommissionSummary,
 } from '../../services/commission';
+import type { PlatformSettings } from '../../types/database';
 
 function money(value: number): string {
   return `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
@@ -25,7 +27,11 @@ function money(value: number): string {
 export function CommissionScreen() {
   const { user } = useAuth();
   const [summary, setSummary] = useState<CommissionSummary | null>(null);
+  const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [rateInput, setRateInput] = useState('8');
+  const [introRateInput, setIntroRateInput] = useState('5');
+  const [introLimitInput, setIntroLimitInput] = useState('10');
+  const [discountInput, setDiscountInput] = useState('1');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,9 +40,16 @@ export function CommissionScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const data = await getCommissionSummary();
+      const [data, cfg] = await Promise.all([
+        getCommissionSummary(),
+        getPlatformSettings(),
+      ]);
       setSummary(data);
-      setRateInput(String(data.rate));
+      setSettings(cfg);
+      setRateInput(String(cfg.commission_rate));
+      setIntroRateInput(String(cfg.intro_commission_rate ?? 5));
+      setIntroLimitInput(String(cfg.intro_order_limit ?? 10));
+      setDiscountInput(String(cfg.high_rating_discount ?? 1));
     } catch (e) {
       setError(
         e instanceof Error
@@ -58,12 +71,19 @@ export function CommissionScreen() {
 
   const handleSave = async () => {
     if (!user?.id) return;
-    const rate = Number(rateInput.replace(',', '.'));
     try {
       setSaving(true);
-      await updateCommissionRate(rate, user.id);
+      await updateCommissionSettings(
+        {
+          commissionRate: Number(rateInput.replace(',', '.')),
+          introCommissionRate: Number(introRateInput.replace(',', '.')),
+          introOrderLimit: Number.parseInt(introLimitInput, 10),
+          highRatingDiscount: Number(discountInput.replace(',', '.')),
+        },
+        user.id
+      );
       await load();
-      Alert.alert('Kaydedildi', `Yeni komisyon oranı: %${rate}`);
+      Alert.alert('Kaydedildi', 'Komisyon ve teşvik ayarları güncellendi.');
     } catch (e) {
       Alert.alert(
         'Hata',
@@ -100,7 +120,8 @@ export function CommissionScreen() {
     >
       <Text className="mb-1 text-xl font-bold text-stone-900">Komisyon</Text>
       <Text className="mb-4 text-sm text-stone-500">
-        Sipariş tutarı üzerinden platform payı. Oran değişince sadece yeni siparişler etkilenir.
+        Kaçışı cezalandırmak yerine içeride kalmayı teşvik et: ilk siparişlerde
+        düşük oran, yüksek puana indirim.
       </Text>
 
       {error ? (
@@ -108,16 +129,26 @@ export function CommissionScreen() {
       ) : null}
 
       <View className="mb-4 rounded-2xl border border-stone-200 bg-white p-4">
-        <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
-          Oran (%)
-        </Text>
-        <TextInput
-          className="mb-3 rounded-xl border border-stone-200 bg-[#FFF8F3] px-4 py-3 text-base text-stone-900"
-          keyboardType="decimal-pad"
+        <Field
+          label="Standart oran (%)"
           value={rateInput}
           onChangeText={setRateInput}
-          placeholder="8"
-          placeholderTextColor="#a8a29e"
+        />
+        <Field
+          label="İlk siparişler oranı (%)"
+          value={introRateInput}
+          onChangeText={setIntroRateInput}
+        />
+        <Field
+          label="İlk sipariş limiti (adet)"
+          value={introLimitInput}
+          onChangeText={setIntroLimitInput}
+          integer
+        />
+        <Field
+          label="Yüksek puan indirimi (puan ≥4.5, ≥5 yorum)"
+          value={discountInput}
+          onChangeText={setDiscountInput}
         />
         <Pressable
           className={`items-center rounded-xl bg-brand py-3 ${
@@ -129,7 +160,7 @@ export function CommissionScreen() {
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text className="font-semibold text-white">Oranı kaydet</Text>
+            <Text className="font-semibold text-white">Ayarları kaydet</Text>
           )}
         </Pressable>
       </View>
@@ -139,7 +170,11 @@ export function CommissionScreen() {
           <Text className="mb-3 text-xs font-semibold uppercase text-stone-500">
             Aktif komisyon kayıtları
           </Text>
-          <Row label="Geçerli oran" value={`%${summary.rate}`} />
+          <Row label="Standart oran" value={`%${settings?.commission_rate ?? summary.rate}`} />
+          <Row
+            label="İlk N sipariş"
+            value={`%${settings?.intro_commission_rate ?? 5} · ${settings?.intro_order_limit ?? 10} adet`}
+          />
           <Row label="Sipariş (komisyonlu)" value={String(summary.orderCount)} />
           <Row label="Brüt ciro" value={money(summary.grossAmount)} />
           <Row
@@ -148,13 +183,36 @@ export function CommissionScreen() {
             emphasize
           />
           <Row label="Satıcı net toplam" value={money(summary.sellerNetAmount)} />
-          <Text className="mt-3 text-xs text-stone-400">
-            İptal edilen siparişlerin komisyonu silinir; bu özet yalnızca aktif kayıtları
-            gösterir.
-          </Text>
         </View>
       ) : null}
     </ScrollView>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChangeText,
+  integer,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  integer?: boolean;
+}) {
+  return (
+    <View className="mb-3">
+      <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
+        {label}
+      </Text>
+      <TextInput
+        className="rounded-xl border border-stone-200 bg-[#FFF8F3] px-4 py-3 text-base text-stone-900"
+        keyboardType={integer ? 'number-pad' : 'decimal-pad'}
+        value={value}
+        onChangeText={onChangeText}
+        placeholderTextColor="#a8a29e"
+      />
+    </View>
   );
 }
 
@@ -169,7 +227,7 @@ function Row({
 }) {
   return (
     <View className="mb-2 flex-row items-center justify-between">
-      <Text className="text-sm text-stone-600">{label}</Text>
+      <Text className="mr-2 flex-1 text-sm text-stone-600">{label}</Text>
       <Text
         className={`text-sm font-semibold ${
           emphasize ? 'text-brand' : 'text-stone-900'
