@@ -12,6 +12,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
+import { PasswordField } from '../../components/auth/PasswordField';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../types/navigation.types';
 
@@ -44,16 +45,16 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1 bg-stone-50"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-1 justify-center px-6">
-        <Text className="mb-2 text-3xl font-bold text-gray-900">Baret</Text>
-        <Text className="mb-8 text-base text-gray-500">Hesabına giriş yap</Text>
+        <Text className="mb-2 text-3xl font-bold text-stone-900">Baret</Text>
+        <Text className="mb-8 text-base text-stone-500">Hesabına giriş yap</Text>
 
-        <Text className="mb-2 text-sm font-medium text-gray-700">E-posta</Text>
+        <Text className="mb-2 text-sm font-medium text-stone-700">E-posta</Text>
         <TextInput
-          className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+          className="mb-4 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="ornek@email.com"
@@ -61,10 +62,8 @@ export function LoginScreen() {
           onChangeText={setEmail}
         />
 
-        <Text className="mb-2 text-sm font-medium text-gray-700">Şifre</Text>
-        <TextInput
-          className="mb-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          secureTextEntry
+        <PasswordField
+          label="Şifre"
           placeholder="••••••••"
           value={password}
           onChangeText={setPassword}
@@ -73,7 +72,7 @@ export function LoginScreen() {
         <Pressable
           className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSubmitting ? 'opacity-70' : ''}`}
           disabled={isSubmitting}
-          onPress={handleLogin}
+          onPress={() => void handleLogin()}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
@@ -83,7 +82,7 @@ export function LoginScreen() {
         </Pressable>
 
         <Pressable onPress={() => navigation.navigate('RoleSelect')}>
-          <Text className="text-center text-sm text-gray-600">
+          <Text className="text-center text-sm text-stone-600">
             Hesabın yok mu? <Text className="font-semibold text-brand">Kayıt Ol</Text>
           </Text>
         </Pressable>
