@@ -19,6 +19,7 @@ import {
   type StoreFormInput,
 } from '../../services/stores';
 import type { Store } from '../../types/database';
+import { getCurrentCoords } from '../../utils/geo';
 
 const emptyForm: StoreFormInput = {
   name: '',
@@ -37,6 +38,11 @@ export function StoreSettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [coords, setCoords] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+  }>({ latitude: null, longitude: null });
 
   const loadStore = useCallback(async () => {
     if (!user?.id) return;
@@ -54,6 +60,10 @@ export function StoreSettingsScreen() {
           district: existing.district ?? '',
           phone: existing.phone,
           email: existing.email ?? '',
+        });
+        setCoords({
+          latitude: existing.latitude,
+          longitude: existing.longitude,
         });
       }
     } catch (error) {
@@ -83,9 +93,21 @@ export function StoreSettingsScreen() {
     try {
       setIsSaving(true);
       const saved = store
-        ? await updateStore(store.id, form)
-        : await createStore(user.id, form);
+        ? await updateStore(store.id, {
+            ...form,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          })
+        : await createStore(user.id, {
+            ...form,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          });
       setStore(saved);
+      setCoords({
+        latitude: saved.latitude,
+        longitude: saved.longitude,
+      });
       Alert.alert(
         'Kaydedildi',
         store
@@ -109,6 +131,24 @@ export function StoreSettingsScreen() {
       Alert.alert('Hata', message);
     } finally {
       setIsSigningOut(false);
+    }
+  };
+
+  const handleCaptureLocation = async () => {
+    try {
+      setIsLocating(true);
+      const next = await getCurrentCoords();
+      setCoords(next);
+      Alert.alert(
+        'Konum alındı',
+        `${next.latitude.toFixed(5)}, ${next.longitude.toFixed(5)}\nKaydet’e basarak mağazaya yaz.`
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Konum alınamadı.';
+      Alert.alert('Konum', message);
+    } finally {
+      setIsLocating(false);
     }
   };
 
@@ -170,10 +210,37 @@ export function StoreSettingsScreen() {
           autoCapitalize="none"
         />
 
+        <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+          <Text className="mb-1 text-sm font-medium text-stone-700">Harita konumu</Text>
+          <Text className="mb-3 text-xs text-stone-500">
+            Alıcılar mağazaya uzaklığı görebilsin ve Haritalar’da yol tarifi alsın.
+          </Text>
+          {coords.latitude != null && coords.longitude != null ? (
+            <Text className="mb-3 text-sm text-green-700">
+              Kayıtlı: {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+            </Text>
+          ) : (
+            <Text className="mb-3 text-sm text-amber-700">Henüz konum yok</Text>
+          )}
+          <Pressable
+            className={`items-center rounded-xl border border-brand bg-orange-50 py-3 ${
+              isLocating ? 'opacity-70' : ''
+            }`}
+            disabled={isLocating}
+            onPress={() => void handleCaptureLocation()}
+          >
+            {isLocating ? (
+              <ActivityIndicator color="#FF6B00" />
+            ) : (
+              <Text className="font-semibold text-brand">Telefon konumunu kullan</Text>
+            )}
+          </Pressable>
+        </View>
+
         <Pressable
           className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSaving ? 'opacity-70' : ''}`}
           disabled={isSaving}
-          onPress={handleSave}
+          onPress={() => void handleSave()}
         >
           {isSaving ? (
             <ActivityIndicator color="#fff" />

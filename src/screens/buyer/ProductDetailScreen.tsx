@@ -25,6 +25,12 @@ import {
   type ReviewWithBuyer,
 } from '../../services/reviews';
 import type { BuyerHomeStackParamList } from '../../types/navigation.types';
+import {
+  distanceMeters,
+  formatDistance,
+  getCurrentCoords,
+  openMapsTo,
+} from '../../utils/geo';
 
 type Props = NativeStackScreenProps<BuyerHomeStackParamList, 'ProductDetail'>;
 
@@ -36,10 +42,14 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [ratingSummary, setRatingSummary] = useState({ average: 0, count: 0 });
   const [storeReviews, setStoreReviews] = useState<ReviewWithBuyer[]>([]);
+  const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
+      setDistanceLabel(null);
       const row = await getCatalogProduct(productId);
       if (!row) {
         Alert.alert('Bulunamadı', 'Ürün bulunamadı veya satışta değil.');
@@ -54,6 +64,21 @@ export function ProductDetailScreen({ navigation, route }: Props) {
       ]);
       setRatingSummary(summary);
       setStoreReviews(reviews.slice(0, 5));
+
+      const lat = row.store.latitude;
+      const lng = row.store.longitude;
+      if (lat != null && lng != null) {
+        try {
+          const me = await getCurrentCoords();
+          setDistanceLabel(
+            formatDistance(
+              distanceMeters(me, { latitude: lat, longitude: lng })
+            )
+          );
+        } catch {
+          // Permission denied or GPS unavailable — distance stays hidden.
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün yüklenemedi.';
       Alert.alert('Hata', message);
@@ -126,6 +151,54 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     }
   };
 
+  const storeHasCoords =
+    product?.store.latitude != null && product?.store.longitude != null;
+
+  const handleRefreshDistance = async () => {
+    if (!product?.store.latitude || !product?.store.longitude) return;
+    try {
+      setIsLocating(true);
+      const me = await getCurrentCoords();
+      setDistanceLabel(
+        formatDistance(
+          distanceMeters(me, {
+            latitude: product.store.latitude,
+            longitude: product.store.longitude,
+          })
+        )
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Konum alınamadı.';
+      Alert.alert('Konum', message);
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  const handleOpenMaps = async () => {
+    if (product?.store.latitude == null || product?.store.longitude == null) {
+      Alert.alert('Harita', 'Bu mağaza henüz konum kaydetmemiş.');
+      return;
+    }
+    try {
+      setIsOpeningMaps(true);
+      await openMapsTo(
+        {
+          latitude: product.store.latitude,
+          longitude: product.store.longitude,
+        },
+        product.store.name
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Harita açılamadı.';
+      Alert.alert('Harita', message);
+    } finally {
+      setIsOpeningMaps(false);
+    }
+  };
+
   if (isLoading || !product) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -161,6 +234,55 @@ export function ProductDetailScreen({ navigation, route }: Props) {
             {product.store.name} · {product.store.city}
             {product.store.district ? ` / ${product.store.district}` : ''}
           </Text>
+
+          {storeHasCoords ? (
+            <View className="mb-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <Text className="mb-2 text-sm text-stone-700">
+                {distanceLabel
+                  ? `Mağazaya uzaklık: ${distanceLabel}`
+                  : 'Konum izniyle uzaklığı görebilirsin'}
+              </Text>
+              <View className="flex-row gap-2">
+                {!distanceLabel ? (
+                  <Pressable
+                    className={`flex-1 items-center rounded-xl border border-brand bg-orange-50 py-2.5 ${
+                      isLocating ? 'opacity-70' : ''
+                    }`}
+                    disabled={isLocating}
+                    onPress={() => void handleRefreshDistance()}
+                  >
+                    {isLocating ? (
+                      <ActivityIndicator color="#FF6B00" />
+                    ) : (
+                      <Text className="text-sm font-semibold text-brand">
+                        Uzaklığı hesapla
+                      </Text>
+                    )}
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  className={`flex-1 items-center rounded-xl bg-brand py-2.5 ${
+                    isOpeningMaps ? 'opacity-70' : ''
+                  }`}
+                  disabled={isOpeningMaps}
+                  onPress={() => void handleOpenMaps()}
+                >
+                  {isOpeningMaps ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-sm font-semibold text-white">
+                      Haritada aç
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Text className="mb-3 text-xs text-stone-400">
+              Bu mağaza harita konumu eklememiş
+            </Text>
+          )}
+
           {ratingSummary.count > 0 ? (
             <View className="mb-2 flex-row items-center">
               <StarRating value={Math.round(ratingSummary.average)} readonly size="sm" />

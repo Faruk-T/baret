@@ -9,6 +9,8 @@ export type StoreFormInput = {
   district?: string;
   phone: string;
   email?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export async function getMyStore(ownerId: string): Promise<Store | null> {
@@ -34,6 +36,8 @@ export async function createStore(ownerId: string, input: StoreFormInput): Promi
       district: input.district?.trim() || null,
       phone: input.phone.trim(),
       email: input.email?.trim() || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     })
     .select('*')
     .single();
@@ -43,17 +47,22 @@ export async function createStore(ownerId: string, input: StoreFormInput): Promi
 }
 
 export async function updateStore(storeId: string, input: StoreFormInput): Promise<Store> {
+  const patch: Record<string, unknown> = {
+    name: input.name.trim(),
+    description: input.description?.trim() || null,
+    address: input.address.trim(),
+    city: input.city.trim(),
+    district: input.district?.trim() || null,
+    phone: input.phone.trim(),
+    email: input.email?.trim() || null,
+  };
+
+  if (input.latitude !== undefined) patch.latitude = input.latitude;
+  if (input.longitude !== undefined) patch.longitude = input.longitude;
+
   const { data, error } = await supabase
     .from('stores')
-    .update({
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      address: input.address.trim(),
-      city: input.city.trim(),
-      district: input.district?.trim() || null,
-      phone: input.phone.trim(),
-      email: input.email?.trim() || null,
-    })
+    .update(patch)
     .eq('id', storeId)
     .select('*')
     .single();

@@ -28,6 +28,12 @@
         {
           "photosPermission": "Ürün görselleri seçmek için galeri erişimine izin verin."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Mağazaya uzaklığını göstermek ve haritada yol tarifi için konumuna ihtiyacımız var."
+        }
       ]
     ]
   }
