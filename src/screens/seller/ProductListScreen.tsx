@@ -13,6 +13,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProductThumb } from '../../components/common/ProductThumb';
 import { useAuth } from '../../context/AuthContext';
 import { DELIVERY_OPTION_LABELS } from '../../constants/enums';
+import { LOW_STOCK_THRESHOLD, isLowStock } from '../../constants/inventory';
 import {
   deleteProduct,
   listStoreProducts,
@@ -120,19 +121,28 @@ export function ProductListScreen() {
   }
 
   const activeCount = products.filter((p) => p.is_active).length;
+  const lowStockCount = products.filter((p) => isLowStock(p.stock, p.is_active)).length;
 
   return (
     <View className="flex-1 bg-stone-50">
-      <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 py-3">
-        <Text className="text-sm text-stone-600">
-          {products.length} ürün · {activeCount} aktif
-        </Text>
-        <Pressable
-          className="rounded-xl bg-brand px-4 py-2"
-          onPress={() => navigation.navigate('ProductForm', {})}
-        >
-          <Text className="font-semibold text-white">+ Yeni</Text>
-        </Pressable>
+      <View className="border-b border-stone-200 bg-white px-4 py-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm text-stone-600">
+            {products.length} ürün · {activeCount} aktif
+            {lowStockCount > 0 ? ` · ${lowStockCount} düşük stok` : ''}
+          </Text>
+          <Pressable
+            className="rounded-xl bg-brand px-4 py-2"
+            onPress={() => navigation.navigate('ProductForm', {})}
+          >
+            <Text className="font-semibold text-white">+ Yeni</Text>
+          </Pressable>
+        </View>
+        {lowStockCount > 0 ? (
+          <Text className="mt-2 text-xs text-amber-700">
+            Stok ≤ {LOW_STOCK_THRESHOLD} olan aktif ürünler turuncu etiketle işaretli.
+          </Text>
+        ) : null}
       </View>
 
       <FlatList
@@ -144,14 +154,31 @@ export function ProductListScreen() {
             Henüz ürün yok. İlk ürününü ekle.
           </Text>
         }
-        renderItem={({ item }) => (
-          <View className="mb-3 rounded-2xl border border-stone-200 bg-white p-4">
+        renderItem={({ item }) => {
+          const low = isLowStock(item.stock, item.is_active);
+          return (
+          <View
+            className={`mb-3 rounded-2xl border bg-white p-4 ${
+              low ? 'border-amber-300' : 'border-stone-200'
+            }`}
+          >
             <View className="mb-2 flex-row items-start">
               <ProductThumb uri={item.image_url} />
               <View className="flex-1 pr-1">
-                <Text className="mb-1 text-base font-semibold text-stone-900">{item.name}</Text>
+                <View className="mb-1 flex-row items-center justify-between">
+                  <Text className="flex-1 pr-2 text-base font-semibold text-stone-900">
+                    {item.name}
+                  </Text>
+                  {low ? (
+                    <Text className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      Düşük stok
+                    </Text>
+                  ) : null}
+                </View>
                 <Text className="text-sm text-brand">{formatTRY(item.price)}</Text>
-                <Text className="mt-1 text-xs text-stone-500">
+                <Text
+                  className={`mt-1 text-xs ${low ? 'font-semibold text-amber-700' : 'text-stone-500'}`}
+                >
                   Stok: {item.stock} · {item.is_active ? 'Aktif' : 'Pasif'}
                 </Text>
                 <Text className="mt-1 text-xs text-stone-400">
@@ -183,7 +210,8 @@ export function ProductListScreen() {
               )}
             </View>
           </View>
-        )}
+          );
+        }}
       />
     </View>
   );
