@@ -7,7 +7,6 @@ import type { CompositeNavigationProp } from '@react-navigation/native';
 import { ProductThumb } from '../../components/common/ProductThumb';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
-import { UiCard } from '../../components/ui/UiCard';
 import { useCart } from '../../context/CartContext';
 import type {
   BuyerCartStackParamList,
@@ -74,30 +73,40 @@ export function CartScreen() {
         renderItem={({ item }) => {
           const lineTotal = item.price * item.quantity;
           return (
-            <UiCard className="mb-3 flex-row" padded={false}>
-              <View className="flex-row p-3">
-                <ProductThumb uri={item.imageUrl} />
-                <View className="flex-1">
+            <View
+              className="mb-3 overflow-hidden rounded-2xl border border-stone-200 bg-white"
+              style={ui.shadow}
+            >
+              <View className="flex-row items-start p-3">
+                <ProductThumb uri={item.imageUrl} size={72} />
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
                     className="mb-1 text-base font-bold text-stone-900"
                     numberOfLines={2}
                   >
                     {item.name}
                   </Text>
-                  <Text className="mb-1 text-sm font-semibold text-brand">
-                    {formatTRY(item.price)} × {item.quantity}
+                  <Text className="mb-0.5 text-sm text-stone-500" numberOfLines={1}>
+                    {item.storeName}
                   </Text>
-                  <Text className="mb-2 text-xs text-stone-500">
-                    Satır: {formatTRY(lineTotal)}
+                  <Text className="mb-1 text-base font-bold text-brand">
+                    {formatTRY(item.price)}
+                  </Text>
+                  <Text className="mb-3 text-xs text-stone-500">
+                    {item.quantity} adet · Satır {formatTRY(lineTotal)}
                   </Text>
                   <View className="flex-row items-center">
                     <Pressable
                       className="h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-[#FFF8F3]"
-                      onPress={() => updateQuantity(item.productId, item.quantity - 1)}
+                      onPress={() =>
+                        updateQuantity(item.productId, item.quantity - 1)
+                      }
                     >
                       <Text className="text-lg text-stone-800">−</Text>
                     </Pressable>
-                    <Text className="mx-3 font-bold text-stone-900">{item.quantity}</Text>
+                    <Text className="mx-3 min-w-[24px] text-center text-base font-bold text-stone-900">
+                      {item.quantity}
+                    </Text>
                     <Pressable
                       className="h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-[#FFF8F3]"
                       onPress={() => {
@@ -115,7 +124,7 @@ export function CartScreen() {
                       <Text className="text-lg text-stone-800">+</Text>
                     </Pressable>
                     <Pressable
-                      className="ml-auto"
+                      className="ml-auto px-1"
                       onPress={() => removeItem(item.productId)}
                     >
                       <Text className="text-sm font-bold text-red-600">Kaldır</Text>
@@ -123,7 +132,7 @@ export function CartScreen() {
                   </View>
                 </View>
               </View>
-            </UiCard>
+            </View>
           );
         }}
       />
