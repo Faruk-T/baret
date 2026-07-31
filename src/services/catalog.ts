@@ -3,7 +3,14 @@ import type { DeliveryOption, Product, Store } from '../types/database';
 
 export type CatalogStore = Pick<
   Store,
-  'id' | 'name' | 'city' | 'district' | 'is_approved' | 'is_active'
+  | 'id'
+  | 'name'
+  | 'city'
+  | 'district'
+  | 'is_approved'
+  | 'is_active'
+  | 'latitude'
+  | 'longitude'
 >;
 
 export type CatalogProduct = Product & {
@@ -35,6 +42,8 @@ export async function listCatalogProducts(
         name,
         city,
         district,
+        latitude,
+        longitude,
         is_approved,
         is_active
       )
@@ -92,6 +101,8 @@ export async function getCatalogProduct(
         name,
         city,
         district,
+        latitude,
+        longitude,
         is_approved,
         is_active
       )

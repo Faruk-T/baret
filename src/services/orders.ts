@@ -12,6 +12,12 @@ export type OrderWithProduct = Order & {
     city: string;
     district: string | null;
   } | null;
+  order_commissions: {
+    commission_rate: number;
+    commission_amount: number;
+    seller_net_amount: number;
+    order_amount: number;
+  } | null;
 };
 
 export type CheckoutInput = {
@@ -100,14 +106,30 @@ export async function listStoreOrders(storeId: string): Promise<OrderWithProduct
       `
       *,
       products ( name, image_url ),
-      stores ( name, city, district )
+      stores ( name, city, district ),
+      order_commissions ( commission_rate, commission_amount, seller_net_amount, order_amount )
     `
     )
     .eq('store_id', storeId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as OrderWithProduct[]) ?? [];
+  // Hide pickup codes from seller client — only buyer should display the code.
+  return ((data as OrderWithProduct[]) ?? []).map((row) => ({
+    ...row,
+    pickup_code: null,
+  }));
+}
+
+export async function countPendingStoreOrders(storeId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', storeId)
+    .eq('status', 'pending');
+
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function cancelBuyerOrder(orderId: string, buyerId: string): Promise<Order> {
@@ -137,4 +159,15 @@ export async function updateSellerOrderStatus(
 
   if (error) throw error;
   return data;
+}
+
+/** Seller: buyer shows pickup code → mark delivered. */
+export async function confirmOrderPickup(code: string): Promise<Order> {
+  const { data, error } = await supabase.rpc('confirm_order_pickup', {
+    p_code: code.trim().toUpperCase(),
+  });
+
+  if (error) throw error;
+  if (!data) throw new Error('Teslim doğrulanamadı.');
+  return data as Order;
 }

@@ -1,14 +1,19 @@
-import { Alert, FlatList, Image, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 
+import { ProductThumb } from '../../components/common/ProductThumb';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { useCart } from '../../context/CartContext';
 import type {
   BuyerCartStackParamList,
   BuyerTabParamList,
 } from '../../types/navigation.types';
+import { formatTRY } from '../../utils/format';
+import { ui } from '../../theme/ui';
 
 type CartNav = CompositeNavigationProp<
   NativeStackNavigationProp<BuyerCartStackParamList, 'CartList'>,
@@ -28,34 +33,36 @@ export function CartScreen() {
   };
 
   if (!isReady) {
-    return <View className="flex-1 bg-stone-50" />;
+    return <View className="flex-1 bg-[#FFF8F3]" />;
   }
 
   if (items.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-6">
-        <Text className="mb-2 text-lg font-semibold text-stone-900">Sepetin boş</Text>
-        <Text className="mb-6 text-center text-sm text-stone-500">
-          Ana Sayfa’dan ürün seçip sepete ekleyebilirsin.
-        </Text>
-        <Pressable
-          className="rounded-xl bg-brand px-5 py-3"
-          onPress={() => navigation.navigate('Home')}
-        >
-          <Text className="font-semibold text-white">Ürünlere git</Text>
-        </Pressable>
+      <View className="flex-1 bg-[#FFF8F3]">
+        <EmptyState
+          icon="cart-outline"
+          title="Sepetin boş"
+          description="Ana Sayfa’dan ürün seçip sepete ekle — tek mağazadan alışveriş yaparsın."
+          actionLabel="Ürünlere git"
+          onAction={() => navigation.navigate('Home')}
+        />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-stone-50">
-      <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 py-3">
-        <Text className="flex-1 pr-3 text-sm text-stone-600">
-          {itemCount} adet · {items[0]?.storeName}
-        </Text>
+    <View className="flex-1 bg-[#FFF8F3]">
+      <View className="flex-row items-center justify-between border-b border-orange-100 bg-white px-4 py-3">
+        <View className="flex-1 pr-3">
+          <Text className="text-xs font-bold uppercase tracking-wide text-stone-500">
+            Sepet
+          </Text>
+          <Text className="mt-0.5 text-sm font-semibold text-stone-800">
+            {itemCount} adet · {items[0]?.storeName}
+          </Text>
+        </View>
         <Pressable onPress={confirmClear}>
-          <Text className="text-sm font-medium text-red-600">Sepeti temizle</Text>
+          <Text className="text-sm font-bold text-red-600">Temizle</Text>
         </Pressable>
       </View>
 
@@ -66,54 +73,63 @@ export function CartScreen() {
         renderItem={({ item }) => {
           const lineTotal = item.price * item.quantity;
           return (
-            <View className="mb-3 flex-row rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
-              {item.imageUrl ? (
-                <Image
-                  source={{ uri: item.imageUrl }}
-                  className="mr-3 h-16 w-16 rounded-xl bg-stone-200"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="mr-3 h-16 w-16 items-center justify-center rounded-xl bg-stone-200">
-                  <Text className="text-xs text-stone-500">Yok</Text>
-                </View>
-              )}
-              <View className="flex-1">
-                <Text className="mb-1 text-base font-semibold text-stone-900" numberOfLines={2}>
-                  {item.name}
-                </Text>
-                <Text className="mb-1 text-sm text-brand">
-                  ₺{item.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ×{' '}
-                  {item.quantity}
-                </Text>
-                <Text className="mb-2 text-xs text-stone-500">
-                  Satır: ₺{lineTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                </Text>
-                <View className="flex-row items-center">
-                  <Pressable
-                    className="h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white"
-                    onPress={() => updateQuantity(item.productId, item.quantity - 1)}
+            <View
+              className="mb-3 overflow-hidden rounded-2xl border border-stone-200 bg-white"
+              style={ui.shadow}
+            >
+              <View className="flex-row items-start p-3">
+                <ProductThumb uri={item.imageUrl} size={72} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    className="mb-1 text-base font-bold text-stone-900"
+                    numberOfLines={2}
                   >
-                    <Text>−</Text>
-                  </Pressable>
-                  <Text className="mx-3 font-semibold text-stone-900">{item.quantity}</Text>
-                  <Pressable
-                    className="h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white"
-                    onPress={() => {
-                      try {
-                        updateQuantity(item.productId, item.quantity + 1);
-                      } catch (error) {
-                        const message =
-                          error instanceof Error ? error.message : 'Miktar güncellenemedi.';
-                        Alert.alert('Stok', message);
+                    {item.name}
+                  </Text>
+                  <Text className="mb-0.5 text-sm text-stone-500" numberOfLines={1}>
+                    {item.storeName}
+                  </Text>
+                  <Text className="mb-1 text-base font-bold text-brand">
+                    {formatTRY(item.price)}
+                  </Text>
+                  <Text className="mb-3 text-xs text-stone-500">
+                    {item.quantity} adet · Satır {formatTRY(lineTotal)}
+                  </Text>
+                  <View className="flex-row items-center">
+                    <Pressable
+                      className="h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-[#FFF8F3]"
+                      onPress={() =>
+                        updateQuantity(item.productId, item.quantity - 1)
                       }
-                    }}
-                  >
-                    <Text>+</Text>
-                  </Pressable>
-                  <Pressable className="ml-auto" onPress={() => removeItem(item.productId)}>
-                    <Text className="text-sm font-medium text-red-600">Kaldır</Text>
-                  </Pressable>
+                    >
+                      <Text className="text-lg text-stone-800">−</Text>
+                    </Pressable>
+                    <Text className="mx-3 min-w-[24px] text-center text-base font-bold text-stone-900">
+                      {item.quantity}
+                    </Text>
+                    <Pressable
+                      className="h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-[#FFF8F3]"
+                      onPress={() => {
+                        try {
+                          updateQuantity(item.productId, item.quantity + 1);
+                        } catch (error) {
+                          const message =
+                            error instanceof Error
+                              ? error.message
+                              : 'Miktar güncellenemedi.';
+                          Alert.alert('Stok', message);
+                        }
+                      }}
+                    >
+                      <Text className="text-lg text-stone-800">+</Text>
+                    </Pressable>
+                    <Pressable
+                      className="ml-auto px-1"
+                      onPress={() => removeItem(item.productId)}
+                    >
+                      <Text className="text-sm font-bold text-red-600">Kaldır</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </View>
@@ -121,16 +137,20 @@ export function CartScreen() {
         }}
       />
 
-      <View className="border-t border-stone-200 bg-white px-4 py-4">
-        <Text className="mb-3 text-lg font-semibold text-stone-900">
-          Toplam: ₺{totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-        </Text>
-        <Pressable
-          className="items-center rounded-2xl bg-brand py-4"
+      <View
+        className="border-t border-orange-100 bg-white px-4 py-4"
+        style={ui.shadow}
+      >
+        <View className="mb-3 flex-row items-end justify-between">
+          <Text className="text-sm text-stone-500">Toplam</Text>
+          <Text className="text-2xl font-bold text-stone-900">
+            {formatTRY(totalAmount)}
+          </Text>
+        </View>
+        <PrimaryButton
+          label="Siparişe geç"
           onPress={() => navigation.navigate('Checkout')}
-        >
-          <Text className="text-base font-bold text-white">Siparişe geç</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );

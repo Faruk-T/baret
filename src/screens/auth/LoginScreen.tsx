@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -12,6 +12,9 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
+import { PasswordField } from '../../components/auth/PasswordField';
+import { BrandHero } from '../../components/ui/BrandHero';
+import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../types/navigation.types';
 
@@ -44,50 +47,58 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1 bg-[#FFF8F3]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View className="flex-1 justify-center px-6">
-        <Text className="mb-2 text-3xl font-bold text-gray-900">Baret</Text>
-        <Text className="mb-8 text-base text-gray-500">Hesabına giriş yap</Text>
-
-        <Text className="mb-2 text-sm font-medium text-gray-700">E-posta</Text>
-        <TextInput
-          className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="ornek@email.com"
-          value={email}
-          onChangeText={setEmail}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="flex-grow"
+      >
+        <BrandHero
+          eyebrow="Pazaryeri"
+          title="Baret"
+          subtitle="Şantiye malzemesini onaylı nalburdan bul, sipariş ver."
         />
 
-        <Text className="mb-2 text-sm font-medium text-gray-700">Şifre</Text>
-        <TextInput
-          className="mb-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          secureTextEntry
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <Pressable
-          className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSubmitting ? 'opacity-70' : ''}`}
-          disabled={isSubmitting}
-          onPress={handleLogin}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-base font-semibold text-white">Giriş Yap</Text>
-          )}
-        </Pressable>
-
-        <Pressable onPress={() => navigation.navigate('RoleSelect')}>
-          <Text className="text-center text-sm text-gray-600">
-            Hesabın yok mu? <Text className="font-semibold text-brand">Kayıt Ol</Text>
+        <View className="-mt-5 flex-1 rounded-t-3xl bg-[#FFF8F3] px-6 pt-8 pb-10">
+          <Text className="mb-1 text-2xl font-bold text-stone-900">Giriş yap</Text>
+          <Text className="mb-6 text-sm text-stone-500">
+            Hesabınla devam et — alıcı, satıcı veya yönetici.
           </Text>
-        </Pressable>
-      </View>
+
+          <Text className="mb-2 text-sm font-semibold text-stone-700">E-posta</Text>
+          <TextInput
+            className="mb-4 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-base text-stone-900"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="ornek@email.com"
+            placeholderTextColor="#a8a29e"
+            value={email}
+            onChangeText={setEmail}
+          />
+
+          <PasswordField
+            label="Şifre"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <PrimaryButton
+            label="Giriş Yap"
+            loading={isSubmitting}
+            onPress={() => void handleLogin()}
+            className="mb-5"
+          />
+
+          <Pressable onPress={() => navigation.navigate('RoleSelect')}>
+            <Text className="text-center text-sm text-stone-600">
+              Hesabın yok mu?{' '}
+              <Text className="font-bold text-brand">Kayıt Ol</Text>
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

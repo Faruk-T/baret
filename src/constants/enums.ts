@@ -28,7 +28,7 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Beklemede',
   preparing: 'Hazırlanıyor',
-  shipped: 'Kargoda',
+  shipped: 'Hazır / Yolda',
   delivered: 'Teslim Edildi',
   cancelled: 'İptal Edildi',
 };

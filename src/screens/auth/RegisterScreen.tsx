@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { PasswordField } from '../../components/auth/PasswordField';
+import { BrandHero } from '../../components/ui/BrandHero';
+import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../types/navigation.types';
 
@@ -59,63 +62,71 @@ export function RegisterScreen({ navigation, route }: Props) {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1 bg-[#FFF8F3]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View className="flex-1 justify-center px-6">
-        <Text className="mb-2 text-3xl font-bold text-gray-900">Kayıt Ol</Text>
-        <Text className="mb-2 text-base text-gray-500">
-          Seçilen rol: <Text className="font-semibold text-brand">{roleLabel}</Text>
-        </Text>
-        <Pressable className="mb-6" onPress={() => navigation.navigate('RoleSelect')}>
-          <Text className="text-sm text-gray-500 underline">Rolü değiştir</Text>
-        </Pressable>
-
-        <Text className="mb-2 text-sm font-medium text-gray-700">Ad Soyad</Text>
-        <TextInput
-          className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          placeholder="Adınız Soyadınız"
-          value={fullName}
-          onChangeText={setFullName}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="flex-grow"
+      >
+        <BrandHero
+          compact
+          eyebrow="Yeni hesap"
+          title={`${roleLabel} kaydı`}
+          subtitle="Birkaç bilgiyle Baret’e katıl — sonra mağaza veya alışverişe geç."
         />
 
-        <Text className="mb-2 text-sm font-medium text-gray-700">E-posta</Text>
-        <TextInput
-          className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="ornek@email.com"
-          value={email}
-          onChangeText={setEmail}
-        />
+        <View className="-mt-4 flex-1 rounded-t-3xl bg-[#FFF8F3] px-6 pt-7 pb-10">
+          <View className="mb-5 self-start rounded-full bg-orange-100 px-3 py-1">
+            <Text className="text-xs font-bold text-brand">Rol: {roleLabel}</Text>
+          </View>
 
-        <Text className="mb-2 text-sm font-medium text-gray-700">Şifre</Text>
-        <TextInput
-          className="mb-6 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-          secureTextEntry
-          placeholder="En az 6 karakter"
-          value={password}
-          onChangeText={setPassword}
-        />
+          <Pressable className="mb-5" onPress={() => navigation.navigate('RoleSelect')}>
+            <Text className="text-sm font-semibold text-brand">← Rolü değiştir</Text>
+          </Pressable>
 
-        <Pressable
-          className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSubmitting ? 'opacity-70' : ''}`}
-          disabled={isSubmitting}
-          onPress={handleRegister}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-base font-semibold text-white">Hesap Oluştur</Text>
-          )}
-        </Pressable>
+          <Text className="mb-2 text-sm font-semibold text-stone-700">Ad Soyad</Text>
+          <TextInput
+            className="mb-4 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-base text-stone-900"
+            placeholder="Adınız Soyadınız"
+            placeholderTextColor="#a8a29e"
+            value={fullName}
+            onChangeText={setFullName}
+          />
 
-        <Pressable onPress={() => navigation.navigate('Login')}>
-          <Text className="text-center text-sm text-gray-600">
-            Zaten hesabın var mı? <Text className="font-semibold text-brand">Giriş Yap</Text>
-          </Text>
-        </Pressable>
-      </View>
+          <Text className="mb-2 text-sm font-semibold text-stone-700">E-posta</Text>
+          <TextInput
+            className="mb-4 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-base text-stone-900"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="ornek@email.com"
+            placeholderTextColor="#a8a29e"
+            value={email}
+            onChangeText={setEmail}
+          />
+
+          <PasswordField
+            label="Şifre"
+            placeholder="En az 6 karakter"
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <PrimaryButton
+            label="Hesap Oluştur"
+            loading={isSubmitting}
+            onPress={() => void handleRegister()}
+            className="mb-5"
+          />
+
+          <Pressable onPress={() => navigation.navigate('Login')}>
+            <Text className="text-center text-sm text-stone-600">
+              Zaten hesabın var mı?{' '}
+              <Text className="font-bold text-brand">Giriş Yap</Text>
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

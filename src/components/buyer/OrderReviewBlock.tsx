@@ -4,6 +4,10 @@ import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'reac
 import { StarRating } from '../../components/common/StarRating';
 import { createReview } from '../../services/reviews';
 import type { Review } from '../../types/database';
+import {
+  containsContactLeak,
+  sanitizeContactLeak,
+} from '../../utils/contactFilter';
 
 type Props = {
   buyerId: string;
@@ -32,7 +36,9 @@ export function OrderReviewBlock({
         </Text>
         <StarRating value={existing.rating} readonly size="sm" />
         {existing.comment ? (
-          <Text className="mt-2 text-sm text-stone-700">{existing.comment}</Text>
+          <Text className="mt-2 text-sm text-stone-700">
+            {sanitizeContactLeak(existing.comment)}
+          </Text>
         ) : null}
       </View>
     );
@@ -42,6 +48,12 @@ export function OrderReviewBlock({
     if (rating < 1) {
       Alert.alert('Puan', '1–5 arası yıldız seç.');
       return;
+    }
+    if (containsContactLeak(comment)) {
+      Alert.alert(
+        'İletişim gizlendi',
+        'Yorumdaki telefon / WhatsApp / e-posta otomatik olarak [gizlendi] yapılır.'
+      );
     }
     setSaving(true);
     try {

@@ -187,6 +187,22 @@ Teslim edilen siparişte alıcı 1–5 yıldız + yorum bırakır; satıcı Dash
 
 ![Satıcı dashboard düşük puan](assets/screenshots/seller-dashboard-reviews-low.png)
 
+### Polish — soft-delete & admin özet (Gün 18–19)
+
+Ürün silme artık hard delete değil: `is_active = false` (katalogdan düşer, satıcıda Pasife al / Aktifleştir). Admin İstatistikler + Kullanıcılar listesi; profil/sepet görsel polish. Ortak `formatTRY` + `ProductThumb`.
+
+| Ekran | Dosya |
+|-------|--------|
+| Satıcı ürün soft-delete | `assets/screenshots/seller-products-soft-delete.png` |
+| Katalog (pasif ürün yok) | `assets/screenshots/buyer-home-after-soft-delete.png` |
+| Katalog (ürün aktifken) | `assets/screenshots/buyer-home-before-soft-delete.png` |
+
+![Satıcı soft-delete](assets/screenshots/seller-products-soft-delete.png)
+
+![Katalog pasif sonrası](assets/screenshots/buyer-home-after-soft-delete.png)
+
+![Katalog aktif ürünlerle](assets/screenshots/buyer-home-before-soft-delete.png)
+
 ---
 
 # Faz 1 Teslim Edilenler
@@ -254,4 +270,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 4 — Gün 17/20 tamamlandı** | Admin onay + değerlendirme (yıldız/yorum). **Sonraki: Gün 18** bug fix / UI polish.
+✅ **Faz 4 — Gün 19/20** | Soft-delete + admin stats/users + polish. **Sonraki: Gün 20** demo / son merge.

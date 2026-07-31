@@ -25,6 +25,11 @@ import {
   type ReviewWithBuyer,
 } from '../../services/reviews';
 import type { BuyerHomeStackParamList } from '../../types/navigation.types';
+import {
+  distanceMeters,
+  formatDistance,
+  getCurrentCoords,
+} from '../../utils/geo';
 
 type Props = NativeStackScreenProps<BuyerHomeStackParamList, 'ProductDetail'>;
 
@@ -36,10 +41,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [ratingSummary, setRatingSummary] = useState({ average: 0, count: 0 });
   const [storeReviews, setStoreReviews] = useState<ReviewWithBuyer[]>([]);
+  const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
+      setDistanceLabel(null);
       const row = await getCatalogProduct(productId);
       if (!row) {
         Alert.alert('Bulunamadı', 'Ürün bulunamadı veya satışta değil.');
@@ -54,6 +62,21 @@ export function ProductDetailScreen({ navigation, route }: Props) {
       ]);
       setRatingSummary(summary);
       setStoreReviews(reviews.slice(0, 5));
+
+      const lat = row.store.latitude;
+      const lng = row.store.longitude;
+      if (lat != null && lng != null) {
+        try {
+          const me = await getCurrentCoords();
+          setDistanceLabel(
+            formatDistance(
+              distanceMeters(me, { latitude: lat, longitude: lng })
+            )
+          );
+        } catch {
+          // Permission denied or GPS unavailable — distance stays hidden.
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün yüklenemedi.';
       Alert.alert('Hata', message);
@@ -126,6 +149,31 @@ export function ProductDetailScreen({ navigation, route }: Props) {
     }
   };
 
+  const storeHasCoords =
+    product?.store.latitude != null && product?.store.longitude != null;
+
+  const handleRefreshDistance = async () => {
+    if (!product?.store.latitude || !product?.store.longitude) return;
+    try {
+      setIsLocating(true);
+      const me = await getCurrentCoords();
+      setDistanceLabel(
+        formatDistance(
+          distanceMeters(me, {
+            latitude: product.store.latitude,
+            longitude: product.store.longitude,
+          })
+        )
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Konum alınamadı.';
+      Alert.alert('Konum', message);
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
   if (isLoading || !product) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -138,29 +186,74 @@ export function ProductDetailScreen({ navigation, route }: Props) {
   const linePreview = Number(product.price) * quantity;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-[#FFF8F3]">
       <ScrollView className="flex-1">
         {product.image_url ? (
           <Image
             source={{ uri: product.image_url }}
-            className="h-64 w-full bg-gray-100"
+            className="h-72 w-full bg-stone-100"
             resizeMode="cover"
           />
         ) : (
-          <View className="h-64 w-full items-center justify-center bg-gray-100">
-            <Text className="text-sm text-gray-500">Görsel yok</Text>
+          <View className="h-72 w-full items-center justify-center bg-orange-50">
+            <Text className="text-sm font-medium text-brand">Görsel yok</Text>
           </View>
         )}
 
-        <View className="px-6 py-4">
-          <Text className="mb-2 text-2xl font-bold text-gray-900">{product.name}</Text>
-          <Text className="mb-3 text-xl font-semibold text-brand">
+        <View className="px-5 py-5">
+          <Text className="mb-2 text-2xl font-bold text-stone-900">{product.name}</Text>
+          <Text className="mb-3 text-2xl font-bold text-brand">
             ₺{Number(product.price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
           </Text>
           <Text className="mb-1 text-sm text-gray-600">
             {product.store.name} · {product.store.city}
             {product.store.district ? ` / ${product.store.district}` : ''}
           </Text>
+
+          {storeHasCoords ? (
+            <View className="mb-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <Text className="mb-2 text-sm text-stone-700">
+                {distanceLabel
+                  ? `Yaklaşık uzaklık: ${distanceLabel}`
+                  : 'Konum izniyle yaklaşık uzaklığı görebilirsin'}
+              </Text>
+              <Text className="mb-2 text-xs text-stone-500">
+                Tam adres ve harita yol tarifi, satıcı siparişi kabul ettikten sonra
+                Siparişlerim’de açılır.
+              </Text>
+              {!distanceLabel ? (
+                <Pressable
+                  className={`items-center rounded-xl border border-brand bg-orange-50 py-2.5 ${
+                    isLocating ? 'opacity-70' : ''
+                  }`}
+                  disabled={isLocating}
+                  onPress={() => void handleRefreshDistance()}
+                >
+                  {isLocating ? (
+                    <ActivityIndicator color="#FF6B00" />
+                  ) : (
+                    <Text className="text-sm font-semibold text-brand">
+                      Uzaklığı hesapla
+                    </Text>
+                  )}
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
+            <Text className="mb-3 text-xs text-stone-400">
+              Bu mağaza harita konumu eklememiş
+            </Text>
+          )}
+
+          <View className="mb-3 rounded-xl border border-orange-100 bg-orange-50 p-3">
+            <Text className="text-xs font-bold text-brand">Platform güvencesi</Text>
+            <Text className="mt-1 text-xs leading-4 text-stone-600">
+              Telefon ve WhatsApp ürün sayfasında gösterilmez. Sipariş, stok ve
+              değerlendirme Baret üzerinden kalır — dışarıda anlaşma komisyon
+              kaçırma sayılır ve şikayet edilebilir.
+            </Text>
+          </View>
+
           {ratingSummary.count > 0 ? (
             <View className="mb-2 flex-row items-center">
               <StarRating value={Math.round(ratingSummary.average)} readonly size="sm" />
@@ -244,13 +337,13 @@ export function ProductDetailScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
 
-      <View className="border-t border-gray-100 px-6 py-4">
+      <View className="border-t border-orange-100 bg-white px-5 py-4">
         <Pressable
-          className={`items-center rounded-xl py-3.5 ${outOfStock ? 'bg-gray-300' : 'bg-brand'}`}
+          className={`items-center rounded-2xl py-4 ${outOfStock ? 'bg-stone-300' : 'bg-brand'}`}
           disabled={outOfStock}
           onPress={handleAddToCart}
         >
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-bold text-white">
             {outOfStock ? 'Stokta yok' : 'Sepete Ekle'}
           </Text>
         </Pressable>
