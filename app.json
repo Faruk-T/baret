@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.baret.app",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -27,8 +28,7 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.READ_MEDIA_IMAGES"
       ]
     },
     "web": {
@@ -47,7 +47,9 @@
         {
           "locationWhenInUsePermission": "Mağazaya uzaklığını göstermek ve haritada yol tarifi için konumuna ihtiyacımız var."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

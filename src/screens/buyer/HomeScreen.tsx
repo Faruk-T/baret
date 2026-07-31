@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -40,6 +41,7 @@ export function HomeScreen() {
   const [maxPrice, setMaxPrice] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,6 +59,27 @@ export function HomeScreen() {
       ),
     [search, city, district, minPrice, maxPrice, selectedCategory, deliveryOption]
   );
+
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (search.trim()) parts.push(`“${search.trim()}”`);
+    if (selectedCategory) parts.push(selectedCategory);
+    if (city.trim()) parts.push(city.trim());
+    if (district.trim()) parts.push(district.trim());
+    if (minPrice.trim() || maxPrice.trim()) {
+      parts.push(`${minPrice.trim() || '0'}–${maxPrice.trim() || '∞'} ₺`);
+    }
+    if (deliveryOption) parts.push(DELIVERY_OPTION_LABELS[deliveryOption]);
+    return parts.join(' · ');
+  }, [
+    search,
+    selectedCategory,
+    city,
+    district,
+    minPrice,
+    maxPrice,
+    deliveryOption,
+  ]);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh' = 'initial') => {
@@ -117,6 +140,8 @@ export function HomeScreen() {
     setDeliveryOption((prev) => (prev === option ? null : option));
   };
 
+  const collapseFilters = () => setFiltersOpen(false);
+
   return (
     <View className="flex-1 bg-[#FFF8F3]">
       <View className="border-b border-orange-100 bg-[#fffaf7] px-4 pb-3 pt-2">
@@ -124,118 +149,170 @@ export function HomeScreen() {
         <Text className="mb-3 text-sm text-stone-500">
           Şantiye malzemesi · onaylı nalburlar
         </Text>
-        <TextInput
-          className="mb-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
-          placeholder="Ürün ara (örn. çimento)"
-          placeholderTextColor="#a8a29e"
-          value={search}
-          onChangeText={(text) => {
-            setSearch(text);
-            setSelectedCategory(null);
-          }}
-          returnKeyType="search"
-        />
 
-        <View className="mb-2 flex-row gap-2">
-          <TextInput
-            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
-            placeholder="Şehir"
-            placeholderTextColor="#a8a29e"
-            value={city}
-            onChangeText={setCity}
-          />
-          <TextInput
-            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
-            placeholder="İlçe"
-            placeholderTextColor="#a8a29e"
-            value={district}
-            onChangeText={setDistrict}
-          />
-        </View>
+        <Pressable
+          onPress={() => setFiltersOpen((open) => !open)}
+          className="mb-2 flex-row items-center justify-between rounded-xl border border-orange-200 bg-white px-4 py-3"
+        >
+          <View className="mr-3 flex-1">
+            <Text className="text-sm font-semibold text-stone-900">
+              {filtersOpen ? 'Filtreleri gizle' : 'Ara ve filtrele'}
+            </Text>
+            {!filtersOpen && hasActiveFilters ? (
+              <Text className="mt-0.5 text-xs text-stone-500" numberOfLines={1}>
+                {activeFilterSummary}
+              </Text>
+            ) : !filtersOpen ? (
+              <Text className="mt-0.5 text-xs text-stone-400">
+                Şehir, fiyat, kategori, teslimat
+              </Text>
+            ) : null}
+          </View>
+          <View className="flex-row items-center gap-2">
+            {hasActiveFilters ? (
+              <View className="rounded-full bg-brand px-2 py-0.5">
+                <Text className="text-[10px] font-bold text-white">Aktif</Text>
+              </View>
+            ) : null}
+            <Ionicons
+              name={filtersOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#FF6B00"
+            />
+          </View>
+        </Pressable>
 
-        <View className="mb-2 flex-row gap-2">
-          <TextInput
-            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
-            placeholder="Min ₺"
-            placeholderTextColor="#a8a29e"
-            value={minPrice}
-            onChangeText={setMinPrice}
-            keyboardType="decimal-pad"
-          />
-          <TextInput
-            className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
-            placeholder="Max ₺"
-            placeholderTextColor="#a8a29e"
-            value={maxPrice}
-            onChangeText={setMaxPrice}
-            keyboardType="decimal-pad"
-          />
-        </View>
+        {filtersOpen ? (
+          <View>
+            <TextInput
+              className="mb-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
+              placeholder="Ürün ara (örn. çimento)"
+              placeholderTextColor="#a8a29e"
+              value={search}
+              onChangeText={(text) => {
+                setSearch(text);
+                setSelectedCategory(null);
+              }}
+              returnKeyType="search"
+            />
 
-        <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-          Kategoriler
-        </Text>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={[...PRODUCT_CATEGORIES]}
-          keyExtractor={(item) => item}
-          className="mb-2"
-          renderItem={({ item }) => {
-            const active = selectedCategory === item;
-            return (
+            <View className="mb-2 flex-row gap-2">
+              <TextInput
+                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
+                placeholder="Şehir"
+                placeholderTextColor="#a8a29e"
+                value={city}
+                onChangeText={setCity}
+              />
+              <TextInput
+                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
+                placeholder="İlçe"
+                placeholderTextColor="#a8a29e"
+                value={district}
+                onChangeText={setDistrict}
+              />
+            </View>
+
+            <View className="mb-2 flex-row gap-2">
+              <TextInput
+                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
+                placeholder="Min ₺"
+                placeholderTextColor="#a8a29e"
+                value={minPrice}
+                onChangeText={setMinPrice}
+                keyboardType="decimal-pad"
+              />
+              <TextInput
+                className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-900"
+                placeholder="Max ₺"
+                placeholderTextColor="#a8a29e"
+                value={maxPrice}
+                onChangeText={setMaxPrice}
+                keyboardType="decimal-pad"
+              />
+            </View>
+
+            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Kategoriler
+            </Text>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={[...PRODUCT_CATEGORIES]}
+              keyExtractor={(item) => item}
+              className="mb-2"
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const active = selectedCategory === item;
+                return (
+                  <Pressable
+                    className={`mr-2 rounded-full border px-3 py-1.5 ${
+                      active
+                        ? 'border-brand bg-brand'
+                        : 'border-stone-200 bg-white'
+                    }`}
+                    onPress={() => toggleCategory(item)}
+                  >
+                    <Text
+                      className={`text-sm ${
+                        active ? 'font-semibold text-white' : 'text-stone-700'
+                      }`}
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+            />
+
+            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Teslimat
+            </Text>
+            <View className="mb-3 flex-row flex-wrap">
+              {DELIVERY_OPTIONS.map((option) => {
+                const active = deliveryOption === option;
+                return (
+                  <Pressable
+                    key={option}
+                    className={`mb-2 mr-2 rounded-full border px-3 py-1.5 ${
+                      active
+                        ? 'border-brand bg-brand'
+                        : 'border-stone-200 bg-white'
+                    }`}
+                    onPress={() => toggleDelivery(option)}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        active ? 'font-semibold text-white' : 'text-stone-700'
+                      }`}
+                    >
+                      {DELIVERY_OPTION_LABELS[option]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View className="flex-row items-center justify-between gap-3">
+              {hasActiveFilters ? (
+                <Pressable onPress={clearFilters} className="py-2">
+                  <Text className="text-sm font-medium text-brand">
+                    Filtreleri temizle
+                  </Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
               <Pressable
-                className={`mr-2 rounded-full border px-3 py-1.5 ${
-                  active
-                    ? 'border-brand bg-brand'
-                    : 'border-stone-200 bg-white'
-                }`}
-                onPress={() => toggleCategory(item)}
+                onPress={collapseFilters}
+                className="rounded-xl bg-brand px-4 py-2.5"
               >
-                <Text
-                  className={`text-sm ${
-                    active ? 'font-semibold text-white' : 'text-stone-700'
-                  }`}
-                >
-                  {item}
+                <Text className="text-sm font-semibold text-white">
+                  Uygula ve kapat
                 </Text>
               </Pressable>
-            );
-          }}
-        />
-
-        <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-          Teslimat
-        </Text>
-        <View className="mb-2 flex-row flex-wrap">
-          {DELIVERY_OPTIONS.map((option) => {
-            const active = deliveryOption === option;
-            return (
-              <Pressable
-                key={option}
-                className={`mb-2 mr-2 rounded-full border px-3 py-1.5 ${
-                  active
-                    ? 'border-brand bg-brand'
-                    : 'border-stone-200 bg-white'
-                }`}
-                onPress={() => toggleDelivery(option)}
-              >
-                <Text
-                  className={`text-xs ${
-                    active ? 'font-semibold text-white' : 'text-stone-700'
-                  }`}
-                >
-                  {DELIVERY_OPTION_LABELS[option]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {hasActiveFilters ? (
-          <Pressable onPress={clearFilters} className="self-start py-1">
-            <Text className="text-sm font-medium text-brand">Filtreleri temizle</Text>
-          </Pressable>
+            </View>
+          </View>
         ) : null}
       </View>
 
