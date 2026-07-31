@@ -107,6 +107,12 @@ export type PlatformSettings = {
   intro_commission_rate: number;
   intro_order_limit: number;
   high_rating_discount: number;
+  tier1_max: number;
+  tier1_rate: number;
+  tier2_max: number;
+  tier2_rate: number;
+  tier3_rate: number;
+  min_commission_amount: number;
   updated_at: string;
   updated_by: string | null;
 };
@@ -303,6 +309,12 @@ export type Database = {
           intro_commission_rate?: number;
           intro_order_limit?: number;
           high_rating_discount?: number;
+          tier1_max?: number;
+          tier1_rate?: number;
+          tier2_max?: number;
+          tier2_rate?: number;
+          tier3_rate?: number;
+          min_commission_amount?: number;
           updated_at?: string;
           updated_by?: string | null;
         };

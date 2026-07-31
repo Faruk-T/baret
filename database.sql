@@ -121,13 +121,25 @@ CREATE TABLE public.platform_settings (
                          CHECK (intro_order_limit >= 0),
   high_rating_discount   NUMERIC(5, 2) NOT NULL DEFAULT 1.00
                          CHECK (high_rating_discount >= 0 AND high_rating_discount <= 100),
+  tier1_max              NUMERIC(12, 2) NOT NULL DEFAULT 100.00 CHECK (tier1_max > 0),
+  tier1_rate             NUMERIC(5, 2) NOT NULL DEFAULT 10.00
+                         CHECK (tier1_rate >= 0 AND tier1_rate <= 100),
+  tier2_max              NUMERIC(12, 2) NOT NULL DEFAULT 1000.00 CHECK (tier2_max > 0),
+  tier2_rate             NUMERIC(5, 2) NOT NULL DEFAULT 8.00
+                         CHECK (tier2_rate >= 0 AND tier2_rate <= 100),
+  tier3_rate             NUMERIC(5, 2) NOT NULL DEFAULT 5.00
+                         CHECK (tier3_rate >= 0 AND tier3_rate <= 100),
+  min_commission_amount  NUMERIC(12, 2) NOT NULL DEFAULT 1.00
+                         CHECK (min_commission_amount >= 0),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by             UUID REFERENCES public.users(id) ON DELETE SET NULL
+  updated_by             UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  CHECK (tier2_max > tier1_max)
 );
 
 INSERT INTO public.platform_settings (
-  id, commission_rate, intro_commission_rate, intro_order_limit, high_rating_discount
-) VALUES (1, 8.00, 5.00, 10, 1.00);
+  id, commission_rate, intro_commission_rate, intro_order_limit, high_rating_discount,
+  tier1_max, tier1_rate, tier2_max, tier2_rate, tier3_rate, min_commission_amount
+) VALUES (1, 8.00, 5.00, 10, 1.00, 100.00, 10.00, 1000.00, 8.00, 5.00, 1.00);
 
 CREATE TABLE public.platform_reports (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -315,10 +327,16 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_rate NUMERIC(5, 2);
+  v_tier1_max NUMERIC(12, 2);
+  v_tier1_rate NUMERIC(5, 2);
+  v_tier2_max NUMERIC(12, 2);
+  v_tier2_rate NUMERIC(5, 2);
+  v_tier3_rate NUMERIC(5, 2);
+  v_min_commission NUMERIC(12, 2);
   v_intro NUMERIC(5, 2);
   v_intro_limit INTEGER;
   v_discount NUMERIC(5, 2);
+  v_rate NUMERIC(5, 2);
   v_prior_count INTEGER;
   v_avg NUMERIC;
   v_review_count INTEGER;
@@ -326,16 +344,27 @@ DECLARE
   v_net NUMERIC(12, 2);
 BEGIN
   SELECT
-    commission_rate,
+    COALESCE(tier1_max, 100.00),
+    COALESCE(tier1_rate, 10.00),
+    COALESCE(tier2_max, 1000.00),
+    COALESCE(tier2_rate, commission_rate, 8.00),
+    COALESCE(tier3_rate, 5.00),
+    COALESCE(min_commission_amount, 1.00),
     COALESCE(intro_commission_rate, 5.00),
     COALESCE(intro_order_limit, 10),
     COALESCE(high_rating_discount, 1.00)
-  INTO v_rate, v_intro, v_intro_limit, v_discount
+  INTO
+    v_tier1_max, v_tier1_rate, v_tier2_max, v_tier2_rate, v_tier3_rate,
+    v_min_commission, v_intro, v_intro_limit, v_discount
   FROM public.platform_settings
   WHERE id = 1;
 
-  IF v_rate IS NULL THEN
-    v_rate := 8.00;
+  IF NEW.total_amount < v_tier1_max THEN
+    v_rate := v_tier1_rate;
+  ELSIF NEW.total_amount < v_tier2_max THEN
+    v_rate := v_tier2_rate;
+  ELSE
+    v_rate := v_tier3_rate;
   END IF;
 
   SELECT COUNT(*) INTO v_prior_count
@@ -358,7 +387,16 @@ BEGIN
   END IF;
 
   v_commission := ROUND(NEW.total_amount * v_rate / 100.0, 2);
+
+  IF v_commission < v_min_commission THEN
+    v_commission := LEAST(v_min_commission, NEW.total_amount);
+  END IF;
+
   v_net := NEW.total_amount - v_commission;
+
+  IF NEW.total_amount > 0 THEN
+    v_rate := ROUND((v_commission / NEW.total_amount) * 100.0, 2);
+  END IF;
 
   INSERT INTO public.order_commissions (
     order_id, store_id, order_amount, commission_rate, commission_amount, seller_net_amount
