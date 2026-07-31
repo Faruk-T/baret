@@ -1,4 +1,5 @@
 -- 1. ADIM: TAM TEMİZLİK (Eski Kalıntıları Siliyoruz)
+DROP TABLE IF EXISTS public.platform_reports CASCADE;
 DROP TABLE IF EXISTS public.order_commissions CASCADE;
 DROP TABLE IF EXISTS public.platform_settings CASCADE;
 DROP TABLE IF EXISTS public.reviews CASCADE;
@@ -111,14 +112,36 @@ CREATE TABLE public.license_keys (
 );
 
 CREATE TABLE public.platform_settings (
-  id               INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  commission_rate  NUMERIC(5, 2) NOT NULL DEFAULT 8.00
-                   CHECK (commission_rate >= 0 AND commission_rate <= 100),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by       UUID REFERENCES public.users(id) ON DELETE SET NULL
+  id                     INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  commission_rate        NUMERIC(5, 2) NOT NULL DEFAULT 8.00
+                         CHECK (commission_rate >= 0 AND commission_rate <= 100),
+  intro_commission_rate  NUMERIC(5, 2) NOT NULL DEFAULT 5.00
+                         CHECK (intro_commission_rate >= 0 AND intro_commission_rate <= 100),
+  intro_order_limit      INTEGER NOT NULL DEFAULT 10
+                         CHECK (intro_order_limit >= 0),
+  high_rating_discount   NUMERIC(5, 2) NOT NULL DEFAULT 1.00
+                         CHECK (high_rating_discount >= 0 AND high_rating_discount <= 100),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by             UUID REFERENCES public.users(id) ON DELETE SET NULL
 );
 
-INSERT INTO public.platform_settings (id, commission_rate) VALUES (1, 8.00);
+INSERT INTO public.platform_settings (
+  id, commission_rate, intro_commission_rate, intro_order_limit, high_rating_discount
+) VALUES (1, 8.00, 5.00, 10, 1.00);
+
+CREATE TABLE public.platform_reports (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id  UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  store_id     UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  order_id     UUID REFERENCES public.orders(id) ON DELETE SET NULL,
+  reason       TEXT NOT NULL,
+  details      TEXT,
+  status       TEXT NOT NULL DEFAULT 'open'
+               CHECK (status IN ('open', 'reviewed', 'closed')),
+  admin_note   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE public.order_commissions (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -150,6 +173,7 @@ CREATE INDEX idx_license_keys_unused ON public.license_keys(redeemed_at) WHERE r
 CREATE INDEX idx_stores_license_expires ON public.stores(license_expires_at);
 CREATE INDEX idx_order_commissions_store_id ON public.order_commissions(store_id);
 CREATE INDEX idx_order_commissions_created_at ON public.order_commissions(created_at DESC);
+CREATE INDEX idx_platform_reports_status ON public.platform_reports(status, created_at DESC);
 
 -- 5. ADIM: FONKSİYONLAR VE TRİGGERLAR
 CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$;
@@ -158,6 +182,7 @@ CREATE TRIGGER trg_stores_updated_at BEFORE UPDATE ON public.stores FOR EACH ROW
 CREATE TRIGGER trg_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER trg_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER trg_reviews_updated_at BEFORE UPDATE ON public.reviews FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER trg_platform_reports_updated_at BEFORE UPDATE ON public.platform_reports FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ DECLARE requested_role TEXT := COALESCE(NEW.raw_user_meta_data->>'role', 'buyer'); safe_role public.user_role := 'buyer'; BEGIN IF requested_role IN ('buyer', 'seller') THEN safe_role := requested_role::public.user_role; END IF; INSERT INTO public.users (id, email, full_name, phone, role) VALUES ( NEW.id, NEW.email, NULLIF(NEW.raw_user_meta_data->>'full_name', ''), NULLIF(NEW.raw_user_meta_data->>'phone', ''), safe_role ); RETURN NEW; END; $$;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -174,6 +199,7 @@ ALTER TABLE public.reviews  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.license_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platform_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "users_select_own_or_admin" ON public.users FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
 CREATE POLICY "users_update_own" ON public.users FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK ( id = auth.uid() AND role = (SELECT u.role FROM public.users u WHERE u.id = auth.uid()) );
@@ -278,6 +304,10 @@ CREATE POLICY "platform_settings_admin_insert" ON public.platform_settings FOR I
 CREATE POLICY "order_commissions_admin_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY "order_commissions_seller_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
 
+CREATE POLICY "platform_reports_insert_own" ON public.platform_reports FOR INSERT TO authenticated WITH CHECK (reporter_id = auth.uid());
+CREATE POLICY "platform_reports_select_own_or_admin" ON public.platform_reports FOR SELECT TO authenticated USING (reporter_id = auth.uid() OR public.is_admin());
+CREATE POLICY "platform_reports_admin_update" ON public.platform_reports FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
 CREATE OR REPLACE FUNCTION public.create_order_commission()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -286,12 +316,45 @@ SET search_path = public
 AS $$
 DECLARE
   v_rate NUMERIC(5, 2);
+  v_intro NUMERIC(5, 2);
+  v_intro_limit INTEGER;
+  v_discount NUMERIC(5, 2);
+  v_prior_count INTEGER;
+  v_avg NUMERIC;
+  v_review_count INTEGER;
   v_commission NUMERIC(12, 2);
   v_net NUMERIC(12, 2);
 BEGIN
-  SELECT commission_rate INTO v_rate FROM public.platform_settings WHERE id = 1;
+  SELECT
+    commission_rate,
+    COALESCE(intro_commission_rate, 5.00),
+    COALESCE(intro_order_limit, 10),
+    COALESCE(high_rating_discount, 1.00)
+  INTO v_rate, v_intro, v_intro_limit, v_discount
+  FROM public.platform_settings
+  WHERE id = 1;
+
   IF v_rate IS NULL THEN
     v_rate := 8.00;
+  END IF;
+
+  SELECT COUNT(*) INTO v_prior_count
+  FROM public.orders
+  WHERE store_id = NEW.store_id
+    AND id <> NEW.id
+    AND status <> 'cancelled';
+
+  IF v_prior_count < v_intro_limit THEN
+    v_rate := LEAST(v_rate, v_intro);
+  END IF;
+
+  SELECT COALESCE(AVG(rating), 0), COUNT(*)
+  INTO v_avg, v_review_count
+  FROM public.reviews
+  WHERE store_id = NEW.store_id;
+
+  IF v_review_count >= 5 AND v_avg >= 4.5 THEN
+    v_rate := GREATEST(0, v_rate - v_discount);
   END IF;
 
   v_commission := ROUND(NEW.total_amount * v_rate / 100.0, 2);
@@ -421,4 +484,52 @@ $$;
 
 REVOKE ALL ON FUNCTION public.confirm_order_pickup(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.confirm_order_pickup(TEXT) TO authenticated;
+
+-- Contact unlock after seller accepts (anti-leakage)
+CREATE OR REPLACE FUNCTION public.get_order_store_contact(p_order_id UUID)
+RETURNS TABLE (
+  store_id UUID,
+  store_name TEXT,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  city TEXT,
+  district TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Giriş gerekli';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    s.id,
+    s.name,
+    s.phone,
+    s.email,
+    s.address,
+    s.city,
+    s.district,
+    s.latitude,
+    s.longitude
+  FROM public.orders o
+  JOIN public.stores s ON s.id = o.store_id
+  WHERE o.id = p_order_id
+    AND o.buyer_id = auth.uid()
+    AND o.status IN ('preparing', 'shipped', 'delivered');
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'İletişim bilgisi henüz açılamaz (satıcı siparişi kabul etmeli)';
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_order_store_contact(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_order_store_contact(UUID) TO authenticated;
 

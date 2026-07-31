@@ -270,4 +270,4 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 4 — Gün 19/20** | Soft-delete + admin stats/users + polish. **Sonraki: Gün 20** demo / son merge.
+✅ **Faz 4 — Gün 20** | Canlı demo günü. PR açık (`day-18-19-polish-docs`). Schema: `database.sql` anti-leakage ile senkron.
