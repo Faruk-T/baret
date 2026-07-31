@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import { SellerDashboardScreen } from '../screens/seller/SellerDashboardScreen';
@@ -9,12 +10,14 @@ import { countPendingStoreOrders } from '../services/orders';
 import { getMyStore } from '../services/stores';
 import type { SellerTabParamList } from '../types/navigation.types';
 import { SellerProductsNavigator } from './SellerProductsNavigator';
+import { getTabBarScreenOptions } from './tabBarOptions';
 import { tabIcon } from './tabIcons';
 
 const Tab = createBottomTabNavigator<SellerTabParamList>();
 
 export function SellerNavigator() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState(0);
 
   const refreshPendingBadge = useCallback(async () => {
@@ -45,22 +48,7 @@ export function SellerNavigator() {
 
   return (
     <Tab.Navigator
-      screenOptions={{
-        headerShown: true,
-        tabBarActiveTintColor: '#FF6B00',
-        tabBarInactiveTintColor: '#78716c',
-        tabBarStyle: {
-          backgroundColor: '#fffaf7',
-          borderTopColor: '#fed7aa',
-          height: 60,
-          paddingBottom: 6,
-          paddingTop: 4,
-        },
-        headerStyle: { backgroundColor: '#FFF8F3' },
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      }}
+      screenOptions={getTabBarScreenOptions(insets)}
       screenListeners={{
         focus: () => {
           void refreshPendingBadge();
