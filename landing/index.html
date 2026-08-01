@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Baret — İnşaat & nalbur pazaryeri</title>
+    <meta
+      name="description"
+      content="Baret, onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri. Alıcı, satıcı ve admin tek platformda."
+    />
+    <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.css"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="mesh" aria-hidden="true"></div>
+    <div class="orb orb-a" aria-hidden="true"></div>
+    <div class="orb orb-b" aria-hidden="true"></div>
+
+    <header class="nav">
+      <a class="nav-brand" href="#top">
+        <img src="./assets/icon.png" alt="" width="36" height="36" />
+        <span>Baret</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#nasil">Nasıl çalışır</a>
+        <a href="#vitrin">Öne çıkanlar</a>
+        <a href="#roller">Roller</a>
+      </nav>
+      <a
+        class="btn btn-sm"
+        href="https://expo.dev/artifacts/eas/qycbkSpxSMaTDPGEysY0D79H-Psavqmcd7LCwP09728.apk"
+        download="baret.apk"
+      >
+        APK indir
+      </a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-bg" aria-hidden="true">
+          <img
+            class="hero-art hero-art-left"
+            src="./assets/illu-order-cart.png"
+            alt=""
+          />
+          <img
+            class="hero-art hero-art-center"
+            src="./assets/illu-hero-market.png"
+            alt=""
+          />
+          <img
+            class="hero-art hero-art-right"
+            src="./assets/illu-delivery-code.png"
+            alt=""
+          />
+          <div class="hero-fade"></div>
+        </div>
+
+        <div class="hero-copy">
+          <p class="eyebrow" data-animate="fade-up">Şantiye malzemesi · Onaylı nalbur</p>
+          <h1 class="brand-hero" data-animate="fade-up" data-delay="0.08">
+            Baret
+          </h1>
+          <p class="hero-lead" data-animate="fade-up" data-delay="0.16">
+            Malzemeyi bul, onaylı mağazadan sipariş ver, teslim koduyla güvenle al.
+          </p>
+          <div class="hero-cta" data-animate="fade-up" data-delay="0.24">
+            <a
+              class="btn"
+              href="https://expo.dev/artifacts/eas/qycbkSpxSMaTDPGEysY0D79H-Psavqmcd7LCwP09728.apk"
+              download="baret.apk"
+            >
+              APK indir
+            </a>
+            <a class="btn btn-ghost" href="#vitrin">Nasıl koruruz?</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+          <span>Katalog</span><span>Sepet</span><span>Sipariş</span><span>Teslim kodu</span>
+          <span>Komisyon</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
+          <span>Katalog</span><span>Sepet</span><span>Sipariş</span><span>Teslim kodu</span>
+          <span>Komisyon</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
+        </div>
+      </section>
+
+      <section class="strip" id="nasil">
+        <h2 class="section-title" data-animate="fade-up">Üç adımda işler</h2>
+        <p class="section-sub" data-animate="fade-up" data-delay="0.08">
+          Karmaşık süreç yok. Malzeme bul, sipariş ver, mağazadan teslim al veya gelsin.
+        </p>
+        <ol class="steps">
+          <li data-animate="fade-up">
+            <span class="step-num">01</span>
+            <h3>Keşfet</h3>
+            <p>Onaylı mağazaların ürünlerini ara; şehir ve teslimat filtresiyle daralt.</p>
+          </li>
+          <li data-animate="fade-up" data-delay="0.1">
+            <span class="step-num">02</span>
+            <h3>Sipariş ver</h3>
+            <p>Sepete ekle, adresini gir. İletişim bilgisi sipariş kabulünden sonra açılır.</p>
+          </li>
+          <li data-animate="fade-up" data-delay="0.2">
+            <span class="step-num">03</span>
+            <h3>Teslim al</h3>
+            <p>Hazır olunca teslim kodunu satıcıya göster; sipariş güvenle tamamlanır.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="showcase" id="vitrin">
+        <div class="showcase-head">
+          <h2 class="section-title" data-animate="fade-up">Baret’i hisset</h2>
+          <p class="section-sub" data-animate="fade-up" data-delay="0.08">
+            Ekran görüntüsü değil — ürünün vaat ettiği deneyim.
+          </p>
+        </div>
+
+        <div class="carousel" data-carousel data-animate="fade-up">
+          <button
+            type="button"
+            class="carousel-nav carousel-prev"
+            data-carousel-prev
+            aria-label="Önceki slayt"
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                d="M15 5 8 12l7 7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div class="carousel-stage">
+            <div class="carousel-track" data-carousel-track>
+              <article class="carousel-slide is-active">
+                <img src="./assets/illu-discover.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">01 · Keşfet</p>
+                  <h3>Şantiye malzemesi tek yerde</h3>
+                  <p>
+                    Çimento, demir, boya, elektrik… Onaylı nalburların katalogunu
+                    şehir ve teslimat seçenekleriyle daralt.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-order-cart.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">02 · Sipariş</p>
+                  <h3>Sepete at, adresi bırak</h3>
+                  <p>
+                    Malzemeyi seç, miktarı ayarla. Adres ve telefon ile siparişi
+                    oluştur — mağaza kabul edene kadar iletişim kapalı kalır.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-secure-lock.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">03 · Güven</p>
+                  <h3>İletişim siparişten sonra</h3>
+                  <p>
+                    Telefon ve adres bilgisi erken sızmaz. Böylece pazarlık ve
+                    sipariş platform dışında kaçmaz.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-delivery-code.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">04 · Teslim</p>
+                  <h3>Kodunu göster, teslim al</h3>
+                  <p>
+                    Hazır olunca müşteri kodu satıcıya gösterir. Teslim doğrulanır,
+                    sipariş güvenle kapanır.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-approved-store.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">05 · Onay</p>
+                  <h3>Yalnızca onaylı mağazalar</h3>
+                  <p>
+                    Katalogda herkes yok. Admin onayı ve lisans kontrolüyle
+                    güvenilir nalburlar öne çıkar.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-seller.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">06 · Satıcı</p>
+                  <h3>Panelden işletmeyi yönet</h3>
+                  <p>
+                    Ürün, stok, sipariş durumu ve teslim doğrulama — nalbur için
+                    sade bir kontrol merkezi.
+                  </p>
+                </div>
+              </article>
+
+              <article class="carousel-slide">
+                <img src="./assets/illu-fair-commission.png" alt="" />
+                <div class="carousel-copy">
+                  <p class="carousel-kicker">07 · Komisyon</p>
+                  <h3>Adil platform payı</h3>
+                  <p>
+                    Tutar dilimlerine göre komisyon. Küçük sipariş ezilmez, büyük
+                    işlemde denge korunur.
+                  </p>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="carousel-nav carousel-next"
+            data-carousel-next
+            aria-label="Sonraki slayt"
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                d="m9 5 7 7-7 7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div class="carousel-dots" data-carousel-dots aria-label="Slayt seçimi"></div>
+        </div>
+      </section>
+
+      <section class="roles" id="roller">
+        <h2 class="section-title" data-animate="fade-up">Kimler için?</h2>
+        <div class="role-row">
+          <article data-animate="fade-up">
+            <h3>Alıcı</h3>
+            <p>Mühendis ve şantiye ekipleri için katalog, sepet, sipariş ve değerlendirme.</p>
+          </article>
+          <article data-animate="fade-up" data-delay="0.1">
+            <h3>Satıcı</h3>
+            <p>Nalburlar ürün ekler, stok takip eder, sipariş durumunu ve lisansı yönetir.</p>
+          </article>
+          <article data-animate="fade-up" data-delay="0.2">
+            <h3>Admin</h3>
+            <p>Mağaza onayı, lisans anahtarları, tutar dilimli komisyon ve şikayetler.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="features" id="ozellikler">
+        <h2 class="section-title" data-animate="fade-up">Neden Baret?</h2>
+        <ul class="feature-list">
+          <li data-animate="fade-up"><strong>Onaylı mağazalar</strong> — Katalogda yalnızca admin onaylı nalburlar.</li>
+          <li data-animate="fade-up" data-delay="0.08"><strong>Güvenli iletişim</strong> — Telefon sipariş kabulünden önce kapalı.</li>
+          <li data-animate="fade-up" data-delay="0.16"><strong>Teslim kodu</strong> — Gel-al / yolda siparişte doğrulamalı teslim.</li>
+          <li data-animate="fade-up" data-delay="0.24"><strong>Adil komisyon</strong> — Tutar dilimlerine göre platform payı.</li>
+        </ul>
+      </section>
+
+      <section class="download" id="indir">
+        <div class="download-inner" data-animate="scale-in">
+          <img class="download-icon" src="./assets/icon.png" alt="" width="72" height="72" />
+          <h2>Şimdi dene</h2>
+          <p>
+            Android için kurulum hazır. Google Play yayını yakında.
+            iOS için Apple Developer süreci ayrıca planlanıyor.
+          </p>
+          <div class="download-actions">
+            <a
+              class="btn"
+              href="https://expo.dev/artifacts/eas/qycbkSpxSMaTDPGEysY0D79H-Psavqmcd7LCwP09728.apk"
+              download="baret.apk"
+            >
+              APK indir
+            </a>
+            <a
+              class="btn btn-ghost"
+              href="https://github.com/Faruk-T/baret"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+          <p class="fineprint">
+            Trunçgil Teknoloji Yaz Staj Programı kapsamında geliştirilmiştir.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <img src="./assets/icon.png" alt="" width="28" height="28" />
+      <p>© <span id="year"></span> Baret · Faruk Tazeoğlu</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js"></script>
+    <script src="./main.js"></script>
+  </body>
+</html>
