@@ -12,8 +12,12 @@
   } else {
     gsap.registerPlugin(ScrollTrigger);
 
+    const desktopMq = window.matchMedia("(min-width: 901px)");
+    const isDesktop = desktopMq.matches;
+
     let lenis = null;
-    if (!prefersReduced && typeof Lenis !== "undefined") {
+    // Native scroll feels better on phones; Lenis stays desktop-only.
+    if (!prefersReduced && isDesktop && typeof Lenis !== "undefined") {
       lenis = new Lenis({
         duration: 1.1,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -26,24 +30,27 @@
       gsap.ticker.lagSmoothing(0);
     }
 
-    const isDesktop = window.matchMedia("(min-width: 901px)").matches;
     if (isDesktop) {
       gsap.set(".hero-art-center", { xPercent: -50 });
       gsap.set(".hero-art-left", { rotation: -8 });
       gsap.set(".hero-art-right", { rotation: 8 });
+    } else {
+      gsap.set(".hero-art", { clearProps: "transform,x,y,rotation,xPercent,scale" });
     }
 
     const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    heroTl.from(".hero-art-center", { y: 80, scale: 0.92, opacity: 0, duration: 1.1 }, 0);
     if (isDesktop) {
       heroTl
+        .from(".hero-art-center", { y: 80, scale: 0.92, opacity: 0, duration: 1.1 }, 0)
         .from(".hero-art-left", { x: -60, rotation: -16, opacity: 0, duration: 1 }, 0.15)
         .from(".hero-art-right", { x: 60, rotation: 16, opacity: 0, duration: 1 }, 0.2);
+    } else {
+      heroTl.from(".hero-art-center", { y: 28, opacity: 0, duration: 0.7 }, 0);
     }
     heroTl.from(
       ".hero-copy [data-animate]",
-      { y: 36, opacity: 0, duration: 0.75, stagger: 0.08 },
-      0.35
+      { y: 28, opacity: 0, duration: 0.65, stagger: 0.07 },
+      0.2
     );
 
     if (!prefersReduced) {

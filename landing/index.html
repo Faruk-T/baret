@@ -129,24 +129,6 @@
         </div>
 
         <div class="carousel" data-carousel data-animate="fade-up">
-          <button
-            type="button"
-            class="carousel-nav carousel-prev"
-            data-carousel-prev
-            aria-label="Önceki slayt"
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path
-                d="M15 5 8 12l7 7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
           <div class="carousel-stage">
             <div class="carousel-track" data-carousel-track>
               <article class="carousel-slide is-active">
@@ -235,25 +217,43 @@
             </div>
           </div>
 
-          <button
-            type="button"
-            class="carousel-nav carousel-next"
-            data-carousel-next
-            aria-label="Sonraki slayt"
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path
-                d="m9 5 7 7-7 7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
-          <div class="carousel-dots" data-carousel-dots aria-label="Slayt seçimi"></div>
+          <div class="carousel-controls">
+            <button
+              type="button"
+              class="carousel-nav carousel-prev"
+              data-carousel-prev
+              aria-label="Önceki slayt"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  d="M15 5 8 12l7 7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="carousel-dots" data-carousel-dots aria-label="Slayt seçimi"></div>
+            <button
+              type="button"
+              class="carousel-nav carousel-next"
+              data-carousel-next
+              aria-label="Sonraki slayt"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  d="m9 5 7 7-7 7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </section>
 
