@@ -148,6 +148,13 @@ export function ProductFormScreen({ navigation, route }: Props) {
       Alert.alert('Teslimat', 'En az bir teslimat seçeneği seç.');
       return;
     }
+    if (!isEdit && !localImageUri && !imageUrl) {
+      Alert.alert(
+        'Ürün görseli gerekli',
+        'Yeni ürün için galeriden bir fotoğraf seçmelisin.'
+      );
+      return;
+    }
 
     let productSaved = false;
 

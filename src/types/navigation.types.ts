@@ -42,6 +42,12 @@ export type AdminStackParamList = {
   BuyerAdminDetail: { userId: string };
   StoreCommissionDetail: { storeId: string; storeName: string };
   AdminOrders: undefined;
+  FinanceSummary: undefined;
+  StoreHealth: undefined;
+  AuditLog: undefined;
+  ProductModeration: undefined;
+  NotificationsCenter: undefined;
+  AdminRoles: undefined;
   PlatformStats: undefined;
   LicenseKeys: undefined;
   Commission: undefined;

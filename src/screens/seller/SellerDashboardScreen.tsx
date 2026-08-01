@@ -12,6 +12,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import { StarRating } from '../../components/common/StarRating';
+import { NotificationsInbox } from '../../components/notifications/NotificationsInbox';
 import { MenuTile } from '../../components/ui/MenuTile';
 import { UiCard } from '../../components/ui/UiCard';
 import { LOW_STOCK_THRESHOLD, isLowStock } from '../../constants/inventory';
@@ -185,6 +186,12 @@ export function SellerDashboardScreen() {
       <Text className="mb-3 text-sm text-stone-500">
         Mağaza paneli · stok, lisans ve siparişler
       </Text>
+
+      {user?.id ? (
+        <UiCard className="mb-4">
+          <NotificationsInbox userId={user.id} limit={5} />
+        </UiCard>
+      ) : null}
 
       <View
         className={`mb-4 rounded-2xl border px-3 py-3 ${

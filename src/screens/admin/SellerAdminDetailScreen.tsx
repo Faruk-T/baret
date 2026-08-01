@@ -192,6 +192,13 @@ export function SellerAdminDetailScreen({ route, navigation }: Props) {
             }
             disabled={busy}
           />
+          <Action
+            label="Bildirim gönder"
+            icon="notifications-outline"
+            variant="muted"
+            onPress={() => navigation.navigate('NotificationsCenter')}
+            disabled={busy}
+          />
         </View>
       ) : null}
     </ScrollView>

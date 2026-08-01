@@ -11,6 +11,11 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { useAuth } from '../../context/AuthContext';
+import {
+  createNotification,
+  writeAuditLog,
+} from '../../services/adminOps';
 import {
   listPlatformReportsAdmin,
   updatePlatformReportStatus,
@@ -34,6 +39,7 @@ type Nav = NativeStackNavigationProp<AdminStackParamList, 'Reports'>;
 
 export function ReportsScreen() {
   const navigation = useNavigation<Nav>();
+  const { user } = useAuth();
   const [rows, setRows] = useState<PlatformReport[]>([]);
   const [stores, setStores] = useState<Record<string, Store>>({});
   const [loading, setLoading] = useState(true);
@@ -122,6 +128,25 @@ export function ReportsScreen() {
                   'reviewed',
                   'Admin: mağaza askıya alındı'
                 );
+                if (user?.id) {
+                  await writeAuditLog({
+                    actorId: user.id,
+                    action: 'store.suspend',
+                    entityType: 'store',
+                    entityId: item.store_id,
+                    meta: { reportId: item.id },
+                  });
+                  const store = stores[item.store_id];
+                  if (store?.owner_id) {
+                    await createNotification({
+                      userId: store.owner_id,
+                      title: 'Mağaza askıya alındı',
+                      body: 'Bir şikayet sonrası mağazan askıya alındı. Destek ile iletişime geç.',
+                      kind: 'warning',
+                      createdBy: user.id,
+                    }).catch(() => undefined);
+                  }
+                }
                 await load();
                 Alert.alert('Tamam', 'Mağaza askıya alındı.');
               } catch (e) {

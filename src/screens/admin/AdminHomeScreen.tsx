@@ -15,11 +15,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuth } from '../../context/AuthContext';
 import { getPlatformStats } from '../../services/admin';
+import { getTodayPulse } from '../../services/adminOps';
 import {
   getCommissionSummary,
   listStoreCommissionSummaries,
 } from '../../services/commission';
 import { listPendingStores } from '../../services/stores';
+import { supabase } from '../../services/supabase';
 import type { AdminStackParamList } from '../../types/navigation.types';
 import { ui } from '../../theme/ui';
 
@@ -38,17 +40,21 @@ export function AdminHomeScreen() {
   const [orders, setOrders] = useState(0);
   const [unsettled, setUnsettled] = useState(0);
   const [platformCut, setPlatformCut] = useState(0);
+  const [ordersToday, setOrdersToday] = useState(0);
+  const [revenueToday, setRevenueToday] = useState(0);
+  const [openReports, setOpenReports] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [pending, stats, summary, storeRows] = await Promise.all([
+      const [pending, stats, summary, storeRows, pulse] = await Promise.all([
         listPendingStores().catch(() => []),
         getPlatformStats().catch(() => null),
         getCommissionSummary().catch(() => null),
         listStoreCommissionSummaries().catch(() => []),
+        getTodayPulse().catch(() => null),
       ]);
       setPendingCount(pending.length);
       if (stats) {
@@ -60,6 +66,11 @@ export function AdminHomeScreen() {
       setUnsettled(
         storeRows.reduce((sum, row) => sum + row.unsettledAmount, 0)
       );
+      if (pulse) {
+        setOrdersToday(pulse.ordersToday);
+        setRevenueToday(pulse.revenueToday);
+        setOpenReports(pulse.openReports);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,6 +81,33 @@ export function AdminHomeScreen() {
     useCallback(() => {
       setLoading(true);
       void load();
+
+      const channel = supabase
+        .channel('admin-home-live')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          () => {
+            void load();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'platform_reports' },
+          () => {
+            void load();
+          }
+        )
+        .subscribe();
+
+      const poll = setInterval(() => {
+        void load();
+      }, 20000);
+
+      return () => {
+        clearInterval(poll);
+        void supabase.removeChannel(channel);
+      };
     }, [load])
   );
 
@@ -126,43 +164,62 @@ export function AdminHomeScreen() {
         {loading ? (
           <ActivityIndicator color="#FF6B00" />
         ) : (
-          <View className="flex-row flex-wrap justify-between">
-            <Kpi
-              label="Bekleyen onay"
-              value={String(pendingCount)}
-              tint="#fbbf24"
-              onPress={() => navigation.navigate('SellerApprovals')}
-            />
-            <Kpi
-              label="Tahsilat bekleyen"
-              value={money(unsettled)}
-              tint="#fb923c"
-              onPress={() => navigation.navigate('Commission')}
-            />
-            <Kpi
-              label="Alıcı"
-              value={String(buyers)}
-              tint="#38bdf8"
-              onPress={() => navigation.navigate('PeopleHub')}
-            />
-            <Kpi
-              label="Satıcı"
-              value={String(sellers)}
-              tint="#a3e635"
-              onPress={() => navigation.navigate('PeopleHub')}
-            />
-            <Kpi
-              label="Sipariş"
-              value={String(orders)}
-              tint="#c4b5fd"
-              onPress={() => navigation.navigate('PlatformStats')}
-            />
-            <Kpi
-              label="Toplam komisyon"
-              value={money(platformCut)}
-              tint="#fda4af"
-              onPress={() => navigation.navigate('Commission')}
-            />
+          <View>
+            <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-400">
+              Bugün (canlı)
+            </Text>
+            <View className="mb-3 flex-row flex-wrap justify-between">
+              <Kpi
+                label="Bugünkü sipariş"
+                value={String(ordersToday)}
+                tint="#38bdf8"
+                onPress={() => navigation.navigate('AdminOrders')}
+              />
+              <Kpi
+                label="Bugünkü ciro"
+                value={money(revenueToday)}
+                tint="#a3e635"
+                onPress={() => navigation.navigate('FinanceSummary')}
+              />
+              <Kpi
+                label="Açık şikayet"
+                value={String(openReports)}
+                tint="#f87171"
+                onPress={() => navigation.navigate('Reports')}
+              />
+              <Kpi
+                label="Tahsilat bekleyen"
+                value={money(unsettled)}
+                tint="#fb923c"
+                onPress={() => navigation.navigate('Commission')}
+              />
+            </View>
+            <View className="flex-row flex-wrap justify-between">
+              <Kpi
+                label="Bekleyen onay"
+                value={String(pendingCount)}
+                tint="#fbbf24"
+                onPress={() => navigation.navigate('SellerApprovals')}
+              />
+              <Kpi
+                label="Alıcı"
+                value={String(buyers)}
+                tint="#67e8f9"
+                onPress={() => navigation.navigate('PeopleHub')}
+              />
+              <Kpi
+                label="Satıcı"
+                value={String(sellers)}
+                tint="#bef264"
+                onPress={() => navigation.navigate('PeopleHub')}
+              />
+              <Kpi
+                label="Toplam komisyon"
+                value={money(platformCut)}
+                tint="#fda4af"
+                onPress={() => navigation.navigate('Commission')}
+              />
+            </View>
           </View>
         )}
       </LinearGradient>
@@ -180,9 +237,21 @@ export function AdminHomeScreen() {
         />
         <MenuCard
           title="Sipariş merkezi"
-          subtitle="Tüm siparişler · durum filtresi"
+          subtitle="Şehir / mağaza / müdahale / CSV"
           icon="receipt"
           onPress={() => navigation.navigate('AdminOrders')}
+        />
+        <MenuCard
+          title="Finans özeti"
+          subtitle="Ay bazlı tahsilat ve top satıcılar"
+          icon="pie-chart"
+          onPress={() => navigation.navigate('FinanceSummary')}
+        />
+        <MenuCard
+          title="Mağaza sağlığı"
+          subtitle="Stok · gecikme · puan · şikayet skoru"
+          icon="heart"
+          onPress={() => navigation.navigate('StoreHealth')}
         />
         <MenuCard
           title="Satıcı onayları"
@@ -199,19 +268,44 @@ export function AdminHomeScreen() {
         />
         <MenuCard
           title="Lisans anahtarları"
-          subtitle="Süre kodu üret"
+          subtitle="Takvimden bitiş tarihi seç"
           icon="key"
           onPress={() => navigation.navigate('LicenseKeys')}
         />
         <MenuCard
+          title="İçerik denetimi"
+          subtitle="Ürün kaldır / aç"
+          icon="images"
+          onPress={() => navigation.navigate('ProductModeration')}
+        />
+        <MenuCard
+          title="Bildirim merkezi"
+          subtitle="Satıcıya uygulama içi mesaj"
+          icon="notifications"
+          onPress={() => navigation.navigate('NotificationsCenter')}
+        />
+        <MenuCard
+          title="Rol yetkileri"
+          subtitle="Super / destek / finans"
+          icon="shield-checkmark"
+          onPress={() => navigation.navigate('AdminRoles')}
+        />
+        <MenuCard
           title="Şikayetler"
-          subtitle="Sızıntı ve ihlal bildirimleri"
+          subtitle="Askıya al · satıcıya git"
           icon="warning"
+          badge={openReports}
           onPress={() => navigation.navigate('Reports')}
         />
         <MenuCard
+          title="Audit log"
+          subtitle="Kim ne yaptı, ne zaman"
+          icon="list"
+          onPress={() => navigation.navigate('AuditLog')}
+        />
+        <MenuCard
           title="Platform özeti"
-          subtitle="Canlı istatistikler"
+          subtitle={`Toplam sipariş: ${orders}`}
           icon="stats-chart"
           onPress={() => navigation.navigate('PlatformStats')}
         />

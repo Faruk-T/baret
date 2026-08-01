@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,49 +10,86 @@ import { StoreSettingsScreen } from '../screens/seller/StoreSettingsScreen';
 import { countPendingStoreOrders } from '../services/orders';
 import { getMyStore } from '../services/stores';
 import type { SellerTabParamList } from '../types/navigation.types';
+import { isLicenseValid } from '../utils/license';
 import { SellerProductsNavigator } from './SellerProductsNavigator';
 import { getTabBarScreenOptions } from './tabBarOptions';
 import { tabIcon } from './tabIcons';
+import { ui } from '../theme/ui';
 
 const Tab = createBottomTabNavigator<SellerTabParamList>();
+const LockedTab = createBottomTabNavigator();
 
 export function SellerNavigator() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState(0);
+  const [licenseOk, setLicenseOk] = useState<boolean | null>(null);
+  const [hasStore, setHasStore] = useState(false);
 
-  const refreshPendingBadge = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (!user?.id) {
       setPendingCount(0);
+      setLicenseOk(true);
+      setHasStore(false);
       return;
     }
     try {
       const store = await getMyStore(user.id);
       if (!store) {
+        setHasStore(false);
+        setLicenseOk(true); // allow creating store first
         setPendingCount(0);
         return;
       }
+      setHasStore(true);
+      setLicenseOk(isLicenseValid(store.license_expires_at));
       const count = await countPendingStoreOrders(store.id);
       setPendingCount(count);
     } catch {
       setPendingCount(0);
+      setLicenseOk(true);
     }
   }, [user?.id]);
 
   useEffect(() => {
-    void refreshPendingBadge();
+    void refresh();
     const timer = setInterval(() => {
-      void refreshPendingBadge();
-    }, 20000);
+      void refresh();
+    }, 15000);
     return () => clearInterval(timer);
-  }, [refreshPendingBadge]);
+  }, [refresh]);
+
+  if (licenseOk === null) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
+        <ActivityIndicator color={ui.brand} />
+      </View>
+    );
+  }
+
+  // No valid license → only Mağaza tab (redeem)
+  if (hasStore && !licenseOk) {
+    return (
+      <LockedTab.Navigator screenOptions={getTabBarScreenOptions(insets)}>
+        <LockedTab.Screen
+          name="StoreSettings"
+          component={StoreSettingsScreen}
+          options={{
+            title: 'Lisans gerekli',
+            tabBarIcon: tabIcon('key-outline', 'key'),
+          }}
+          listeners={{ focus: () => void refresh() }}
+        />
+      </LockedTab.Navigator>
+    );
+  }
 
   return (
     <Tab.Navigator
       screenOptions={getTabBarScreenOptions(insets)}
       screenListeners={{
         focus: () => {
-          void refreshPendingBadge();
+          void refresh();
         },
       }}
     >

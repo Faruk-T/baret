@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { NotificationsInbox } from '../../components/notifications/NotificationsInbox';
 import { BrandHero } from '../../components/ui/BrandHero';
 import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { UiCard } from '../../components/ui/UiCard';
@@ -157,6 +158,12 @@ export function ProfileScreen() {
               </>
             )}
           </UiCard>
+
+          {user?.id ? (
+            <UiCard className="mb-4">
+              <NotificationsInbox userId={user.id} limit={8} />
+            </UiCard>
+          ) : null}
 
           <Text className="mb-4 px-1 text-sm leading-5 text-stone-500">
             Baret — inşaat & nalbur pazaryeri. Siparişlerin bu hesapla bağlıdır.

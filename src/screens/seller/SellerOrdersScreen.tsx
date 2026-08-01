@@ -17,6 +17,7 @@ import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { UiCard } from '../../components/ui/UiCard';
 import { useAuth } from '../../context/AuthContext';
+import { notifyBuyerOrderStatus } from '../../services/adminOps';
 import { getMyStore } from '../../services/stores';
 import {
   confirmOrderPickup,
@@ -89,32 +90,45 @@ export function SellerOrdersScreen() {
     }, [load])
   );
 
+  const runAdvance = async (order: OrderWithProduct, next: NonNullable<typeof SELLER_NEXT[keyof typeof SELLER_NEXT]>) => {
+    try {
+      const updated = await updateSellerOrderStatus(order.id, next);
+      if (user?.id) {
+        await notifyBuyerOrderStatus(
+          { buyer_id: updated.buyer_id, id: updated.id, status: updated.status },
+          user.id
+        );
+      }
+      await load();
+      if (next === 'shipped') {
+        Alert.alert(
+          'Teslim kodu oluştu',
+          updated.pickup_code
+            ? 'Alıcı kendi uygulamasında 6 haneli kodu görecek. Mağazaya gelince kodu senden doğrulatır — sen kodu burada girersin.'
+            : 'Durum güncellendi. Kod görünmüyorsa pickup-code SQL’ini çalıştırıp yenile.'
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Güncellenemedi.';
+      Alert.alert('Hata', message);
+    }
+  };
+
   const advance = (order: OrderWithProduct) => {
     const next = SELLER_NEXT[order.status];
     if (!next) return;
+    // Pending → preparing: one tap, no confirm dialog
+    if (order.status === 'pending' && next === 'preparing') {
+      void runAdvance(order, next);
+      return;
+    }
     Alert.alert('Durum güncelle', `Sipariş “${nextStatusLabel(order, next)}” olsun mu?`, [
       { text: 'Vazgeç', style: 'cancel' },
       {
         text: 'Güncelle',
         onPress: () => {
-          void (async () => {
-            try {
-              const updated = await updateSellerOrderStatus(order.id, next);
-              await load();
-              if (next === 'shipped') {
-                Alert.alert(
-                  'Teslim kodu oluştu',
-                  updated.pickup_code
-                    ? 'Alıcı kendi uygulamasında 6 haneli kodu görecek. Mağazaya gelince kodu senden doğrulatır — sen kodu burada girersin.'
-                    : 'Durum güncellendi. Kod görünmüyorsa pickup-code SQL’ini çalıştırıp yenile.'
-                );
-              }
-            } catch (error) {
-              const message =
-                error instanceof Error ? error.message : 'Güncellenemedi.';
-              Alert.alert('Hata', message);
-            }
-          })();
+          void runAdvance(order, next);
         },
       },
     ]);

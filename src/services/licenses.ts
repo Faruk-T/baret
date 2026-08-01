@@ -3,9 +3,21 @@ import type { LicenseKey, Store } from '../types/database';
 import { generateLicenseCode } from '../utils/license';
 
 export type CreateLicenseInput = {
-  durationDays: number;
+  /** Absolute end of day (local) when seller license should expire after redeem */
+  expiresAt: Date;
   notes?: string;
 };
+
+function endOfLocalDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function daysUntil(date: Date): number {
+  const ms = endOfLocalDay(date).getTime() - Date.now();
+  return Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
 
 export async function listLicenseKeysAdmin(): Promise<LicenseKey[]> {
   const { data, error } = await supabase
@@ -22,20 +34,22 @@ export async function createLicenseKey(
   adminId: string,
   input: CreateLicenseInput
 ): Promise<LicenseKey> {
-  if (!Number.isInteger(input.durationDays) || input.durationDays < 1) {
-    throw new Error('Süre en az 1 gün olmalı.');
+  const expiresAt = endOfLocalDay(input.expiresAt);
+  if (expiresAt.getTime() <= Date.now()) {
+    throw new Error('Bitiş tarihi bugünden sonra olmalı.');
   }
 
+  const durationDays = daysUntil(expiresAt);
   let lastError: Error | null = null;
 
-  // Retry a few times if a rare code collision happens.
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const code = generateLicenseCode();
     const { data, error } = await supabase
       .from('license_keys')
       .insert({
         code,
-        duration_days: input.durationDays,
+        duration_days: durationDays,
+        expires_at: expiresAt.toISOString(),
         notes: input.notes?.trim() || null,
         created_by: adminId,
       })
@@ -44,6 +58,14 @@ export async function createLicenseKey(
 
     if (!error && data) return data;
     lastError = error ?? new Error('Lisans anahtarı oluşturulamadı.');
+    if (
+      error &&
+      (error.message.includes('expires_at') || error.code === 'PGRST204')
+    ) {
+      throw new Error(
+        'Lisans bitiş tarihi kolonu yok. Supabase’te docs/admin-ops-v2-setup.sql çalıştır.'
+      );
+    }
     if (error && !String(error.message).toLowerCase().includes('duplicate')) {
       throw error;
     }

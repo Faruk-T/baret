@@ -68,7 +68,8 @@ export function previewCommission(
     tierLabel = `Büyük (≥ ₺${Number(settings.tier2_max).toLocaleString('tr-TR')})`;
   }
 
-  let commission = Math.round(safeAmount * rate * 100) / 100;
+  // rate is a percent (e.g. 10 => 10%), not a fraction
+  let commission = Math.round(((safeAmount * rate) / 100) * 100) / 100;
   const percentCut = commission;
   const minFloor = Number(settings.min_commission_amount);
   let usedMinFloor = false;

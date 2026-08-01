@@ -14,6 +14,8 @@ export type OrderStatus =
 
 export type DeliveryOption = 'kargo' | 'gel_al' | 'aracla_teslim';
 
+export type AdminRole = 'super' | 'support' | 'finance';
+
 /** Use `type` (not `interface`) so rows satisfy postgrest `Record<string, unknown>`. */
 export type User = {
   id: string;
@@ -21,6 +23,7 @@ export type User = {
   full_name: string | null;
   phone: string | null;
   role: UserRole;
+  admin_role?: AdminRole | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -50,12 +53,34 @@ export type LicenseKey = {
   id: string;
   code: string;
   duration_days: number;
+  expires_at: string | null;
   notes: string | null;
   created_by: string;
   created_at: string;
   redeemed_by: string | null;
   redeemed_at: string | null;
   store_id: string | null;
+};
+
+export type AdminAuditLog = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AppNotification = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  kind: string;
+  is_read: boolean;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type Product = {
@@ -210,6 +235,7 @@ export type Database = {
           id?: string;
           code: string;
           duration_days: number;
+          expires_at?: string | null;
           notes?: string | null;
           created_by: string;
           created_at?: string;
@@ -218,6 +244,35 @@ export type Database = {
           store_id?: string | null;
         };
         Update: Partial<Omit<LicenseKey, 'id'>>;
+        Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: AdminAuditLog;
+        Insert: {
+          id?: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          meta?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AdminAuditLog, 'id'>>;
+        Relationships: [];
+      };
+      app_notifications: {
+        Row: AppNotification;
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          body: string;
+          kind?: string;
+          is_read?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AppNotification, 'id'>>;
         Relationships: [];
       };
       products: {

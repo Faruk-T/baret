@@ -13,10 +13,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAuth } from '../../context/AuthContext';
 import {
   collectStoreCommissions,
   getStoreCommissionDetail,
 } from '../../services/commission';
+import { writeAuditLog } from '../../services/adminOps';
 import type { AdminStackParamList } from '../../types/navigation.types';
 import { ui } from '../../theme/ui';
 
@@ -37,6 +39,7 @@ function formatDate(iso: string): string {
 }
 
 export function StoreCommissionDetailScreen({ route }: Props) {
+  const { user } = useAuth();
   const { storeId, storeName } = route.params;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,7 +92,20 @@ export function StoreCommissionDetailScreen({ route }: Props) {
             void (async () => {
               try {
                 setCollecting(true);
-                await collectStoreCommissions(storeId, note);
+                const row = await collectStoreCommissions(storeId, note);
+                if (user?.id) {
+                  await writeAuditLog({
+                    actorId: user.id,
+                    action: 'commission.collect',
+                    entityType: 'store',
+                    entityId: storeId,
+                    meta: {
+                      amount: row.amount,
+                      order_count: row.order_count,
+                      storeName,
+                    },
+                  });
+                }
                 setNote('');
                 await load();
                 Alert.alert('Tamam', 'Tahsilat kaydedildi.');

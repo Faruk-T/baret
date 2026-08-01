@@ -11,6 +11,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '../../context/AuthContext';
+import { writeAuditLog } from '../../services/adminOps';
 import {
   approveStore,
   listAllStoresAdmin,
@@ -23,7 +24,7 @@ import type { Store } from '../../types/database';
 type Filter = 'pending' | 'approved' | 'all';
 
 export function SellerApprovalScreen() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [filter, setFilter] = useState<Filter>('pending');
   const [loading, setLoading] = useState(true);
@@ -87,6 +88,15 @@ export function SellerApprovalScreen() {
           void (async () => {
             try {
               await approveStore(store.id);
+              if (user?.id) {
+                await writeAuditLog({
+                  actorId: user.id,
+                  action: 'store.approve',
+                  entityType: 'store',
+                  entityId: store.id,
+                  meta: { name: store.name },
+                });
+              }
               await load();
             } catch (error) {
               const message =
@@ -112,6 +122,15 @@ export function SellerApprovalScreen() {
             void (async () => {
               try {
                 await unapproveStore(store.id);
+                if (user?.id) {
+                  await writeAuditLog({
+                    actorId: user.id,
+                    action: 'store.unapprove',
+                    entityType: 'store',
+                    entityId: store.id,
+                    meta: { name: store.name },
+                  });
+                }
                 await load();
               } catch (error) {
                 const message =
@@ -135,6 +154,15 @@ export function SellerApprovalScreen() {
           void (async () => {
             try {
               await rejectStore(store.id);
+              if (user?.id) {
+                await writeAuditLog({
+                  actorId: user.id,
+                  action: 'store.reject',
+                  entityType: 'store',
+                  entityId: store.id,
+                  meta: { name: store.name },
+                });
+              }
               await load();
             } catch (error) {
               const message =
@@ -151,6 +179,15 @@ export function SellerApprovalScreen() {
     void (async () => {
       try {
         await reactivateStore(store.id);
+        if (user?.id) {
+          await writeAuditLog({
+            actorId: user.id,
+            action: 'store.reactivate',
+            entityType: 'store',
+            entityId: store.id,
+            meta: { name: store.name },
+          });
+        }
         await load();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'İşlem başarısız.';

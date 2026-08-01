@@ -79,7 +79,33 @@ export async function createOrdersFromCart(input: CheckoutInput): Promise<Order[
   const { data, error } = await supabase.from('orders').insert(rows).select('*');
 
   if (error) throw error;
-  return data ?? [];
+  const created = data ?? [];
+
+  // Best-effort: notify store owners of new orders (in-app).
+  try {
+    const storeIds = [...new Set(created.map((o) => o.store_id))];
+    if (storeIds.length > 0) {
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id, owner_id, name')
+        .in('id', storeIds);
+      const { notifyUserSafe } = await import('./adminOps');
+      for (const store of stores ?? []) {
+        const count = created.filter((o) => o.store_id === store.id).length;
+        await notifyUserSafe({
+          userId: store.owner_id,
+          title: 'Yeni sipariş',
+          body: `${store.name}: ${count} yeni satır bekliyor.`,
+          kind: 'order',
+          createdBy: buyerId,
+        });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return created;
 }
 
 export async function listBuyerOrders(buyerId: string): Promise<OrderWithProduct[]> {
