@@ -279,7 +279,16 @@ export async function createNotification(input: {
   kind?: string;
   createdBy: string;
 }): Promise<AppNotification | null> {
-  const { data, error } = await supabase
+  // Prefer SECURITY DEFINER RPC (allowlisted). Fallback: admin direct insert.
+  const { data, error } = await supabase.rpc('notify_user', {
+    p_user_id: input.userId,
+    p_title: input.title.trim(),
+    p_body: input.body.trim(),
+    p_kind: input.kind ?? 'info',
+  });
+  if (!error && data) return data as AppNotification;
+
+  const { data: inserted, error: insertError } = await supabase
     .from('app_notifications')
     .insert({
       user_id: input.userId,
@@ -290,12 +299,14 @@ export async function createNotification(input: {
     })
     .select('*')
     .single();
-  if (error) {
-    // Non-fatal if SQL not applied yet
-    console.warn('notification skipped', error.message);
+  if (insertError) {
+    console.warn(
+      'notification skipped',
+      error?.message ?? insertError.message
+    );
     return null;
   }
-  return data as AppNotification;
+  return inserted as AppNotification;
 }
 
 const ORDER_STATUS_NOTIFY: Record<string, string> = {

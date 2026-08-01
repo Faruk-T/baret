@@ -2,7 +2,10 @@
 -- Run after docs/commission-setup.sql in Supabase SQL Editor.
 -- 1) Store contact only via RPC after seller accepts order
 -- 2) Buyer reports (leakage / off-platform)
--- 3) Intro + rating-based commission incentives
+--
+-- WARNING: Do NOT re-run the create_order_commission() block below on a DB that
+-- already has tiered commission (database.sql / commission-tiers-setup.sql).
+-- That older body flattens rates and wipes dilim/taban logic. Skip §3 if tiers live.
 
 -- ─── Commission incentive columns ───────────────────────────────────────────
 ALTER TABLE public.platform_settings

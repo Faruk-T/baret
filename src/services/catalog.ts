@@ -11,6 +11,7 @@ export type CatalogStore = Pick<
   | 'is_active'
   | 'latitude'
   | 'longitude'
+  | 'license_expires_at'
 >;
 
 export type CatalogProduct = Product & {
@@ -45,13 +46,16 @@ export async function listCatalogProducts(
         latitude,
         longitude,
         is_approved,
-        is_active
+        is_active,
+        license_expires_at
       )
     `
     )
     .eq('is_active', true)
     .eq('store.is_approved', true)
     .eq('store.is_active', true)
+    .not('image_url', 'is', null)
+    .gt('store.license_expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
 
   const search = filters.search?.trim();
@@ -104,7 +108,8 @@ export async function getCatalogProduct(
         latitude,
         longitude,
         is_approved,
-        is_active
+        is_active,
+        license_expires_at
       )
     `
     )
@@ -112,6 +117,8 @@ export async function getCatalogProduct(
     .eq('is_active', true)
     .eq('store.is_approved', true)
     .eq('store.is_active', true)
+    .not('image_url', 'is', null)
+    .gt('store.license_expires_at', new Date().toISOString())
     .maybeSingle();
 
   if (error) throw error;

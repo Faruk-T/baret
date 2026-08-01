@@ -156,67 +156,84 @@ export function ProductFormScreen({ navigation, route }: Props) {
       return;
     }
 
-    let productSaved = false;
-
     try {
       setIsSaving(true);
-      const payload = {
+      const basePayload = {
         name,
         description,
         price: parsedPrice,
         stock: parsedStock,
         delivery_options: deliveryOptions,
-        is_active: isActive,
         image_url: imageUrl,
       };
 
       let savedId = productId;
+      let finalImageUrl = imageUrl;
 
       if (isEdit && productId) {
-        await updateProduct(productId, payload);
-        productSaved = true;
+        // Upload new image before activating when needed
+        if (localImageUri) {
+          finalImageUrl = await uploadProductImage(
+            storeId,
+            productId,
+            localImageUri,
+            localImageMime
+          );
+        }
+        if (isActive && !finalImageUrl) {
+          Alert.alert(
+            'Görsel gerekli',
+            'Aktif ürün için fotoğraf zorunlu. Galeriden seç veya pasif kaydet.'
+          );
+          return;
+        }
+        await updateProduct(productId, {
+          ...basePayload,
+          image_url: finalImageUrl,
+          is_active: isActive,
+        });
       } else {
-        const created = await createProduct(storeId, payload);
+        // Create inactive shell → upload photo → then set desired active flag
+        const created = await createProduct(storeId, {
+          ...basePayload,
+          is_active: false,
+          image_url: null,
+        });
         savedId = created.id;
-        productSaved = true;
-      }
-
-      if (localImageUri && savedId) {
+        if (!localImageUri || !savedId) {
+          Alert.alert('Görsel gerekli', 'Yeni ürün için fotoğraf yüklenmeli.');
+          return;
+        }
         try {
-          const publicUrl = await uploadProductImage(
+          finalImageUrl = await uploadProductImage(
             storeId,
             savedId,
             localImageUri,
             localImageMime
           );
-          await updateProduct(savedId, {
-            ...payload,
-            image_url: publicUrl,
-          });
         } catch (imageError) {
           const imageMessage =
             imageError instanceof Error
               ? imageError.message
               : 'Görsel yüklenemedi.';
           Alert.alert(
-            'Ürün kaydedildi',
-            `Ürün listene eklendi ama görsel yüklenemedi.\n\n${imageMessage}\n\nSupabase Storage policy / bucket ayarını kontrol et; sonra Düzenle ile görseli tekrar yükleyebilirsin.`
+            'Görsel yüklenemedi',
+            `${imageMessage}\n\nÜrün taslak olarak kaldı (pasif). Storage ayarını kontrol edip Düzenle ile tekrar dene.`
           );
           navigation.goBack();
           return;
         }
+        await updateProduct(savedId, {
+          ...basePayload,
+          image_url: finalImageUrl,
+          is_active: isActive,
+        });
       }
 
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün kaydedilemedi.';
-      Alert.alert(
-        productSaved ? 'Ürün kaydedildi' : 'Hata',
-        productSaved
-          ? `Ürün kaydı tamam ama sonraki adımda hata oluştu:\n${message}`
-          : message
-      );
-      if (productSaved) navigation.goBack();
+      Alert.alert('Hata', message);
     } finally {
       setIsSaving(false);
     }

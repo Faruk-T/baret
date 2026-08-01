@@ -12,7 +12,7 @@ export type OrderWithProduct = Order & {
     city: string;
     district: string | null;
   } | null;
-  order_commissions: {
+  order_commissions?: {
     commission_rate: number;
     commission_amount: number;
     seller_net_amount: number;
@@ -115,14 +115,40 @@ export async function listBuyerOrders(buyerId: string): Promise<OrderWithProduct
       `
       *,
       products ( name, image_url ),
-      stores ( name, city, district )
+      stores ( name, city, district ),
+      order_pickup_secrets ( code )
     `
     )
     .eq('buyer_id', buyerId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data as OrderWithProduct[]) ?? [];
+  if (error) {
+    // Fallback if secrets table not migrated yet
+    const legacy = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        products ( name, image_url ),
+        stores ( name, city, district )
+      `
+      )
+      .eq('buyer_id', buyerId)
+      .order('created_at', { ascending: false });
+    if (legacy.error) throw legacy.error;
+    return (legacy.data as OrderWithProduct[]) ?? [];
+  }
+
+  type Row = OrderWithProduct & {
+    order_pickup_secrets?: { code: string } | null;
+  };
+  return ((data as unknown as Row[]) ?? []).map((row) => {
+    const { order_pickup_secrets, ...rest } = row;
+    return {
+      ...rest,
+      pickup_code: order_pickup_secrets?.code ?? rest.pickup_code ?? null,
+    };
+  });
 }
 
 export async function listStoreOrders(storeId: string): Promise<OrderWithProduct[]> {

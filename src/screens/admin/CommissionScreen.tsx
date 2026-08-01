@@ -345,7 +345,10 @@ export function CommissionScreen() {
         />
       </Section>
 
-      <Section title="2 · Canlı örnek" subtitle="Kaydetmeden önce dene">
+      <Section
+        title="2 · Canlı örnek"
+        subtitle="Dilim + taban (ilk sipariş / yüksek puan teşviki hariç)"
+      >
         <Field
           label="Örnek sipariş tutarı (₺)"
           value={exampleAmount}

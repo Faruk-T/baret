@@ -102,10 +102,8 @@ export function SellerOrdersScreen() {
       await load();
       if (next === 'shipped') {
         Alert.alert(
-          'Teslim kodu oluştu',
-          updated.pickup_code
-            ? 'Alıcı kendi uygulamasında 6 haneli kodu görecek. Mağazaya gelince kodu senden doğrulatır — sen kodu burada girersin.'
-            : 'Durum güncellendi. Kod görünmüyorsa pickup-code SQL’ini çalıştırıp yenile.'
+          'Teslime hazır',
+          'Alıcı kendi uygulamasında 6 haneli teslim kodunu görecek. Kod sana görünmez — mağazaya gelince kodu buraya girerek doğrularsın.'
         );
       }
     } catch (error) {
@@ -143,6 +141,12 @@ export function SellerOrdersScreen() {
     try {
       setVerifying(true);
       const order = await confirmOrderPickup(code);
+      if (user?.id) {
+        await notifyBuyerOrderStatus(
+          { buyer_id: order.buyer_id, id: order.id, status: 'delivered' },
+          user.id
+        );
+      }
       setPickupInput('');
       await load();
       Alert.alert(

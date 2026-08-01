@@ -100,6 +100,7 @@ CREATE TABLE public.license_keys (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code            TEXT NOT NULL UNIQUE,
   duration_days   INTEGER NOT NULL CHECK (duration_days > 0),
+  expires_at      TIMESTAMPTZ,
   notes           TEXT,
   created_by      UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -233,21 +234,59 @@ CREATE POLICY "users_select_own_or_admin" ON public.users FOR SELECT TO authenti
 CREATE POLICY "users_update_own" ON public.users FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK ( id = auth.uid() AND role = (SELECT u.role FROM public.users u WHERE u.id = auth.uid()) );
 CREATE POLICY "users_admin_update" ON public.users FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "stores_select_public_approved" ON public.stores FOR SELECT TO anon, authenticated USING (is_approved = TRUE AND is_active = TRUE);
+CREATE POLICY "stores_select_public_approved" ON public.stores FOR SELECT TO anon, authenticated USING (
+  is_approved = TRUE AND is_active = TRUE
+  AND license_expires_at IS NOT NULL AND license_expires_at > NOW()
+);
 CREATE POLICY "stores_select_own" ON public.stores FOR SELECT TO authenticated USING (owner_id = auth.uid() OR public.is_admin());
-CREATE POLICY "stores_insert_seller" ON public.stores FOR INSERT TO authenticated WITH CHECK ( owner_id = auth.uid() AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'seller' ) );
+CREATE POLICY "stores_insert_seller" ON public.stores FOR INSERT TO authenticated WITH CHECK ( owner_id = auth.uid() AND is_approved = FALSE AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'seller' ) );
 CREATE POLICY "stores_update_own_or_admin" ON public.stores FOR UPDATE TO authenticated USING (owner_id = auth.uid() OR public.is_admin()) WITH CHECK (owner_id = auth.uid() OR public.is_admin());
 CREATE POLICY "stores_delete_own_or_admin" ON public.stores FOR DELETE TO authenticated USING (owner_id = auth.uid() OR public.is_admin());
 
-CREATE POLICY "products_select_public_active" ON public.products FOR SELECT TO anon, authenticated USING ( is_active = TRUE AND EXISTS ( SELECT 1 FROM public.stores s WHERE s.id = products.store_id AND s.is_approved = TRUE AND s.is_active = TRUE ) );
+CREATE POLICY "products_select_public_active" ON public.products FOR SELECT TO anon, authenticated USING (
+  is_active = TRUE AND image_url IS NOT NULL AND btrim(image_url) <> ''
+  AND EXISTS (
+    SELECT 1 FROM public.stores s
+    WHERE s.id = products.store_id AND s.is_approved = TRUE AND s.is_active = TRUE
+      AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+  )
+);
 CREATE POLICY "products_select_own_store" ON public.products FOR SELECT TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin());
-CREATE POLICY "products_insert_store_owner" ON public.products FOR INSERT TO authenticated WITH CHECK (public.is_store_owner(store_id) OR public.is_admin());
-CREATE POLICY "products_update_store_owner" ON public.products FOR UPDATE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin()) WITH CHECK (public.is_store_owner(store_id) OR public.is_admin());
+CREATE POLICY "products_insert_store_owner" ON public.products FOR INSERT TO authenticated WITH CHECK (
+  public.is_admin() OR (
+    public.is_store_owner(store_id)
+    AND EXISTS (
+      SELECT 1 FROM public.stores s
+      WHERE s.id = store_id AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+    )
+  )
+);
+CREATE POLICY "products_update_store_owner" ON public.products FOR UPDATE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin()) WITH CHECK (
+  public.is_admin() OR (
+    public.is_store_owner(store_id)
+    AND EXISTS (
+      SELECT 1 FROM public.stores s
+      WHERE s.id = store_id AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+    )
+  )
+);
 CREATE POLICY "products_delete_store_owner" ON public.products FOR DELETE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin());
 
 CREATE POLICY "orders_select_buyer" ON public.orders FOR SELECT TO authenticated USING (buyer_id = auth.uid() OR public.is_admin());
 CREATE POLICY "orders_select_seller" ON public.orders FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
-CREATE POLICY "orders_insert_buyer" ON public.orders FOR INSERT TO authenticated WITH CHECK ( buyer_id = auth.uid() AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'buyer' ) AND EXISTS ( SELECT 1 FROM public.products p JOIN public.stores s ON s.id = p.store_id WHERE p.id = product_id AND p.store_id = orders.store_id AND p.is_active = TRUE AND p.stock >= orders.quantity AND s.is_approved = TRUE AND s.is_active = TRUE ) );
+CREATE POLICY "orders_insert_buyer" ON public.orders FOR INSERT TO authenticated WITH CHECK (
+  buyer_id = auth.uid()
+  AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'buyer' )
+  AND EXISTS (
+    SELECT 1 FROM public.products p
+    JOIN public.stores s ON s.id = p.store_id
+    WHERE p.id = product_id AND p.store_id = orders.store_id
+      AND p.is_active = TRUE AND p.stock >= orders.quantity
+      AND p.image_url IS NOT NULL AND btrim(p.image_url) <> ''
+      AND s.is_approved = TRUE AND s.is_active = TRUE
+      AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+  )
+);
 CREATE POLICY "orders_update_buyer_cancel" ON public.orders FOR UPDATE TO authenticated USING (buyer_id = auth.uid() AND status = 'pending') WITH CHECK (buyer_id = auth.uid() AND status = 'cancelled');
 CREATE POLICY "orders_update_seller" ON public.orders FOR UPDATE TO authenticated USING (public.is_store_owner(store_id)) WITH CHECK (public.is_store_owner(store_id));
 CREATE POLICY "orders_update_admin" ON public.orders FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -303,8 +342,15 @@ BEGIN
     RAISE EXCEPTION 'Bu anahtar daha önce kullanılmış';
   END IF;
 
-  v_base := GREATEST(COALESCE(v_store.license_expires_at, NOW()), NOW());
-  v_new_expiry := v_base + make_interval(days => v_key.duration_days);
+  IF v_key.expires_at IS NOT NULL THEN
+    IF v_key.expires_at <= NOW() THEN
+      RAISE EXCEPTION 'Bu lisans anahtarının hedef tarihi geçmiş';
+    END IF;
+    v_new_expiry := v_key.expires_at;
+  ELSE
+    v_base := GREATEST(COALESCE(v_store.license_expires_at, NOW()), NOW());
+    v_new_expiry := v_base + make_interval(days => v_key.duration_days);
+  END IF;
 
   UPDATE public.license_keys
   SET
@@ -313,10 +359,14 @@ BEGIN
     store_id = v_store.id
   WHERE id = v_key.id;
 
+  PERFORM set_config('baret.allow_license_update', 'on', true);
+
   UPDATE public.stores
   SET license_expires_at = v_new_expiry
   WHERE id = v_store.id
   RETURNING * INTO v_store;
+
+  PERFORM set_config('baret.allow_license_update', 'off', true);
 
   RETURN v_store;
 END;
@@ -440,7 +490,14 @@ SET search_path = public
 AS $$
 BEGIN
   IF OLD.status IS DISTINCT FROM 'cancelled' AND NEW.status = 'cancelled' THEN
-    DELETE FROM public.order_commissions WHERE order_id = NEW.id;
+    IF EXISTS (
+      SELECT 1 FROM public.order_commissions c
+      WHERE c.order_id = NEW.id AND c.collection_id IS NOT NULL
+    ) THEN
+      RAISE EXCEPTION 'Tahsil edilmiş komisyonlu sipariş iptal edilemez';
+    END IF;
+    DELETE FROM public.order_commissions
+    WHERE order_id = NEW.id AND collection_id IS NULL;
   END IF;
   RETURN NEW;
 END;
@@ -468,6 +525,23 @@ BEGIN
 END;
 $$;
 
+CREATE TABLE public.order_pickup_secrets (
+  order_id   UUID PRIMARY KEY REFERENCES public.orders(id) ON DELETE CASCADE,
+  code       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_order_pickup_secrets_code ON public.order_pickup_secrets (upper(code));
+ALTER TABLE public.order_pickup_secrets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "pickup_secrets_buyer_admin_select" ON public.order_pickup_secrets
+  FOR SELECT TO authenticated
+  USING (
+    public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_id AND o.buyer_id = auth.uid()
+    )
+  );
+
 CREATE OR REPLACE FUNCTION public.set_pickup_code_on_shipped()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -479,17 +553,17 @@ DECLARE
   attempts INTEGER := 0;
 BEGIN
   IF NEW.status = 'shipped' AND (OLD.status IS DISTINCT FROM 'shipped') THEN
-    IF NEW.pickup_code IS NULL OR btrim(NEW.pickup_code) = '' THEN
-      LOOP
-        candidate := public.generate_pickup_code();
-        attempts := attempts + 1;
-        EXIT WHEN NOT EXISTS (
-          SELECT 1 FROM public.orders
-          WHERE pickup_code = candidate AND status = 'shipped'
-        ) OR attempts > 20;
-      END LOOP;
-      NEW.pickup_code := candidate;
-    END IF;
+    LOOP
+      candidate := public.generate_pickup_code();
+      attempts := attempts + 1;
+      EXIT WHEN NOT EXISTS (
+        SELECT 1 FROM public.order_pickup_secrets s WHERE upper(s.code) = candidate
+      ) OR attempts > 20;
+    END LOOP;
+    INSERT INTO public.order_pickup_secrets (order_id, code)
+    VALUES (NEW.id, candidate)
+    ON CONFLICT (order_id) DO UPDATE SET code = EXCLUDED.code;
+    NEW.pickup_code := NULL;
   END IF;
   RETURN NEW;
 END;
@@ -521,7 +595,8 @@ BEGIN
   SELECT o.* INTO v_order
   FROM public.orders o
   JOIN public.stores s ON s.id = o.store_id
-  WHERE o.pickup_code = v_normalized
+  JOIN public.order_pickup_secrets sec ON sec.order_id = o.id
+  WHERE upper(sec.code) = v_normalized
     AND o.status = 'shipped'
     AND s.owner_id = auth.uid()
   FOR UPDATE OF o;
@@ -530,10 +605,12 @@ BEGIN
     RAISE EXCEPTION 'Kod bulunamadı veya sipariş teslime hazır değil';
   END IF;
 
+  PERFORM set_config('baret.allow_deliver', 'on', true);
   UPDATE public.orders
   SET status = 'delivered'
   WHERE id = v_order.id
   RETURNING * INTO v_order;
+  PERFORM set_config('baret.allow_deliver', 'off', true);
 
   RETURN v_order;
 END;
@@ -624,7 +701,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF OLD.status = 'pending' AND NEW.status = 'cancelled' THEN
+  IF OLD.status IS DISTINCT FROM 'cancelled'
+     AND NEW.status = 'cancelled'
+     AND OLD.status IN ('pending', 'preparing', 'shipped') THEN
     UPDATE public.products
     SET stock = stock + OLD.quantity
     WHERE id = OLD.product_id;
@@ -703,4 +782,10 @@ $$;
 
 REVOKE ALL ON FUNCTION public.collect_store_commissions(UUID, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.collect_store_commissions(UUID, TEXT) TO authenticated;
+
+-- Remaining live-DB hardening (price lock, status machine, store column protect,
+-- notify_user RPC, pickup secrets migration) — apply on existing projects:
+--   docs/security-hardening-setup.sql
+-- Fresh wipes from this file already include license gate RLS, pickup secrets,
+-- commission/stock cancel rules, and absolute license redeem.
 

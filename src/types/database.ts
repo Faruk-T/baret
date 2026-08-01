@@ -275,6 +275,28 @@ export type Database = {
         Update: Partial<Omit<AppNotification, 'id'>>;
         Relationships: [];
       };
+      order_pickup_secrets: {
+        Row: {
+          order_id: string;
+          code: string;
+          created_at: string;
+        };
+        Insert: {
+          order_id: string;
+          code: string;
+          created_at?: string;
+        };
+        Update: Partial<{ code: string; created_at: string }>;
+        Relationships: [
+          {
+            foreignKeyName: 'order_pickup_secrets_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: true;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       products: {
         Row: Product;
         Insert: {
@@ -479,6 +501,19 @@ export type Database = {
       collect_store_commissions: {
         Args: { p_store_id: string; p_note?: string | null };
         Returns: CommissionCollection;
+      };
+      notify_user: {
+        Args: {
+          p_user_id: string;
+          p_title: string;
+          p_body: string;
+          p_kind?: string;
+        };
+        Returns: AppNotification;
+      };
+      get_order_pickup_code: {
+        Args: { p_order_id: string };
+        Returns: string | null;
       };
     };
     CompositeTypes: {
