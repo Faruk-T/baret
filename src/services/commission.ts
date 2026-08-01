@@ -14,15 +14,8 @@ export type CommissionSummary = {
 };
 
 export type CommissionSettingsInput = {
-  tier1Max: number;
-  tier1Rate: number;
-  tier2Max: number;
-  tier2Rate: number;
-  tier3Rate: number;
-  minCommissionAmount: number;
-  introCommissionRate: number;
-  introOrderLimit: number;
-  highRatingDiscount: number;
+  /** Flat percent applied to every order line (e.g. 10 = %10). */
+  rate: number;
 };
 
 export type CommissionPreview = {
@@ -34,60 +27,22 @@ export type CommissionPreview = {
   usedMinFloor: boolean;
 };
 
-function num(value: string | number, fallback = 0): number {
-  if (typeof value === 'number') return value;
-  const n = Number(String(value).replace(',', '.'));
-  return Number.isFinite(n) ? n : fallback;
-}
-
-/** Client-side preview matching SQL tier + min floor (without intro/rating). */
+/** Client-side preview: flat percent, no floor / tiers / intro. */
 export function previewCommission(
   amount: number,
-  settings: Pick<
-    PlatformSettings,
-    | 'tier1_max'
-    | 'tier1_rate'
-    | 'tier2_max'
-    | 'tier2_rate'
-    | 'tier3_rate'
-    | 'min_commission_amount'
-  >
+  ratePercent: number
 ): CommissionPreview {
   const safeAmount = Math.max(0, amount);
-  let rate: number;
-  let tierLabel: string;
-
-  if (safeAmount < Number(settings.tier1_max)) {
-    rate = Number(settings.tier1_rate);
-    tierLabel = `Küçük (< ₺${Number(settings.tier1_max).toLocaleString('tr-TR')})`;
-  } else if (safeAmount < Number(settings.tier2_max)) {
-    rate = Number(settings.tier2_rate);
-    tierLabel = `Orta (< ₺${Number(settings.tier2_max).toLocaleString('tr-TR')})`;
-  } else {
-    rate = Number(settings.tier3_rate);
-    tierLabel = `Büyük (≥ ₺${Number(settings.tier2_max).toLocaleString('tr-TR')})`;
-  }
-
-  // rate is a percent (e.g. 10 => 10%), not a fraction
-  let commission = Math.round(((safeAmount * rate) / 100) * 100) / 100;
-  const percentCut = commission;
-  const minFloor = Number(settings.min_commission_amount);
-  let usedMinFloor = false;
-  if (commission < minFloor && safeAmount > 0) {
-    commission = Math.min(minFloor, safeAmount);
-    usedMinFloor = commission > percentCut;
-    if (safeAmount > 0) {
-      rate = Math.round((commission / safeAmount) * 10000) / 100;
-    }
-  }
+  const rate = Math.max(0, Math.min(100, ratePercent));
+  const commission = Math.round(((safeAmount * rate) / 100) * 100) / 100;
 
   return {
     amount: safeAmount,
-    tierLabel,
+    tierLabel: `Sabit %${rate.toLocaleString('tr-TR')}`,
     rate,
     commission,
     sellerNet: Math.round((safeAmount - commission) * 100) / 100,
-    usedMinFloor,
+    usedMinFloor: false,
   };
 }
 
@@ -124,89 +79,37 @@ export async function updateCommissionSettings(
   input: CommissionSettingsInput,
   adminId: string
 ): Promise<PlatformSettings> {
-  const checkRate = (rate: number, label: string) => {
-    if (Number.isNaN(rate) || rate < 0 || rate > 100) {
-      throw new Error(`${label} 0–100 arasında olmalı.`);
-    }
-  };
-  const checkMoney = (value: number, label: string) => {
-    if (Number.isNaN(value) || value < 0) {
-      throw new Error(`${label} 0 veya üzeri olmalı.`);
-    }
-  };
-
-  checkRate(input.tier1Rate, 'Küçük dilim oranı');
-  checkRate(input.tier2Rate, 'Orta dilim oranı');
-  checkRate(input.tier3Rate, 'Büyük dilim oranı');
-  checkRate(input.introCommissionRate, 'İlk sipariş oranı');
-  checkRate(input.highRatingDiscount, 'Puan indirimi');
-  checkMoney(input.tier1Max, 'Küçük dilim üst limiti');
-  checkMoney(input.tier2Max, 'Orta dilim üst limiti');
-  checkMoney(input.minCommissionAmount, 'Minimum komisyon');
-
-  if (input.tier2Max <= input.tier1Max) {
-    throw new Error('Orta dilim limiti, küçük dilim limitinden büyük olmalı.');
-  }
-  if (!Number.isInteger(input.introOrderLimit) || input.introOrderLimit < 0) {
-    throw new Error('İlk sipariş limiti 0 veya üzeri tam sayı olmalı.');
+  if (Number.isNaN(input.rate) || input.rate < 0 || input.rate > 100) {
+    throw new Error('Komisyon oranı 0–100 arasında olmalı.');
   }
 
-  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const flat = Math.round(input.rate * 100) / 100;
 
   const { error } = await supabase
     .from('platform_settings')
     .update({
-      // Legacy mirror = orta dilim (raporlar / eski kod)
-      commission_rate: round2(input.tier2Rate),
-      tier1_max: round2(input.tier1Max),
-      tier1_rate: round2(input.tier1Rate),
-      tier2_max: round2(input.tier2Max),
-      tier2_rate: round2(input.tier2Rate),
-      tier3_rate: round2(input.tier3Rate),
-      min_commission_amount: round2(input.minCommissionAmount),
-      intro_commission_rate: round2(input.introCommissionRate),
-      intro_order_limit: input.introOrderLimit,
-      high_rating_discount: round2(input.highRatingDiscount),
+      commission_rate: flat,
+      tier1_rate: flat,
+      tier2_rate: flat,
+      tier3_rate: flat,
+      intro_commission_rate: flat,
+      intro_order_limit: 0,
+      high_rating_discount: 0,
+      min_commission_amount: 0,
       updated_at: new Date().toISOString(),
       updated_by: adminId,
     })
     .eq('id', 1);
 
-  if (error) {
-    if (
-      error.message.includes('tier1_max') ||
-      error.message.includes('column') ||
-      error.code === 'PGRST204'
-    ) {
-      throw new Error(
-        'Komisyon dilimleri henüz kurulu değil. Supabase’te docs/commission-tiers-setup.sql çalıştır.'
-      );
-    }
-    throw error;
-  }
+  if (error) throw error;
   return getPlatformSettings();
 }
 
-/** @deprecated use updateCommissionSettings */
 export async function updateCommissionRate(
   rate: number,
   adminId: string
 ): Promise<PlatformSettings> {
-  const current = await getPlatformSettings();
-  return updateCommissionSettings(
-    {
-      tier1Max: Number(current.tier1_max),
-      tier1Rate: Number(current.tier1_rate),
-      tier2Max: Number(current.tier2_max),
-      tier2Rate: rate,
-      tier3Rate: Number(current.tier3_rate),
-      minCommissionAmount: Number(current.min_commission_amount),
-      introCommissionRate: Number(current.intro_commission_rate ?? 5),
-      introOrderLimit: Number(current.intro_order_limit ?? 10),
-      highRatingDiscount: Number(current.high_rating_discount ?? 1),
-    },
-    adminId
-  );
+  return updateCommissionSettings({ rate }, adminId);
 }
 
 export async function getCommissionSummary(): Promise<CommissionSummary> {
@@ -221,7 +124,7 @@ export async function getCommissionSummary(): Promise<CommissionSummary> {
 
   const rows = commissionsRes.data ?? [];
   return {
-    rate: Number(settings.tier2_rate ?? settings.commission_rate),
+    rate: Number(settings.commission_rate ?? settings.tier1_rate ?? 10),
     orderCount: rows.length,
     grossAmount: rows.reduce((sum, r) => sum + Number(r.order_amount), 0),
     commissionAmount: rows.reduce(
@@ -396,5 +299,3 @@ export type OrderCommissionSnippet = Pick<
   OrderCommission,
   'commission_rate' | 'commission_amount' | 'seller_net_amount' | 'order_amount'
 >;
-
-export { num as parseCommissionNumber };

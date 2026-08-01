@@ -141,7 +141,7 @@ CREATE TABLE public.platform_settings (
 INSERT INTO public.platform_settings (
   id, commission_rate, intro_commission_rate, intro_order_limit, high_rating_discount,
   tier1_max, tier1_rate, tier2_max, tier2_rate, tier3_rate, min_commission_amount
-) VALUES (1, 8.00, 5.00, 10, 1.00, 100.00, 10.00, 1000.00, 8.00, 5.00, 1.00);
+) VALUES (1, 10.00, 10.00, 0, 0, 100.00, 10.00, 1000.00, 10.00, 10.00, 0);
 
 CREATE TABLE public.platform_reports (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -396,76 +396,22 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_tier1_max NUMERIC(12, 2);
-  v_tier1_rate NUMERIC(5, 2);
-  v_tier2_max NUMERIC(12, 2);
-  v_tier2_rate NUMERIC(5, 2);
-  v_tier3_rate NUMERIC(5, 2);
-  v_min_commission NUMERIC(12, 2);
-  v_intro NUMERIC(5, 2);
-  v_intro_limit INTEGER;
-  v_discount NUMERIC(5, 2);
   v_rate NUMERIC(5, 2);
-  v_prior_count INTEGER;
-  v_avg NUMERIC;
-  v_review_count INTEGER;
   v_commission NUMERIC(12, 2);
   v_net NUMERIC(12, 2);
 BEGIN
-  SELECT
-    COALESCE(tier1_max, 100.00),
-    COALESCE(tier1_rate, 10.00),
-    COALESCE(tier2_max, 1000.00),
-    COALESCE(tier2_rate, commission_rate, 8.00),
-    COALESCE(tier3_rate, 5.00),
-    COALESCE(min_commission_amount, 1.00),
-    COALESCE(intro_commission_rate, 5.00),
-    COALESCE(intro_order_limit, 10),
-    COALESCE(high_rating_discount, 1.00)
-  INTO
-    v_tier1_max, v_tier1_rate, v_tier2_max, v_tier2_rate, v_tier3_rate,
-    v_min_commission, v_intro, v_intro_limit, v_discount
+  -- Flat percent only (default %10). No tiers / intro / rating discount.
+  SELECT COALESCE(commission_rate, 10.00)
+  INTO v_rate
   FROM public.platform_settings
   WHERE id = 1;
 
-  IF NEW.total_amount < v_tier1_max THEN
-    v_rate := v_tier1_rate;
-  ELSIF NEW.total_amount < v_tier2_max THEN
-    v_rate := v_tier2_rate;
-  ELSE
-    v_rate := v_tier3_rate;
-  END IF;
-
-  SELECT COUNT(*) INTO v_prior_count
-  FROM public.orders
-  WHERE store_id = NEW.store_id
-    AND id <> NEW.id
-    AND status <> 'cancelled';
-
-  IF v_prior_count < v_intro_limit THEN
-    v_rate := LEAST(v_rate, v_intro);
-  END IF;
-
-  SELECT COALESCE(AVG(rating), 0), COUNT(*)
-  INTO v_avg, v_review_count
-  FROM public.reviews
-  WHERE store_id = NEW.store_id;
-
-  IF v_review_count >= 5 AND v_avg >= 4.5 THEN
-    v_rate := GREATEST(0, v_rate - v_discount);
+  IF v_rate IS NULL THEN
+    v_rate := 10.00;
   END IF;
 
   v_commission := ROUND(NEW.total_amount * v_rate / 100.0, 2);
-
-  IF v_commission < v_min_commission THEN
-    v_commission := LEAST(v_min_commission, NEW.total_amount);
-  END IF;
-
   v_net := NEW.total_amount - v_commission;
-
-  IF NEW.total_amount > 0 THEN
-    v_rate := ROUND((v_commission / NEW.total_amount) * 100.0, 2);
-  END IF;
 
   INSERT INTO public.order_commissions (
     order_id, store_id, order_amount, commission_rate, commission_amount, seller_net_amount

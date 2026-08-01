@@ -20,6 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import { notifyBuyerOrderStatus } from '../../services/adminOps';
 import { getMyStore } from '../../services/stores';
 import {
+  cancelSellerOrder,
   confirmOrderPickup,
   listStoreOrders,
   updateSellerOrderStatus,
@@ -130,6 +131,44 @@ export function SellerOrdersScreen() {
         },
       },
     ]);
+  };
+
+  const rejectOrder = (order: OrderWithProduct) => {
+    if (order.status !== 'pending' && order.status !== 'preparing') return;
+    Alert.alert(
+      'Siparişi reddet',
+      'Sipariş iptal edilir, stok geri eklenir. Alıcıya bildirim gider.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Reddet',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                const updated = await cancelSellerOrder(order.id);
+                if (user?.id) {
+                  await notifyBuyerOrderStatus(
+                    {
+                      buyer_id: updated.buyer_id,
+                      id: updated.id,
+                      status: 'cancelled',
+                    },
+                    user.id
+                  );
+                }
+                await load();
+              } catch (error) {
+                Alert.alert(
+                  'Hata',
+                  error instanceof Error ? error.message : 'Reddedilemedi.'
+                );
+              }
+            })();
+          },
+        },
+      ]
+    );
   };
 
   const verifyPickup = async () => {
@@ -341,16 +380,26 @@ export function SellerOrdersScreen() {
               </View>
             ) : null}
 
-            {next ? (
-              <Pressable
-                className="mt-3 self-start rounded-xl bg-brand px-4 py-2.5"
-                onPress={() => advance(item)}
-              >
-                <Text className="font-bold text-white">
-                  → {nextStatusLabel(item, next)}
-                </Text>
-              </Pressable>
-            ) : null}
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {next ? (
+                <Pressable
+                  className="rounded-xl bg-brand px-4 py-2.5"
+                  onPress={() => advance(item)}
+                >
+                  <Text className="font-bold text-white">
+                    → {nextStatusLabel(item, next)}
+                  </Text>
+                </Pressable>
+              ) : null}
+              {item.status === 'pending' || item.status === 'preparing' ? (
+                <Pressable
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5"
+                  onPress={() => rejectOrder(item)}
+                >
+                  <Text className="font-bold text-red-600">Reddet</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </UiCard>
         );
       }}

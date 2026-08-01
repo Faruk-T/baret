@@ -72,8 +72,28 @@ export function AdminOrdersScreen() {
     });
   }, [rows, cityQuery, storeQuery]);
 
+  const allowedAdminNext = (status: OrderStatus): OrderStatus[] => {
+    switch (status) {
+      case 'pending':
+        return ['preparing', 'cancelled'];
+      case 'preparing':
+        return ['shipped', 'cancelled', 'pending'];
+      case 'shipped':
+        return ['delivered', 'cancelled', 'preparing'];
+      default:
+        return [];
+    }
+  };
+
   const intervene = (item: AdminOrderRow) => {
-    const options = ORDER_STATUSES.filter((s) => s !== item.status);
+    const options = allowedAdminNext(item.status);
+    if (options.length === 0) {
+      Alert.alert(
+        'Müdahale',
+        'Bu durumda değiştirilebilir geçiş yok (teslim / iptal edilmiş).'
+      );
+      return;
+    }
     Alert.alert(
       'Siparişe müdahale',
       `${item.products?.name ?? 'Ürün'} · şu an ${ORDER_STATUS_LABELS[item.status]}`,

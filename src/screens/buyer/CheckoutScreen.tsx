@@ -96,7 +96,6 @@ export function CheckoutScreen() {
         ? `Gel-al · Tel: ${phone.trim()} · Adres: ${fullAddress}`
         : `${fullAddress} · Tel: ${phone.trim()}`;
 
-      const orderTotal = totalAmount;
       const created = await createOrdersFromCart({
         buyerId: user.id,
         items,
@@ -105,8 +104,12 @@ export function CheckoutScreen() {
         notes: notes.trim() || null,
       });
 
+      const orderTotal = created.reduce(
+        (sum, row) => sum + Number(row.total_amount),
+        0
+      );
       clearCart();
-      const units = items.reduce((sum, item) => sum + item.quantity, 0);
+      const units = created.reduce((sum, row) => sum + Number(row.quantity), 0);
       Alert.alert(
         'Sipariş alındı',
         `${created.length} kalem · ${units} adet sipariş oluşturuldu.\nToplam ₺${orderTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}\n\nStok sipariş anında düşürüldü. Satıcı kabul edince iletişim açılır.`,

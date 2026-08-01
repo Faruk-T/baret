@@ -43,38 +43,17 @@ export function CommissionScreen() {
   const [storeRows, setStoreRows] = useState<StoreCommissionRow[]>([]);
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
 
-  const [tier1Max, setTier1Max] = useState('100');
-  const [tier1Rate, setTier1Rate] = useState('10');
-  const [tier2Max, setTier2Max] = useState('1000');
-  const [tier2Rate, setTier2Rate] = useState('8');
-  const [tier3Rate, setTier3Rate] = useState('5');
-  const [minCommission, setMinCommission] = useState('1');
-  const [introRate, setIntroRate] = useState('5');
-  const [introLimit, setIntroLimit] = useState('10');
-  const [discount, setDiscount] = useState('1');
+  const [flatRate, setFlatRate] = useState('10');
   const [exampleAmount, setExampleAmount] = useState('50');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [incentivesOpen, setIncentivesOpen] = useState(false);
-
-  const draftSettings = useMemo(
-    () => ({
-      tier1_max: parseNum(tier1Max) || 100,
-      tier1_rate: parseNum(tier1Rate) || 0,
-      tier2_max: parseNum(tier2Max) || 1000,
-      tier2_rate: parseNum(tier2Rate) || 0,
-      tier3_rate: parseNum(tier3Rate) || 0,
-      min_commission_amount: parseNum(minCommission) || 0,
-    }),
-    [tier1Max, tier1Rate, tier2Max, tier2Rate, tier3Rate, minCommission]
-  );
 
   const preview = useMemo(
-    () => previewCommission(parseNum(exampleAmount) || 0, draftSettings),
-    [exampleAmount, draftSettings]
+    () => previewCommission(parseNum(exampleAmount) || 0, parseNum(flatRate) || 0),
+    [exampleAmount, flatRate]
   );
 
   const load = useCallback(async () => {
@@ -88,15 +67,7 @@ export function CommissionScreen() {
       setSummary(data);
       setStoreRows(stores);
       setSettings(cfg);
-      setTier1Max(String(cfg.tier1_max));
-      setTier1Rate(String(cfg.tier1_rate));
-      setTier2Max(String(cfg.tier2_max));
-      setTier2Rate(String(cfg.tier2_rate));
-      setTier3Rate(String(cfg.tier3_rate));
-      setMinCommission(String(cfg.min_commission_amount));
-      setIntroRate(String(cfg.intro_commission_rate ?? 5));
-      setIntroLimit(String(cfg.intro_order_limit ?? 10));
-      setDiscount(String(cfg.high_rating_discount ?? 1));
+      setFlatRate(String(cfg.commission_rate ?? cfg.tier1_rate ?? 10));
     } catch (e) {
       setError(
         e instanceof Error
@@ -120,22 +91,12 @@ export function CommissionScreen() {
     if (!user?.id) return;
     try {
       setSaving(true);
-      await updateCommissionSettings(
-        {
-          tier1Max: parseNum(tier1Max),
-          tier1Rate: parseNum(tier1Rate),
-          tier2Max: parseNum(tier2Max),
-          tier2Rate: parseNum(tier2Rate),
-          tier3Rate: parseNum(tier3Rate),
-          minCommissionAmount: parseNum(minCommission),
-          introCommissionRate: parseNum(introRate),
-          introOrderLimit: Number.parseInt(introLimit, 10),
-          highRatingDiscount: parseNum(discount),
-        },
-        user.id
-      );
+      await updateCommissionSettings({ rate: parseNum(flatRate) }, user.id);
       await load();
-      Alert.alert('Kaydedildi', 'Komisyon dilimleri güncellendi. Yeni siparişlere uygulanır.');
+      Alert.alert(
+        'Kaydedildi',
+        `Sabit %${parseNum(flatRate)} komisyon yeni siparişlere uygulanır.`
+      );
     } catch (e) {
       Alert.alert(
         'Hata',
@@ -280,75 +241,19 @@ export function CommissionScreen() {
         </View>
       ) : null}
 
-      <Section title="1 · Tutar dilimleri" subtitle="Her sipariş satırı kendi dilimine düşer">
-        <TierCard
-          badge="Küçük"
-          color="#FEF3C7"
-          border="#F59E0B"
-          title={`0 – ${tier1Max || '…'} ₺ altı`}
-          hint="Örn. çivi, vida, küçük sarf"
-        >
-          <View className="flex-row gap-2">
-            <Field
-              className="flex-1"
-              label="Üst limit (₺)"
-              value={tier1Max}
-              onChangeText={setTier1Max}
-            />
-            <Field
-              className="flex-1"
-              label="Oran (%)"
-              value={tier1Rate}
-              onChangeText={setTier1Rate}
-            />
-          </View>
-        </TierCard>
-
-        <TierCard
-          badge="Orta"
-          color="#FFEDD5"
-          border="#FF6B00"
-          title={`${tier1Max || '…'} – ${tier2Max || '…'} ₺`}
-          hint="Günlük nalbur siparişleri"
-        >
-          <View className="flex-row gap-2">
-            <Field
-              className="flex-1"
-              label="Üst limit (₺)"
-              value={tier2Max}
-              onChangeText={setTier2Max}
-            />
-            <Field
-              className="flex-1"
-              label="Oran (%)"
-              value={tier2Rate}
-              onChangeText={setTier2Rate}
-            />
-          </View>
-        </TierCard>
-
-        <TierCard
-          badge="Büyük"
-          color="#DBEAFE"
-          border="#3B82F6"
-          title={`${tier2Max || '…'} ₺ ve üzeri`}
-          hint="Çimento, demir, toplu alım — daha düşük %"
-        >
-          <Field label="Oran (%)" value={tier3Rate} onChangeText={setTier3Rate} />
-        </TierCard>
-
+      <Section
+        title="1 · Sabit oran"
+        subtitle="Her sipariş satırında aynı yüzde — dilim / teşvik yok"
+      >
         <Field
-          label="Minimum komisyon (₺)"
-          value={minCommission}
-          onChangeText={setMinCommission}
-          hint="Çok ucuz satırda taban platform payı (sipariş tutarını aşmaz)."
+          label="Komisyon oranı (%)"
+          value={flatRate}
+          onChangeText={setFlatRate}
+          hint="Örn. %10 → 20 ₺ siparişte platform payı 2 ₺, 500 ₺ siparişte 50 ₺."
         />
       </Section>
 
-      <Section
-        title="2 · Canlı örnek"
-        subtitle="Dilim + taban (ilk sipariş / yüksek puan teşviki hariç)"
-      >
+      <Section title="2 · Canlı örnek" subtitle="Kaydetmeden önce dene">
         <Field
           label="Örnek sipariş tutarı (₺)"
           value={exampleAmount}
@@ -379,14 +284,9 @@ export function CommissionScreen() {
               {money(preview.sellerNet)}
             </Text>
           </View>
-          {preview.usedMinFloor ? (
-            <Text className="mt-3 text-xs text-amber-700">
-              Minimum komisyon tabanı uygulandı.
-            </Text>
-          ) : null}
         </View>
         <View className="mt-3 flex-row flex-wrap gap-2">
-          {[20, 50, 150, 800, 2500].map((n) => (
+          {[20, 50, 150, 500, 2500].map((n) => (
             <Pressable
               key={n}
               onPress={() => setExampleAmount(String(n))}
@@ -400,46 +300,6 @@ export function CommissionScreen() {
         </View>
       </Section>
 
-      <Pressable
-        onPress={() => setIncentivesOpen((v) => !v)}
-        className="mb-3 flex-row items-center justify-between rounded-2xl border border-stone-200 bg-white px-4 py-3"
-      >
-        <View className="flex-1 pr-3">
-          <Text className="text-sm font-bold text-stone-900">3 · Teşvikler</Text>
-          <Text className="mt-0.5 text-xs text-stone-500">
-            İlk sipariş oranı ve yüksek puan indirimi
-          </Text>
-        </View>
-        <Ionicons
-          name={incentivesOpen ? 'chevron-up' : 'chevron-down'}
-          size={20}
-          color="#78716c"
-        />
-      </Pressable>
-
-      {incentivesOpen ? (
-        <Section title="" subtitle="">
-          <Field
-            label="İlk siparişler tavan oranı (%)"
-            value={introRate}
-            onChangeText={setIntroRate}
-            hint="Yeni mağaza ilk N siparişte dilim oranından yüksek ödeyemez."
-          />
-          <Field
-            label="İlk sipariş limiti (adet)"
-            value={introLimit}
-            onChangeText={setIntroLimit}
-            integer
-          />
-          <Field
-            label="Yüksek puan indirimi (%)"
-            value={discount}
-            onChangeText={setDiscount}
-            hint="Ort. ≥ 4.5 ve en az 5 yorum varsa dilim oranından düşülür."
-          />
-        </Section>
-      ) : null}
-
       {summary ? (
         <View className="mb-4 rounded-2xl border border-stone-200 bg-white px-4 py-3">
           <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
@@ -447,8 +307,8 @@ export function CommissionScreen() {
           </Text>
           <Row label="Komisyonlu sipariş" value={String(summary.orderCount)} />
           <Row
-            label="Kayıtlı orta dilim"
-            value={`%${settings?.tier2_rate ?? summary.rate}`}
+            label="Kayıtlı oran"
+            value={`%${settings?.commission_rate ?? summary.rate}`}
           />
         </View>
       ) : null}
@@ -461,11 +321,12 @@ export function CommissionScreen() {
         {saving ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text className="text-base font-bold text-white">Dilimleri kaydet</Text>
+          <Text className="text-base font-bold text-white">Oranı kaydet</Text>
         )}
       </Pressable>
       <Text className="mt-2 text-center text-xs text-stone-500">
-        Değişiklik yalnızca yeni siparişlere yansır.
+        Değişiklik yalnızca yeni siparişlere yansır. Supabase’te
+        docs/flat-commission-10.sql çalıştırılmış olmalı.
       </Text>
     </ScrollView>
   );

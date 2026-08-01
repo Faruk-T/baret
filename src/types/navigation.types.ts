@@ -28,6 +28,11 @@ export type SellerTabParamList = {
   StoreSettings: undefined;
 };
 
+export type SellerStackParamList = {
+  SellerTabs: undefined;
+  Notifications: undefined;
+};
+
 export type SellerProductsStackParamList = {
   ProductList: undefined;
   ProductForm: { productId?: string } | undefined;
