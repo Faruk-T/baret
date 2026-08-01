@@ -24,6 +24,17 @@ export async function getMyStore(ownerId: string): Promise<Store | null> {
   return data;
 }
 
+export async function getStoreById(storeId: string): Promise<Store | null> {
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('id', storeId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function createStore(ownerId: string, input: StoreFormInput): Promise<Store> {
   const { data, error } = await supabase
     .from('stores')

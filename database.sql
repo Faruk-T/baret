@@ -1,6 +1,7 @@
 -- 1. ADIM: TAM TEMİZLİK (Eski Kalıntıları Siliyoruz)
 DROP TABLE IF EXISTS public.platform_reports CASCADE;
 DROP TABLE IF EXISTS public.order_commissions CASCADE;
+DROP TABLE IF EXISTS public.commission_collections CASCADE;
 DROP TABLE IF EXISTS public.platform_settings CASCADE;
 DROP TABLE IF EXISTS public.reviews CASCADE;
 DROP TABLE IF EXISTS public.orders CASCADE;
@@ -155,6 +156,17 @@ CREATE TABLE public.platform_reports (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE public.commission_collections (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id      UUID NOT NULL REFERENCES public.stores(id) ON DELETE RESTRICT,
+  amount        NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
+  order_count   INTEGER NOT NULL DEFAULT 0 CHECK (order_count >= 0),
+  note          TEXT,
+  collected_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  collected_by  UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE public.order_commissions (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id           UUID NOT NULL UNIQUE REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -163,6 +175,7 @@ CREATE TABLE public.order_commissions (
   commission_rate    NUMERIC(5, 2) NOT NULL CHECK (commission_rate >= 0 AND commission_rate <= 100),
   commission_amount  NUMERIC(12, 2) NOT NULL CHECK (commission_amount >= 0),
   seller_net_amount  NUMERIC(12, 2) NOT NULL CHECK (seller_net_amount >= 0),
+  collection_id      UUID REFERENCES public.commission_collections(id) ON DELETE SET NULL,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (commission_amount + seller_net_amount = order_amount)
 );
@@ -185,6 +198,8 @@ CREATE INDEX idx_license_keys_unused ON public.license_keys(redeemed_at) WHERE r
 CREATE INDEX idx_stores_license_expires ON public.stores(license_expires_at);
 CREATE INDEX idx_order_commissions_store_id ON public.order_commissions(store_id);
 CREATE INDEX idx_order_commissions_created_at ON public.order_commissions(created_at DESC);
+CREATE INDEX idx_order_commissions_collection ON public.order_commissions(collection_id);
+CREATE INDEX idx_commission_collections_store ON public.commission_collections(store_id, collected_at DESC);
 CREATE INDEX idx_platform_reports_status ON public.platform_reports(status, created_at DESC);
 
 -- 5. ADIM: FONKSİYONLAR VE TRİGGERLAR
@@ -211,6 +226,7 @@ ALTER TABLE public.reviews  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.license_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.commission_collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "users_select_own_or_admin" ON public.users FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
@@ -315,6 +331,9 @@ CREATE POLICY "platform_settings_admin_insert" ON public.platform_settings FOR I
 
 CREATE POLICY "order_commissions_admin_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY "order_commissions_seller_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
+CREATE POLICY "order_commissions_admin_update" ON public.order_commissions FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "commission_collections_admin_all" ON public.commission_collections FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "commission_collections_seller_select" ON public.commission_collections FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
 
 CREATE POLICY "platform_reports_insert_own" ON public.platform_reports FOR INSERT TO authenticated WITH CHECK (reporter_id = auth.uid());
 CREATE POLICY "platform_reports_select_own_or_admin" ON public.platform_reports FOR SELECT TO authenticated USING (reporter_id = auth.uid() OR public.is_admin());
@@ -570,4 +589,118 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_order_store_contact(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_order_store_contact(UUID) TO authenticated;
+
+-- Stock sync: decrement on order insert, restore on pending → cancelled
+CREATE OR REPLACE FUNCTION public.decrement_stock_on_order()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.products
+  SET stock = stock - NEW.quantity
+  WHERE id = NEW.product_id
+    AND stock >= NEW.quantity;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Stok yetersiz veya ürün bulunamadı (product_id=%)', NEW.product_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_orders_decrement_stock ON public.orders;
+CREATE TRIGGER trg_orders_decrement_stock
+  AFTER INSERT ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.decrement_stock_on_order();
+
+CREATE OR REPLACE FUNCTION public.restore_stock_on_cancel()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF OLD.status = 'pending' AND NEW.status = 'cancelled' THEN
+    UPDATE public.products
+    SET stock = stock + OLD.quantity
+    WHERE id = OLD.product_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_orders_restore_stock ON public.orders;
+CREATE TRIGGER trg_orders_restore_stock
+  AFTER UPDATE OF status ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.restore_stock_on_cancel();
+
+-- Live store approval updates for sellers
+ALTER TABLE public.stores REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'stores'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.stores;
+  END IF;
+END;
+$$;
+
+-- Admin: collect unsettled commissions for a store
+CREATE OR REPLACE FUNCTION public.collect_store_commissions(
+  p_store_id UUID,
+  p_note TEXT DEFAULT NULL
+)
+RETURNS public.commission_collections
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_admin UUID := auth.uid();
+  v_amount NUMERIC(12, 2);
+  v_count INTEGER;
+  v_row public.commission_collections;
+BEGIN
+  IF v_admin IS NULL OR NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Sadece admin tahsilat yapabilir';
+  END IF;
+
+  SELECT COALESCE(SUM(commission_amount), 0), COUNT(*)
+  INTO v_amount, v_count
+  FROM public.order_commissions
+  WHERE store_id = p_store_id
+    AND collection_id IS NULL;
+
+  IF v_count = 0 THEN
+    RAISE EXCEPTION 'Bu mağaza için bekleyen komisyon yok';
+  END IF;
+
+  INSERT INTO public.commission_collections (
+    store_id, amount, order_count, note, collected_by
+  ) VALUES (
+    p_store_id, v_amount, v_count, NULLIF(btrim(p_note), ''), v_admin
+  )
+  RETURNING * INTO v_row;
+
+  UPDATE public.order_commissions
+  SET collection_id = v_row.id
+  WHERE store_id = p_store_id
+    AND collection_id IS NULL;
+
+  RETURN v_row;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.collect_store_commissions(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.collect_store_commissions(UUID, TEXT) TO authenticated;
 

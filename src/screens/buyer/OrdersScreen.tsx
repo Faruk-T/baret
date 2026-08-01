@@ -11,13 +11,18 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 
 import { OrderReviewBlock } from '../../components/buyer/OrderReviewBlock';
 import { OrderStoreContactCard } from '../../components/buyer/OrderStoreContactCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { UiCard } from '../../components/ui/UiCard';
-import { DELIVERY_OPTION_LABELS } from '../../constants/enums';
+import {
+  DELIVERY_OPTION_LABELS,
+  ORDER_STATUS_HINTS,
+} from '../../constants/enums';
 import { useAuth } from '../../context/AuthContext';
 import {
   cancelBuyerOrder,
@@ -230,6 +235,15 @@ export function OrdersScreen() {
               {new Date(item.created_at).toLocaleString('tr-TR')}
             </Text>
 
+            <View className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
+              <Text className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                Şimdi ne olacak?
+              </Text>
+              <Text className="mt-1 text-xs leading-4 text-stone-600">
+                {ORDER_STATUS_HINTS[item.status]}
+              </Text>
+            </View>
+
             <OrderStoreContactCard
               orderId={item.id}
               unlocked={canRevealStoreContact(item.status)}
@@ -243,16 +257,23 @@ export function OrdersScreen() {
                 <Text className="text-center font-mono text-3xl font-bold tracking-[6px] text-stone-900">
                   {item.pickup_code}
                 </Text>
+                <Pressable
+                  className="mt-3 flex-row items-center justify-center rounded-xl bg-brand py-2.5"
+                  onPress={() => {
+                    void Clipboard.setStringAsync(item.pickup_code ?? '').then(() => {
+                      Alert.alert('Kopyalandı', 'Teslim kodu panoya alındı.');
+                    });
+                  }}
+                >
+                  <Ionicons name="copy-outline" size={16} color="#fff" />
+                  <Text className="ml-1.5 text-sm font-bold text-white">Kodu kopyala</Text>
+                </Pressable>
                 <Text className="mt-2 text-center text-xs leading-4 text-stone-600">
                   {item.delivery_option === 'gel_al'
                     ? 'Mağazaya gittiğinde bu kodu satıcıya göster. Okutulunca sipariş teslim edildi olur.'
                     : 'Teslimatta bu kodu söyle / göster. Satıcı doğrulayınca sipariş tamamlanır.'}
                 </Text>
               </View>
-            ) : item.status === 'preparing' ? (
-              <Text className="mt-3 text-xs text-stone-500">
-                Satıcı hazır işaretleyince teslim kodun burada görünecek.
-              </Text>
             ) : null}
 
             <View className="mt-3 flex-row flex-wrap gap-3">

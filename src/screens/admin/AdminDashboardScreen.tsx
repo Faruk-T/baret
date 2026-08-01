@@ -84,24 +84,41 @@ export function AdminDashboardScreen() {
       ) : null}
 
       {stats ? (
-        <View className="flex-row flex-wrap justify-between">
-          <StatCard label="Kullanıcı" value={stats.users} />
-          <StatCard label="Alıcı" value={stats.buyers} />
-          <StatCard label="Satıcı" value={stats.sellers} />
-          <StatCard label="Mağaza" value={stats.stores} />
-          <StatCard label="Onay bekleyen" value={stats.pendingStores} />
-          <StatCard label="Ürün" value={stats.products} />
-          <StatCard label="Sipariş" value={stats.orders} />
-          <StatCard label="Yorum" value={stats.reviews} />
-        </View>
+        <>
+          <Text className="mb-2 text-xs font-bold uppercase text-stone-500">
+            İnsanlar
+          </Text>
+          <View className="mb-4 flex-row flex-wrap justify-between">
+            <StatCard label="Alıcı" value={stats.buyers} />
+            <StatCard label="Satıcı" value={stats.sellers} />
+          </View>
+
+          <Text className="mb-2 text-xs font-bold uppercase text-stone-500">
+            Platform
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
+            <StatCard label="Kullanıcı" value={stats.users} />
+            <StatCard label="Mağaza" value={stats.stores} />
+            <StatCard label="Onay bekleyen" value={stats.pendingStores} />
+            <StatCard label="Ürün" value={stats.products} />
+            <StatCard label="Sipariş" value={stats.orders} />
+            <StatCard label="Yorum" value={stats.reviews} />
+          </View>
+        </>
       ) : null}
 
       <Pressable
         className="mt-2 items-center rounded-2xl bg-brand py-3.5"
         style={ui.shadow}
+        onPress={() => navigation.navigate('PeopleHub')}
+      >
+        <Text className="font-bold text-white">Alıcı & satıcı yönetimine git</Text>
+      </Pressable>
+      <Pressable
+        className="mt-2 items-center rounded-2xl border border-brand bg-white py-3.5"
         onPress={() => navigation.navigate('SellerApprovals')}
       >
-        <Text className="font-bold text-white">Satıcı onaylarına git</Text>
+        <Text className="font-bold text-brand">Satıcı onaylarına git</Text>
       </Pressable>
     </ScrollView>
   );

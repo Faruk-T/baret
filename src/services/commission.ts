@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
-import type { OrderCommission, PlatformSettings } from '../types/database';
+import type {
+  CommissionCollection,
+  OrderCommission,
+  PlatformSettings,
+} from '../types/database';
 
 export type CommissionSummary = {
   rate: number;
@@ -209,7 +213,7 @@ export async function getCommissionSummary(): Promise<CommissionSummary> {
     getPlatformSettings(),
     supabase
       .from('order_commissions')
-      .select('order_amount, commission_amount, seller_net_amount'),
+      .select('order_amount, commission_amount, seller_net_amount, collection_id'),
   ]);
 
   if (commissionsRes.error) throw commissionsRes.error;
@@ -228,6 +232,163 @@ export async function getCommissionSummary(): Promise<CommissionSummary> {
       0
     ),
   };
+}
+
+export type StoreCommissionRow = {
+  storeId: string;
+  storeName: string;
+  city: string;
+  orderCount: number;
+  grossAmount: number;
+  commissionAmount: number;
+  unsettledAmount: number;
+  unsettledCount: number;
+  collectedAmount: number;
+};
+
+export async function listStoreCommissionSummaries(): Promise<StoreCommissionRow[]> {
+  const { data, error } = await supabase
+    .from('order_commissions')
+    .select(
+      `
+      store_id,
+      order_amount,
+      commission_amount,
+      collection_id,
+      stores ( name, city )
+    `
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (
+      error.message.includes('collection_id') ||
+      error.code === 'PGRST204'
+    ) {
+      throw new Error(
+        'Komisyon tahsilat tablosu yok. Supabase’te docs/admin-commission-collections-setup.sql çalıştır.'
+      );
+    }
+    throw error;
+  }
+
+  type Row = {
+    store_id: string;
+    order_amount: number;
+    commission_amount: number;
+    collection_id: string | null;
+    stores: { name: string; city: string } | null;
+  };
+
+  const map = new Map<string, StoreCommissionRow>();
+  for (const row of (data as unknown as Row[]) ?? []) {
+    const existing = map.get(row.store_id);
+    const commission = Number(row.commission_amount);
+    const gross = Number(row.order_amount);
+    const unsettled = row.collection_id == null;
+    if (!existing) {
+      map.set(row.store_id, {
+        storeId: row.store_id,
+        storeName: row.stores?.name ?? 'Mağaza',
+        city: row.stores?.city ?? '—',
+        orderCount: 1,
+        grossAmount: gross,
+        commissionAmount: commission,
+        unsettledAmount: unsettled ? commission : 0,
+        unsettledCount: unsettled ? 1 : 0,
+        collectedAmount: unsettled ? 0 : commission,
+      });
+    } else {
+      existing.orderCount += 1;
+      existing.grossAmount += gross;
+      existing.commissionAmount += commission;
+      if (unsettled) {
+        existing.unsettledAmount += commission;
+        existing.unsettledCount += 1;
+      } else {
+        existing.collectedAmount += commission;
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => b.unsettledAmount - a.unsettledAmount || b.commissionAmount - a.commissionAmount
+  );
+}
+
+export type StoreCommissionDetail = {
+  lines: Array<
+    OrderCommission & {
+      products?: { name: string } | null;
+    }
+  >;
+  collections: CommissionCollection[];
+};
+
+export async function getStoreCommissionDetail(
+  storeId: string
+): Promise<StoreCommissionDetail> {
+  const [linesRes, collectionsRes] = await Promise.all([
+    supabase
+      .from('order_commissions')
+      .select(
+        `
+        *,
+        orders (
+          products ( name )
+        )
+      `
+      )
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('commission_collections')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('collected_at', { ascending: false }),
+  ]);
+
+  if (linesRes.error) throw linesRes.error;
+  if (collectionsRes.error) throw collectionsRes.error;
+
+  type LineRow = OrderCommission & {
+    orders?: { products?: { name: string } | null } | null;
+  };
+
+  const lines = ((linesRes.data as unknown as LineRow[]) ?? []).map((row) => ({
+    ...row,
+    products: row.orders?.products ?? null,
+  }));
+
+  return {
+    lines,
+    collections: (collectionsRes.data as CommissionCollection[]) ?? [],
+  };
+}
+
+export async function collectStoreCommissions(
+  storeId: string,
+  note?: string | null
+): Promise<CommissionCollection> {
+  const { data, error } = await supabase.rpc('collect_store_commissions', {
+    p_store_id: storeId,
+    p_note: note?.trim() || null,
+  });
+
+  if (error) {
+    if (
+      error.message.includes('collect_store_commissions') ||
+      error.message.includes('function') ||
+      error.code === 'PGRST202'
+    ) {
+      throw new Error(
+        'Tahsilat RPC yok. Supabase’te docs/admin-commission-collections-setup.sql çalıştır.'
+      );
+    }
+    throw error;
+  }
+  if (!data) throw new Error('Tahsilat kaydı oluşmadı.');
+  return data as CommissionCollection;
 }
 
 export type OrderCommissionSnippet = Pick<

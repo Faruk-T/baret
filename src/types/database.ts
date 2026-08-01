@@ -125,6 +125,18 @@ export type OrderCommission = {
   commission_rate: number;
   commission_amount: number;
   seller_net_amount: number;
+  collection_id: string | null;
+  created_at: string;
+};
+
+export type CommissionCollection = {
+  id: string;
+  store_id: string;
+  amount: number;
+  order_count: number;
+  note: string | null;
+  collected_at: string;
+  collected_by: string | null;
   created_at: string;
 };
 
@@ -321,6 +333,21 @@ export type Database = {
         Update: Partial<Omit<PlatformSettings, 'id'>>;
         Relationships: [];
       };
+      commission_collections: {
+        Row: CommissionCollection;
+        Insert: {
+          id?: string;
+          store_id: string;
+          amount: number;
+          order_count?: number;
+          note?: string | null;
+          collected_at?: string;
+          collected_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<CommissionCollection, 'id'>>;
+        Relationships: [];
+      };
       order_commissions: {
         Row: OrderCommission;
         Insert: {
@@ -331,6 +358,7 @@ export type Database = {
           commission_rate: number;
           commission_amount: number;
           seller_net_amount: number;
+          collection_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Omit<OrderCommission, 'id'>>;
@@ -392,6 +420,10 @@ export type Database = {
       confirm_order_pickup: {
         Args: { p_code: string };
         Returns: Order;
+      };
+      collect_store_commissions: {
+        Args: { p_store_id: string; p_note?: string | null };
+        Returns: CommissionCollection;
       };
     };
     CompositeTypes: {

@@ -10,18 +10,22 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuth } from '../../context/AuthContext';
 import {
   getCommissionSummary,
   getPlatformSettings,
+  listStoreCommissionSummaries,
   previewCommission,
   updateCommissionSettings,
   type CommissionSummary,
+  type StoreCommissionRow,
 } from '../../services/commission';
 import type { PlatformSettings } from '../../types/database';
+import type { AdminStackParamList } from '../../types/navigation.types';
 
 function money(value: number): string {
   return `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
@@ -33,7 +37,10 @@ function parseNum(value: string): number {
 
 export function CommissionScreen() {
   const { user } = useAuth();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AdminStackParamList, 'Commission'>>();
   const [summary, setSummary] = useState<CommissionSummary | null>(null);
+  const [storeRows, setStoreRows] = useState<StoreCommissionRow[]>([]);
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
 
   const [tier1Max, setTier1Max] = useState('100');
@@ -73,11 +80,13 @@ export function CommissionScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [data, cfg] = await Promise.all([
+      const [data, cfg, stores] = await Promise.all([
         getCommissionSummary(),
         getPlatformSettings(),
+        listStoreCommissionSummaries().catch(() => [] as StoreCommissionRow[]),
       ]);
       setSummary(data);
+      setStoreRows(stores);
       setSettings(cfg);
       setTier1Max(String(cfg.tier1_max));
       setTier1Rate(String(cfg.tier1_rate));
@@ -170,12 +179,79 @@ export function CommissionScreen() {
         <Text className="text-xs font-bold uppercase tracking-wider text-orange-100">
           Platform payı
         </Text>
-        <Text className="mt-1 text-2xl font-bold text-white">Komisyon dilimleri</Text>
+        <Text className="mt-1 text-2xl font-bold text-white">Komisyon & tahsilat</Text>
         <Text className="mt-2 text-sm leading-5 text-orange-50">
-          Tek düz oran yok. Sipariş satır tutarına göre dilim seçilir — 50₺ çivi ile
-          2500₺ çimento aynı % olmaz.
+          Her nalburun borcu ayrı. Tahsil ettiğinde onayla — ne kadar / ne zaman
+          aldığını kaydet.
         </Text>
       </LinearGradient>
+
+      <View className="mb-5">
+        <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
+          Satıcı bazlı tahsilat
+        </Text>
+        {storeRows.length === 0 ? (
+          <View className="rounded-2xl border border-dashed border-stone-300 bg-white px-4 py-5">
+            <Text className="text-center text-sm text-stone-500">
+              Henüz komisyon satırı yok. SQL kurulumu:{' '}
+              docs/admin-commission-collections-setup.sql
+            </Text>
+          </View>
+        ) : (
+          storeRows.map((row) => (
+            <Pressable
+              key={row.storeId}
+              className="mb-2 rounded-2xl border border-stone-200 bg-white px-4 py-3"
+              onPress={() =>
+                navigation.navigate('StoreCommissionDetail', {
+                  storeId: row.storeId,
+                  storeName: row.storeName,
+                })
+              }
+            >
+              <View className="flex-row items-start justify-between">
+                <View className="flex-1 pr-2">
+                  <Text className="font-bold text-stone-900">{row.storeName}</Text>
+                  <Text className="mt-0.5 text-xs text-stone-500">
+                    {row.city} · {row.orderCount} sipariş
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#a8a29e" />
+              </View>
+              <View className="mt-3 flex-row gap-3">
+                <View className="flex-1">
+                  <Text className="text-[10px] font-bold uppercase text-amber-700">
+                    Bekleyen
+                  </Text>
+                  <Text className="text-base font-bold text-amber-800">
+                    {money(row.unsettledAmount)}
+                  </Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[10px] font-bold uppercase text-green-700">
+                    Alınan
+                  </Text>
+                  <Text className="text-base font-bold text-green-800">
+                    {money(row.collectedAmount)}
+                  </Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[10px] font-bold uppercase text-stone-500">
+                    Toplam
+                  </Text>
+                  <Text className="text-base font-bold text-stone-900">
+                    {money(row.commissionAmount)}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+          ))
+        )}
+      </View>
+
+      <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
+        Oran ayarları
+      </Text>
 
       {error ? (
         <View className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">

@@ -37,6 +37,11 @@ export type AdminStackParamList = {
   AdminHome: undefined;
   SellerApprovals: undefined;
   UserManagement: undefined;
+  PeopleHub: undefined;
+  SellerAdminDetail: { userId: string; storeId?: string };
+  BuyerAdminDetail: { userId: string };
+  StoreCommissionDetail: { storeId: string; storeName: string };
+  AdminOrders: undefined;
   PlatformStats: undefined;
   LicenseKeys: undefined;
   Commission: undefined;

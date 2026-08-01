@@ -106,9 +106,10 @@ export function CheckoutScreen() {
       });
 
       clearCart();
+      const units = items.reduce((sum, item) => sum + item.quantity, 0);
       Alert.alert(
         'Sipariş alındı',
-        `${created.length} kalem sipariş oluşturuldu. Toplam ₺${orderTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+        `${created.length} kalem · ${units} adet sipariş oluşturuldu.\nToplam ₺${orderTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}\n\nStok sipariş anında düşürüldü. Satıcı kabul edince iletişim açılır.`,
         [
           {
             text: 'Siparişlerim',

@@ -38,22 +38,44 @@ export async function getCurrentCoords(): Promise<Coords> {
   };
 }
 
-/** Open Apple Maps / Google Maps directions to a destination. */
+/**
+ * Open a maps app / browser directions.
+ * Avoid Linking.canOpenURL on Android — https maps URLs often return false
+ * without QUERY_ALL_PACKAGES / intent queries even when openURL would work.
+ */
 export async function openMapsTo(
   dest: Coords,
   label?: string
 ): Promise<void> {
   const name = encodeURIComponent(label || 'Mağaza');
   const { latitude, longitude } = dest;
+  const query = `${latitude},${longitude}`;
 
-  const url =
+  const candidates =
     Platform.OS === 'ios'
-      ? `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${name}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+      ? [
+          `maps:0,0?q=${name}@${query}`,
+          `http://maps.apple.com/?daddr=${query}&q=${name}`,
+          `https://www.google.com/maps/dir/?api=1&destination=${query}`,
+        ]
+      : [
+          `geo:${query}?q=${query}(${name})`,
+          `google.navigation:q=${query}`,
+          `https://www.google.com/maps/dir/?api=1&destination=${query}`,
+          `https://www.google.com/maps/search/?api=1&query=${query}`,
+        ];
 
-  const can = await Linking.canOpenURL(url);
-  if (!can) {
-    throw new Error('Harita uygulaması açılamadı.');
+  let lastError: unknown;
+  for (const url of candidates) {
+    try {
+      await Linking.openURL(url);
+      return;
+    } catch (e) {
+      lastError = e;
+    }
   }
-  await Linking.openURL(url);
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Harita uygulaması açılamadı.');
 }

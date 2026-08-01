@@ -2,10 +2,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
+import { AdminOrdersScreen } from '../screens/admin/AdminOrdersScreen';
+import { BuyerAdminDetailScreen } from '../screens/admin/BuyerAdminDetailScreen';
 import { CommissionScreen } from '../screens/admin/CommissionScreen';
 import { LicenseKeysScreen } from '../screens/admin/LicenseKeysScreen';
+import { PeopleHubScreen } from '../screens/admin/PeopleHubScreen';
 import { ReportsScreen } from '../screens/admin/ReportsScreen';
+import { SellerAdminDetailScreen } from '../screens/admin/SellerAdminDetailScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
+import { StoreCommissionDetailScreen } from '../screens/admin/StoreCommissionDetailScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
 import type { AdminStackParamList } from '../types/navigation.types';
 
@@ -28,6 +33,37 @@ export function AdminNavigator() {
         name="AdminHome"
         component={AdminHomeScreen}
         options={{ title: 'Admin', headerShown: false }}
+      />
+      <Stack.Screen
+        name="PeopleHub"
+        component={PeopleHubScreen}
+        options={{ title: 'Alıcılar & Satıcılar' }}
+      />
+      <Stack.Screen
+        name="SellerAdminDetail"
+        component={SellerAdminDetailScreen}
+        options={{ title: 'Satıcı detay' }}
+      />
+      <Stack.Screen
+        name="BuyerAdminDetail"
+        component={BuyerAdminDetailScreen}
+        options={{ title: 'Alıcı detay' }}
+      />
+      <Stack.Screen
+        name="StoreCommissionDetail"
+        component={StoreCommissionDetailScreen}
+        options={{
+          title: 'Tahsilat',
+          headerStyle: { backgroundColor: '#0B1220' },
+          headerTintColor: '#FF6B00',
+          headerTitleStyle: { fontWeight: '700', color: '#fff' },
+          contentStyle: { backgroundColor: '#0B1220' },
+        }}
+      />
+      <Stack.Screen
+        name="AdminOrders"
+        component={AdminOrdersScreen}
+        options={{ title: 'Sipariş merkezi' }}
       />
       <Stack.Screen
         name="SellerApprovals"

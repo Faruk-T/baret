@@ -277,22 +277,33 @@ export function SellerOrdersScreen() {
                   · {item.quantity} adet
                 </Text>
                 {item.order_commissions ? (
-                  <Text className="mt-1 text-xs text-stone-500">
-                    Komisyon %{Number(item.order_commissions.commission_rate)} · −₺
-                    {Number(item.order_commissions.commission_amount).toLocaleString(
-                      'tr-TR',
-                      { minimumFractionDigits: 2 }
-                    )}{' '}
-                    · Net ₺
-                    {Number(item.order_commissions.seller_net_amount).toLocaleString(
-                      'tr-TR',
-                      { minimumFractionDigits: 2 }
-                    )}
-                  </Text>
+                  <View className="mt-2 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-2">
+                    <Text className="text-[11px] font-bold uppercase text-stone-500">
+                      Komisyon
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-stone-700">
+                      Platform −₺
+                      {Number(item.order_commissions.commission_amount).toLocaleString(
+                        'tr-TR',
+                        { minimumFractionDigits: 2 }
+                      )}{' '}
+                      (%{Number(item.order_commissions.commission_rate)})
+                    </Text>
+                    <Text className="text-xs font-bold text-green-700">
+                      Senin net ₺
+                      {Number(item.order_commissions.seller_net_amount).toLocaleString(
+                        'tr-TR',
+                        { minimumFractionDigits: 2 }
+                      )}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
             </View>
-            <Text className="text-xs text-stone-500">
+            <Text className="mt-1 text-xs text-amber-800">
+              Stok sipariş anında {item.quantity} adet düşürüldü.
+            </Text>
+            <Text className="mt-1 text-xs text-stone-500">
               {DELIVERY_OPTION_LABELS[item.delivery_option]}
             </Text>
             {item.delivery_address ? (

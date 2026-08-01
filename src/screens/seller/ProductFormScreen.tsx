@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +23,7 @@ import { uploadProductImage } from '../../services/storage';
 import type { DeliveryOption } from '../../types/database';
 import type { SellerProductsStackParamList } from '../../types/navigation.types';
 import { isLicenseValid } from '../../utils/license';
+import { ui } from '../../theme/ui';
 
 type Props = NativeStackScreenProps<SellerProductsStackParamList, 'ProductForm'>;
 
@@ -228,22 +230,41 @@ export function ProductFormScreen({ navigation, route }: Props) {
     >
       <ScrollView className="flex-1 px-6 pt-4" keyboardShouldPersistTaps="handled">
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün görseli</Text>
-        <Pressable
-          className="mb-4 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-gray-50"
-          onPress={handlePickImage}
-          style={{ height: 180 }}
-        >
-          {previewUri ? (
-            <Image source={{ uri: previewUri }} className="h-full w-full" resizeMode="cover" />
-          ) : (
-            <Text className="text-sm text-gray-500">Galeriden görsel seç</Text>
-          )}
-        </Pressable>
-        {previewUri ? (
-          <Pressable className="mb-4" onPress={handlePickImage}>
-            <Text className="text-center text-sm font-medium text-brand">Görseli değiştir</Text>
+        <View className="mb-4 overflow-hidden rounded-2xl border border-dashed border-stone-300 bg-stone-50">
+          <Pressable
+            className="items-center justify-center"
+            onPress={handlePickImage}
+            style={{ height: 180 }}
+          >
+            {previewUri ? (
+              <Image source={{ uri: previewUri }} className="h-full w-full" resizeMode="cover" />
+            ) : (
+              <View className="items-center px-6">
+                <View
+                  className="mb-3 h-14 w-14 items-center justify-center rounded-2xl"
+                  style={{ backgroundColor: ui.brandSoft }}
+                >
+                  <Ionicons name="images-outline" size={28} color={ui.brand} />
+                </View>
+                <Text className="text-center text-sm font-semibold text-stone-800">
+                  Ürün fotoğrafı ekle
+                </Text>
+                <Text className="mt-1 text-center text-xs text-stone-500">
+                  Dokunarak galeriden seç
+                </Text>
+              </View>
+            )}
           </Pressable>
-        ) : null}
+          <Pressable
+            className="flex-row items-center justify-center border-t border-stone-200 bg-white py-3.5"
+            onPress={handlePickImage}
+          >
+            <Ionicons name="images" size={18} color={ui.brand} />
+            <Text className="ml-2 text-sm font-bold text-brand">
+              {previewUri ? 'Galeriden değiştir' : 'Galeriden seç'}
+            </Text>
+          </Pressable>
+        </View>
 
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün adı *</Text>
         <TextInput

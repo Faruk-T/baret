@@ -33,6 +33,18 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: 'İptal Edildi',
 };
 
+/** Short next-step hint shown under buyer order cards. */
+export const ORDER_STATUS_HINTS: Record<OrderStatus, string> = {
+  pending:
+    'Satıcı siparişi henüz kabul etmedi. İstersen iptal edebilirsin.',
+  preparing:
+    'Satıcı siparişi kabul etti. Mağaza iletişimi açıldı; hazır olunca teslim kodun gelecek.',
+  shipped:
+    'Sipariş hazır. Teslim kodunu satıcıya göster / söyle — doğrulanınca tamamlanır.',
+  delivered: 'Teslim tamamlandı. İstersen mağazayı değerlendir.',
+  cancelled: 'Bu sipariş iptal edildi.',
+};
+
 export const DELIVERY_OPTION_LABELS: Record<DeliveryOption, string> = {
   kargo: 'Kargo ile Gönderim',
   gel_al: 'Mağazadan Teslim Al',
