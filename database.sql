@@ -1,5 +1,7 @@
 -- 1. ADIM: TAM TEMİZLİK (Eski Kalıntıları Siliyoruz)
+DROP TABLE IF EXISTS public.platform_reports CASCADE;
 DROP TABLE IF EXISTS public.order_commissions CASCADE;
+DROP TABLE IF EXISTS public.commission_collections CASCADE;
 DROP TABLE IF EXISTS public.platform_settings CASCADE;
 DROP TABLE IF EXISTS public.reviews CASCADE;
 DROP TABLE IF EXISTS public.orders CASCADE;
@@ -98,6 +100,7 @@ CREATE TABLE public.license_keys (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code            TEXT NOT NULL UNIQUE,
   duration_days   INTEGER NOT NULL CHECK (duration_days > 0),
+  expires_at      TIMESTAMPTZ,
   notes           TEXT,
   created_by      UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -111,14 +114,59 @@ CREATE TABLE public.license_keys (
 );
 
 CREATE TABLE public.platform_settings (
-  id               INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  commission_rate  NUMERIC(5, 2) NOT NULL DEFAULT 8.00
-                   CHECK (commission_rate >= 0 AND commission_rate <= 100),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by       UUID REFERENCES public.users(id) ON DELETE SET NULL
+  id                     INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  commission_rate        NUMERIC(5, 2) NOT NULL DEFAULT 8.00
+                         CHECK (commission_rate >= 0 AND commission_rate <= 100),
+  intro_commission_rate  NUMERIC(5, 2) NOT NULL DEFAULT 5.00
+                         CHECK (intro_commission_rate >= 0 AND intro_commission_rate <= 100),
+  intro_order_limit      INTEGER NOT NULL DEFAULT 10
+                         CHECK (intro_order_limit >= 0),
+  high_rating_discount   NUMERIC(5, 2) NOT NULL DEFAULT 1.00
+                         CHECK (high_rating_discount >= 0 AND high_rating_discount <= 100),
+  tier1_max              NUMERIC(12, 2) NOT NULL DEFAULT 100.00 CHECK (tier1_max > 0),
+  tier1_rate             NUMERIC(5, 2) NOT NULL DEFAULT 10.00
+                         CHECK (tier1_rate >= 0 AND tier1_rate <= 100),
+  tier2_max              NUMERIC(12, 2) NOT NULL DEFAULT 1000.00 CHECK (tier2_max > 0),
+  tier2_rate             NUMERIC(5, 2) NOT NULL DEFAULT 8.00
+                         CHECK (tier2_rate >= 0 AND tier2_rate <= 100),
+  tier3_rate             NUMERIC(5, 2) NOT NULL DEFAULT 5.00
+                         CHECK (tier3_rate >= 0 AND tier3_rate <= 100),
+  min_commission_amount  NUMERIC(12, 2) NOT NULL DEFAULT 1.00
+                         CHECK (min_commission_amount >= 0),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by             UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  CHECK (tier2_max > tier1_max)
 );
 
-INSERT INTO public.platform_settings (id, commission_rate) VALUES (1, 8.00);
+INSERT INTO public.platform_settings (
+  id, commission_rate, intro_commission_rate, intro_order_limit, high_rating_discount,
+  tier1_max, tier1_rate, tier2_max, tier2_rate, tier3_rate, min_commission_amount
+) VALUES (1, 10.00, 10.00, 0, 0, 100.00, 10.00, 1000.00, 10.00, 10.00, 0);
+
+CREATE TABLE public.platform_reports (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id  UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  store_id     UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  order_id     UUID REFERENCES public.orders(id) ON DELETE SET NULL,
+  reason       TEXT NOT NULL,
+  details      TEXT,
+  status       TEXT NOT NULL DEFAULT 'open'
+               CHECK (status IN ('open', 'reviewed', 'closed')),
+  admin_note   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE public.commission_collections (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id      UUID NOT NULL REFERENCES public.stores(id) ON DELETE RESTRICT,
+  amount        NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
+  order_count   INTEGER NOT NULL DEFAULT 0 CHECK (order_count >= 0),
+  note          TEXT,
+  collected_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  collected_by  UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE public.order_commissions (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -128,6 +176,7 @@ CREATE TABLE public.order_commissions (
   commission_rate    NUMERIC(5, 2) NOT NULL CHECK (commission_rate >= 0 AND commission_rate <= 100),
   commission_amount  NUMERIC(12, 2) NOT NULL CHECK (commission_amount >= 0),
   seller_net_amount  NUMERIC(12, 2) NOT NULL CHECK (seller_net_amount >= 0),
+  collection_id      UUID REFERENCES public.commission_collections(id) ON DELETE SET NULL,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (commission_amount + seller_net_amount = order_amount)
 );
@@ -150,6 +199,9 @@ CREATE INDEX idx_license_keys_unused ON public.license_keys(redeemed_at) WHERE r
 CREATE INDEX idx_stores_license_expires ON public.stores(license_expires_at);
 CREATE INDEX idx_order_commissions_store_id ON public.order_commissions(store_id);
 CREATE INDEX idx_order_commissions_created_at ON public.order_commissions(created_at DESC);
+CREATE INDEX idx_order_commissions_collection ON public.order_commissions(collection_id);
+CREATE INDEX idx_commission_collections_store ON public.commission_collections(store_id, collected_at DESC);
+CREATE INDEX idx_platform_reports_status ON public.platform_reports(status, created_at DESC);
 
 -- 5. ADIM: FONKSİYONLAR VE TRİGGERLAR
 CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$;
@@ -158,6 +210,7 @@ CREATE TRIGGER trg_stores_updated_at BEFORE UPDATE ON public.stores FOR EACH ROW
 CREATE TRIGGER trg_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER trg_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 CREATE TRIGGER trg_reviews_updated_at BEFORE UPDATE ON public.reviews FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER trg_platform_reports_updated_at BEFORE UPDATE ON public.platform_reports FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ DECLARE requested_role TEXT := COALESCE(NEW.raw_user_meta_data->>'role', 'buyer'); safe_role public.user_role := 'buyer'; BEGIN IF requested_role IN ('buyer', 'seller') THEN safe_role := requested_role::public.user_role; END IF; INSERT INTO public.users (id, email, full_name, phone, role) VALUES ( NEW.id, NEW.email, NULLIF(NEW.raw_user_meta_data->>'full_name', ''), NULLIF(NEW.raw_user_meta_data->>'phone', ''), safe_role ); RETURN NEW; END; $$;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -174,26 +227,66 @@ ALTER TABLE public.reviews  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.license_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.commission_collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platform_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "users_select_own_or_admin" ON public.users FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
 CREATE POLICY "users_update_own" ON public.users FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK ( id = auth.uid() AND role = (SELECT u.role FROM public.users u WHERE u.id = auth.uid()) );
 CREATE POLICY "users_admin_update" ON public.users FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY "stores_select_public_approved" ON public.stores FOR SELECT TO anon, authenticated USING (is_approved = TRUE AND is_active = TRUE);
+CREATE POLICY "stores_select_public_approved" ON public.stores FOR SELECT TO anon, authenticated USING (
+  is_approved = TRUE AND is_active = TRUE
+  AND license_expires_at IS NOT NULL AND license_expires_at > NOW()
+);
 CREATE POLICY "stores_select_own" ON public.stores FOR SELECT TO authenticated USING (owner_id = auth.uid() OR public.is_admin());
-CREATE POLICY "stores_insert_seller" ON public.stores FOR INSERT TO authenticated WITH CHECK ( owner_id = auth.uid() AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'seller' ) );
+CREATE POLICY "stores_insert_seller" ON public.stores FOR INSERT TO authenticated WITH CHECK ( owner_id = auth.uid() AND is_approved = FALSE AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'seller' ) );
 CREATE POLICY "stores_update_own_or_admin" ON public.stores FOR UPDATE TO authenticated USING (owner_id = auth.uid() OR public.is_admin()) WITH CHECK (owner_id = auth.uid() OR public.is_admin());
 CREATE POLICY "stores_delete_own_or_admin" ON public.stores FOR DELETE TO authenticated USING (owner_id = auth.uid() OR public.is_admin());
 
-CREATE POLICY "products_select_public_active" ON public.products FOR SELECT TO anon, authenticated USING ( is_active = TRUE AND EXISTS ( SELECT 1 FROM public.stores s WHERE s.id = products.store_id AND s.is_approved = TRUE AND s.is_active = TRUE ) );
+CREATE POLICY "products_select_public_active" ON public.products FOR SELECT TO anon, authenticated USING (
+  is_active = TRUE AND image_url IS NOT NULL AND btrim(image_url) <> ''
+  AND EXISTS (
+    SELECT 1 FROM public.stores s
+    WHERE s.id = products.store_id AND s.is_approved = TRUE AND s.is_active = TRUE
+      AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+  )
+);
 CREATE POLICY "products_select_own_store" ON public.products FOR SELECT TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin());
-CREATE POLICY "products_insert_store_owner" ON public.products FOR INSERT TO authenticated WITH CHECK (public.is_store_owner(store_id) OR public.is_admin());
-CREATE POLICY "products_update_store_owner" ON public.products FOR UPDATE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin()) WITH CHECK (public.is_store_owner(store_id) OR public.is_admin());
+CREATE POLICY "products_insert_store_owner" ON public.products FOR INSERT TO authenticated WITH CHECK (
+  public.is_admin() OR (
+    public.is_store_owner(store_id)
+    AND EXISTS (
+      SELECT 1 FROM public.stores s
+      WHERE s.id = store_id AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+    )
+  )
+);
+CREATE POLICY "products_update_store_owner" ON public.products FOR UPDATE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin()) WITH CHECK (
+  public.is_admin() OR (
+    public.is_store_owner(store_id)
+    AND EXISTS (
+      SELECT 1 FROM public.stores s
+      WHERE s.id = store_id AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+    )
+  )
+);
 CREATE POLICY "products_delete_store_owner" ON public.products FOR DELETE TO authenticated USING (public.is_store_owner(store_id) OR public.is_admin());
 
 CREATE POLICY "orders_select_buyer" ON public.orders FOR SELECT TO authenticated USING (buyer_id = auth.uid() OR public.is_admin());
 CREATE POLICY "orders_select_seller" ON public.orders FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
-CREATE POLICY "orders_insert_buyer" ON public.orders FOR INSERT TO authenticated WITH CHECK ( buyer_id = auth.uid() AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'buyer' ) AND EXISTS ( SELECT 1 FROM public.products p JOIN public.stores s ON s.id = p.store_id WHERE p.id = product_id AND p.store_id = orders.store_id AND p.is_active = TRUE AND p.stock >= orders.quantity AND s.is_approved = TRUE AND s.is_active = TRUE ) );
+CREATE POLICY "orders_insert_buyer" ON public.orders FOR INSERT TO authenticated WITH CHECK (
+  buyer_id = auth.uid()
+  AND EXISTS ( SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'buyer' )
+  AND EXISTS (
+    SELECT 1 FROM public.products p
+    JOIN public.stores s ON s.id = p.store_id
+    WHERE p.id = product_id AND p.store_id = orders.store_id
+      AND p.is_active = TRUE AND p.stock >= orders.quantity
+      AND p.image_url IS NOT NULL AND btrim(p.image_url) <> ''
+      AND s.is_approved = TRUE AND s.is_active = TRUE
+      AND s.license_expires_at IS NOT NULL AND s.license_expires_at > NOW()
+  )
+);
 CREATE POLICY "orders_update_buyer_cancel" ON public.orders FOR UPDATE TO authenticated USING (buyer_id = auth.uid() AND status = 'pending') WITH CHECK (buyer_id = auth.uid() AND status = 'cancelled');
 CREATE POLICY "orders_update_seller" ON public.orders FOR UPDATE TO authenticated USING (public.is_store_owner(store_id)) WITH CHECK (public.is_store_owner(store_id));
 CREATE POLICY "orders_update_admin" ON public.orders FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -249,8 +342,15 @@ BEGIN
     RAISE EXCEPTION 'Bu anahtar daha önce kullanılmış';
   END IF;
 
-  v_base := GREATEST(COALESCE(v_store.license_expires_at, NOW()), NOW());
-  v_new_expiry := v_base + make_interval(days => v_key.duration_days);
+  IF v_key.expires_at IS NOT NULL THEN
+    IF v_key.expires_at <= NOW() THEN
+      RAISE EXCEPTION 'Bu lisans anahtarının hedef tarihi geçmiş';
+    END IF;
+    v_new_expiry := v_key.expires_at;
+  ELSE
+    v_base := GREATEST(COALESCE(v_store.license_expires_at, NOW()), NOW());
+    v_new_expiry := v_base + make_interval(days => v_key.duration_days);
+  END IF;
 
   UPDATE public.license_keys
   SET
@@ -259,10 +359,14 @@ BEGIN
     store_id = v_store.id
   WHERE id = v_key.id;
 
+  PERFORM set_config('baret.allow_license_update', 'on', true);
+
   UPDATE public.stores
   SET license_expires_at = v_new_expiry
   WHERE id = v_store.id
   RETURNING * INTO v_store;
+
+  PERFORM set_config('baret.allow_license_update', 'off', true);
 
   RETURN v_store;
 END;
@@ -277,6 +381,13 @@ CREATE POLICY "platform_settings_admin_insert" ON public.platform_settings FOR I
 
 CREATE POLICY "order_commissions_admin_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY "order_commissions_seller_select" ON public.order_commissions FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
+CREATE POLICY "order_commissions_admin_update" ON public.order_commissions FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "commission_collections_admin_all" ON public.commission_collections FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "commission_collections_seller_select" ON public.commission_collections FOR SELECT TO authenticated USING (public.is_store_owner(store_id));
+
+CREATE POLICY "platform_reports_insert_own" ON public.platform_reports FOR INSERT TO authenticated WITH CHECK (reporter_id = auth.uid());
+CREATE POLICY "platform_reports_select_own_or_admin" ON public.platform_reports FOR SELECT TO authenticated USING (reporter_id = auth.uid() OR public.is_admin());
+CREATE POLICY "platform_reports_admin_update" ON public.platform_reports FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 CREATE OR REPLACE FUNCTION public.create_order_commission()
 RETURNS TRIGGER
@@ -289,9 +400,14 @@ DECLARE
   v_commission NUMERIC(12, 2);
   v_net NUMERIC(12, 2);
 BEGIN
-  SELECT commission_rate INTO v_rate FROM public.platform_settings WHERE id = 1;
+  -- Flat percent only (default %10). No tiers / intro / rating discount.
+  SELECT COALESCE(commission_rate, 10.00)
+  INTO v_rate
+  FROM public.platform_settings
+  WHERE id = 1;
+
   IF v_rate IS NULL THEN
-    v_rate := 8.00;
+    v_rate := 10.00;
   END IF;
 
   v_commission := ROUND(NEW.total_amount * v_rate / 100.0, 2);
@@ -320,7 +436,14 @@ SET search_path = public
 AS $$
 BEGIN
   IF OLD.status IS DISTINCT FROM 'cancelled' AND NEW.status = 'cancelled' THEN
-    DELETE FROM public.order_commissions WHERE order_id = NEW.id;
+    IF EXISTS (
+      SELECT 1 FROM public.order_commissions c
+      WHERE c.order_id = NEW.id AND c.collection_id IS NOT NULL
+    ) THEN
+      RAISE EXCEPTION 'Tahsil edilmiş komisyonlu sipariş iptal edilemez';
+    END IF;
+    DELETE FROM public.order_commissions
+    WHERE order_id = NEW.id AND collection_id IS NULL;
   END IF;
   RETURN NEW;
 END;
@@ -348,6 +471,23 @@ BEGIN
 END;
 $$;
 
+CREATE TABLE public.order_pickup_secrets (
+  order_id   UUID PRIMARY KEY REFERENCES public.orders(id) ON DELETE CASCADE,
+  code       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_order_pickup_secrets_code ON public.order_pickup_secrets (upper(code));
+ALTER TABLE public.order_pickup_secrets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "pickup_secrets_buyer_admin_select" ON public.order_pickup_secrets
+  FOR SELECT TO authenticated
+  USING (
+    public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_id AND o.buyer_id = auth.uid()
+    )
+  );
+
 CREATE OR REPLACE FUNCTION public.set_pickup_code_on_shipped()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -359,17 +499,17 @@ DECLARE
   attempts INTEGER := 0;
 BEGIN
   IF NEW.status = 'shipped' AND (OLD.status IS DISTINCT FROM 'shipped') THEN
-    IF NEW.pickup_code IS NULL OR btrim(NEW.pickup_code) = '' THEN
-      LOOP
-        candidate := public.generate_pickup_code();
-        attempts := attempts + 1;
-        EXIT WHEN NOT EXISTS (
-          SELECT 1 FROM public.orders
-          WHERE pickup_code = candidate AND status = 'shipped'
-        ) OR attempts > 20;
-      END LOOP;
-      NEW.pickup_code := candidate;
-    END IF;
+    LOOP
+      candidate := public.generate_pickup_code();
+      attempts := attempts + 1;
+      EXIT WHEN NOT EXISTS (
+        SELECT 1 FROM public.order_pickup_secrets s WHERE upper(s.code) = candidate
+      ) OR attempts > 20;
+    END LOOP;
+    INSERT INTO public.order_pickup_secrets (order_id, code)
+    VALUES (NEW.id, candidate)
+    ON CONFLICT (order_id) DO UPDATE SET code = EXCLUDED.code;
+    NEW.pickup_code := NULL;
   END IF;
   RETURN NEW;
 END;
@@ -401,7 +541,8 @@ BEGIN
   SELECT o.* INTO v_order
   FROM public.orders o
   JOIN public.stores s ON s.id = o.store_id
-  WHERE o.pickup_code = v_normalized
+  JOIN public.order_pickup_secrets sec ON sec.order_id = o.id
+  WHERE upper(sec.code) = v_normalized
     AND o.status = 'shipped'
     AND s.owner_id = auth.uid()
   FOR UPDATE OF o;
@@ -410,10 +551,12 @@ BEGIN
     RAISE EXCEPTION 'Kod bulunamadı veya sipariş teslime hazır değil';
   END IF;
 
+  PERFORM set_config('baret.allow_deliver', 'on', true);
   UPDATE public.orders
   SET status = 'delivered'
   WHERE id = v_order.id
   RETURNING * INTO v_order;
+  PERFORM set_config('baret.allow_deliver', 'off', true);
 
   RETURN v_order;
 END;
@@ -421,4 +564,174 @@ $$;
 
 REVOKE ALL ON FUNCTION public.confirm_order_pickup(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.confirm_order_pickup(TEXT) TO authenticated;
+
+-- Contact unlock after seller accepts (anti-leakage)
+CREATE OR REPLACE FUNCTION public.get_order_store_contact(p_order_id UUID)
+RETURNS TABLE (
+  store_id UUID,
+  store_name TEXT,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  city TEXT,
+  district TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Giriş gerekli';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    s.id,
+    s.name,
+    s.phone,
+    s.email,
+    s.address,
+    s.city,
+    s.district,
+    s.latitude,
+    s.longitude
+  FROM public.orders o
+  JOIN public.stores s ON s.id = o.store_id
+  WHERE o.id = p_order_id
+    AND o.buyer_id = auth.uid()
+    AND o.status IN ('preparing', 'shipped', 'delivered');
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'İletişim bilgisi henüz açılamaz (satıcı siparişi kabul etmeli)';
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_order_store_contact(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_order_store_contact(UUID) TO authenticated;
+
+-- Stock sync: decrement on order insert, restore on pending → cancelled
+CREATE OR REPLACE FUNCTION public.decrement_stock_on_order()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.products
+  SET stock = stock - NEW.quantity
+  WHERE id = NEW.product_id
+    AND stock >= NEW.quantity;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Stok yetersiz veya ürün bulunamadı (product_id=%)', NEW.product_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_orders_decrement_stock ON public.orders;
+CREATE TRIGGER trg_orders_decrement_stock
+  AFTER INSERT ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.decrement_stock_on_order();
+
+CREATE OR REPLACE FUNCTION public.restore_stock_on_cancel()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM 'cancelled'
+     AND NEW.status = 'cancelled'
+     AND OLD.status IN ('pending', 'preparing', 'shipped') THEN
+    UPDATE public.products
+    SET stock = stock + OLD.quantity
+    WHERE id = OLD.product_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_orders_restore_stock ON public.orders;
+CREATE TRIGGER trg_orders_restore_stock
+  AFTER UPDATE OF status ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.restore_stock_on_cancel();
+
+-- Live store approval updates for sellers
+ALTER TABLE public.stores REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'stores'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.stores;
+  END IF;
+END;
+$$;
+
+-- Admin: collect unsettled commissions for a store
+CREATE OR REPLACE FUNCTION public.collect_store_commissions(
+  p_store_id UUID,
+  p_note TEXT DEFAULT NULL
+)
+RETURNS public.commission_collections
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_admin UUID := auth.uid();
+  v_amount NUMERIC(12, 2);
+  v_count INTEGER;
+  v_row public.commission_collections;
+BEGIN
+  IF v_admin IS NULL OR NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Sadece admin tahsilat yapabilir';
+  END IF;
+
+  SELECT COALESCE(SUM(commission_amount), 0), COUNT(*)
+  INTO v_amount, v_count
+  FROM public.order_commissions
+  WHERE store_id = p_store_id
+    AND collection_id IS NULL;
+
+  IF v_count = 0 THEN
+    RAISE EXCEPTION 'Bu mağaza için bekleyen komisyon yok';
+  END IF;
+
+  INSERT INTO public.commission_collections (
+    store_id, amount, order_count, note, collected_by
+  ) VALUES (
+    p_store_id, v_amount, v_count, NULLIF(btrim(p_note), ''), v_admin
+  )
+  RETURNING * INTO v_row;
+
+  UPDATE public.order_commissions
+  SET collection_id = v_row.id
+  WHERE store_id = p_store_id
+    AND collection_id IS NULL;
+
+  RETURN v_row;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.collect_store_commissions(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.collect_store_commissions(UUID, TEXT) TO authenticated;
+
+-- Remaining live-DB hardening (price lock, status machine, store column protect,
+-- notify_user RPC, pickup secrets migration) — apply on existing projects:
+--   docs/security-hardening-setup.sql
+-- Fresh wipes from this file already include license gate RLS, pickup secrets,
+-- commission/stock cancel rules, and absolute license redeem.
 

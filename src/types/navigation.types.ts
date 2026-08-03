@@ -28,6 +28,11 @@ export type SellerTabParamList = {
   StoreSettings: undefined;
 };
 
+export type SellerStackParamList = {
+  SellerTabs: undefined;
+  Notifications: undefined;
+};
+
 export type SellerProductsStackParamList = {
   ProductList: undefined;
   ProductForm: { productId?: string } | undefined;
@@ -37,6 +42,17 @@ export type AdminStackParamList = {
   AdminHome: undefined;
   SellerApprovals: undefined;
   UserManagement: undefined;
+  PeopleHub: undefined;
+  SellerAdminDetail: { userId: string; storeId?: string };
+  BuyerAdminDetail: { userId: string };
+  StoreCommissionDetail: { storeId: string; storeName: string };
+  AdminOrders: undefined;
+  FinanceSummary: undefined;
+  StoreHealth: undefined;
+  AuditLog: undefined;
+  ProductModeration: undefined;
+  NotificationsCenter: undefined;
+  AdminRoles: undefined;
   PlatformStats: undefined;
   LicenseKeys: undefined;
   Commission: undefined;

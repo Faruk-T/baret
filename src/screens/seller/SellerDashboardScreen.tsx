@@ -24,7 +24,8 @@ import {
   type ReviewWithBuyer,
 } from '../../services/reviews';
 import { countPendingStoreOrders } from '../../services/orders';
-import type { Product } from '../../types/database';
+import { supabase } from '../../services/supabase';
+import type { Product, Store } from '../../types/database';
 import type { SellerTabParamList } from '../../types/navigation.types';
 import {
   formatLicenseExpiry,
@@ -39,6 +40,7 @@ export function SellerDashboardScreen() {
   const navigation = useNavigation<TabNav>();
   const { user } = useAuth();
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
   const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
   const [pendingOrders, setPendingOrders] = useState(0);
   const [summary, setSummary] = useState({ average: 0, count: 0 });
@@ -56,6 +58,7 @@ export function SellerDashboardScreen() {
       const store = await getMyStore(user.id);
       if (!store) {
         setStoreName(null);
+        setIsApproved(false);
         setLicenseExpiresAt(null);
         setPendingOrders(0);
         setReviews([]);
@@ -64,6 +67,7 @@ export function SellerDashboardScreen() {
         return;
       }
       setStoreName(store.name);
+      setIsApproved(store.is_approved);
       setLicenseExpiresAt(store.license_expires_at);
       const [rating, rows, products, pending] = await Promise.all([
         getStoreRatingSummary(store.id),
@@ -91,7 +95,42 @@ export function SellerDashboardScreen() {
     useCallback(() => {
       setLoading(true);
       void load();
-    }, [load])
+      if (!user?.id) return;
+
+      const channel = supabase
+        .channel(`dashboard-store-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'stores',
+            filter: `owner_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const next = payload.new as Store;
+            setStoreName(next.name);
+            setIsApproved(next.is_approved);
+            setLicenseExpiresAt(next.license_expires_at);
+          }
+        )
+        .subscribe();
+
+      const poll = setInterval(() => {
+        void getMyStore(user.id).then((store) => {
+          if (!store) return;
+          setIsApproved(store.is_approved);
+          setStoreName(store.name);
+          setLicenseExpiresAt(store.license_expires_at);
+          if (store.is_approved) clearInterval(poll);
+        });
+      }, 4000);
+
+      return () => {
+        clearInterval(poll);
+        void supabase.removeChannel(channel);
+      };
+    }, [load, user?.id])
   );
 
   if (loading) {
@@ -143,9 +182,41 @@ export function SellerDashboardScreen() {
       }
     >
       <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
-      <Text className="mb-4 text-sm text-stone-500">
+      <Text className="mb-3 text-sm text-stone-500">
         Mağaza paneli · stok, lisans ve siparişler
       </Text>
+
+      <View className="mb-4 rounded-2xl border border-stone-200 bg-white px-3 py-3">
+        <Text className="text-sm text-stone-600">
+          Bildirimler sağ üstteki zil ikonunda. Okunmamışlar kırmızı rozetle
+          görünür; listede kalır, zaman damgasıyla izlenir.
+        </Text>
+      </View>
+
+      <View
+        className={`mb-4 rounded-2xl border px-3 py-3 ${
+          isApproved
+            ? 'border-green-200 bg-green-50'
+            : 'border-amber-200 bg-amber-50'
+        }`}
+      >
+        <Text
+          className={`text-sm font-bold ${
+            isApproved ? 'text-green-800' : 'text-amber-900'
+          }`}
+        >
+          {isApproved ? 'Mağaza onaylandı' : 'Onay bekleniyor'}
+        </Text>
+        <Text
+          className={`mt-1 text-xs ${
+            isApproved ? 'text-green-700' : 'text-amber-800'
+          }`}
+        >
+          {isApproved
+            ? 'Ürünlerin alıcı kataloğunda görünür.'
+            : 'Admin onaylayınca burada otomatik güncellenir — çıkış yapmana gerek yok.'}
+        </Text>
+      </View>
 
       <View className="mb-4 flex-row gap-3">
         <UiCard className="flex-1 items-center py-3">

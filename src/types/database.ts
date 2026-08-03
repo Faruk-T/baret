@@ -14,6 +14,8 @@ export type OrderStatus =
 
 export type DeliveryOption = 'kargo' | 'gel_al' | 'aracla_teslim';
 
+export type AdminRole = 'super' | 'support' | 'finance';
+
 /** Use `type` (not `interface`) so rows satisfy postgrest `Record<string, unknown>`. */
 export type User = {
   id: string;
@@ -21,6 +23,7 @@ export type User = {
   full_name: string | null;
   phone: string | null;
   role: UserRole;
+  admin_role?: AdminRole | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -50,12 +53,34 @@ export type LicenseKey = {
   id: string;
   code: string;
   duration_days: number;
+  expires_at: string | null;
   notes: string | null;
   created_by: string;
   created_at: string;
   redeemed_by: string | null;
   redeemed_at: string | null;
   store_id: string | null;
+};
+
+export type AdminAuditLog = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AppNotification = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  kind: string;
+  is_read: boolean;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type Product = {
@@ -107,6 +132,12 @@ export type PlatformSettings = {
   intro_commission_rate: number;
   intro_order_limit: number;
   high_rating_discount: number;
+  tier1_max: number;
+  tier1_rate: number;
+  tier2_max: number;
+  tier2_rate: number;
+  tier3_rate: number;
+  min_commission_amount: number;
   updated_at: string;
   updated_by: string | null;
 };
@@ -119,6 +150,18 @@ export type OrderCommission = {
   commission_rate: number;
   commission_amount: number;
   seller_net_amount: number;
+  collection_id: string | null;
+  created_at: string;
+};
+
+export type CommissionCollection = {
+  id: string;
+  store_id: string;
+  amount: number;
+  order_count: number;
+  note: string | null;
+  collected_at: string;
+  collected_by: string | null;
   created_at: string;
 };
 
@@ -192,6 +235,7 @@ export type Database = {
           id?: string;
           code: string;
           duration_days: number;
+          expires_at?: string | null;
           notes?: string | null;
           created_by: string;
           created_at?: string;
@@ -201,6 +245,57 @@ export type Database = {
         };
         Update: Partial<Omit<LicenseKey, 'id'>>;
         Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: AdminAuditLog;
+        Insert: {
+          id?: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          meta?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AdminAuditLog, 'id'>>;
+        Relationships: [];
+      };
+      app_notifications: {
+        Row: AppNotification;
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          body: string;
+          kind?: string;
+          is_read?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AppNotification, 'id'>>;
+        Relationships: [];
+      };
+      order_pickup_secrets: {
+        Row: {
+          order_id: string;
+          code: string;
+          created_at: string;
+        };
+        Insert: {
+          order_id: string;
+          code: string;
+          created_at?: string;
+        };
+        Update: Partial<{ code: string; created_at: string }>;
+        Relationships: [
+          {
+            foreignKeyName: 'order_pickup_secrets_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: true;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       products: {
         Row: Product;
@@ -303,10 +398,31 @@ export type Database = {
           intro_commission_rate?: number;
           intro_order_limit?: number;
           high_rating_discount?: number;
+          tier1_max?: number;
+          tier1_rate?: number;
+          tier2_max?: number;
+          tier2_rate?: number;
+          tier3_rate?: number;
+          min_commission_amount?: number;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: Partial<Omit<PlatformSettings, 'id'>>;
+        Relationships: [];
+      };
+      commission_collections: {
+        Row: CommissionCollection;
+        Insert: {
+          id?: string;
+          store_id: string;
+          amount: number;
+          order_count?: number;
+          note?: string | null;
+          collected_at?: string;
+          collected_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<CommissionCollection, 'id'>>;
         Relationships: [];
       };
       order_commissions: {
@@ -319,6 +435,7 @@ export type Database = {
           commission_rate: number;
           commission_amount: number;
           seller_net_amount: number;
+          collection_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Omit<OrderCommission, 'id'>>;
@@ -380,6 +497,23 @@ export type Database = {
       confirm_order_pickup: {
         Args: { p_code: string };
         Returns: Order;
+      };
+      collect_store_commissions: {
+        Args: { p_store_id: string; p_note?: string | null };
+        Returns: CommissionCollection;
+      };
+      notify_user: {
+        Args: {
+          p_user_id: string;
+          p_title: string;
+          p_body: string;
+          p_kind?: string;
+        };
+        Returns: AppNotification;
+      };
+      get_order_pickup_code: {
+        Args: { p_order_id: string };
+        Returns: string | null;
       };
     };
     CompositeTypes: {

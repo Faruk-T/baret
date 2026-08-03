@@ -12,7 +12,7 @@ export type OrderWithProduct = Order & {
     city: string;
     district: string | null;
   } | null;
-  order_commissions: {
+  order_commissions?: {
     commission_rate: number;
     commission_amount: number;
     seller_net_amount: number;
@@ -58,9 +58,32 @@ export async function createOrdersFromCart(input: CheckoutInput): Promise<Order[
     throw new Error('Bu teslimat için adres gerekli.');
   }
 
+  // Re-validate live price/stock (server also overwrites price)
+  const productIds = items.map((i) => i.productId);
+  const { data: liveProducts, error: liveError } = await supabase
+    .from('products')
+    .select('id, price, stock, is_active, store_id')
+    .in('id', productIds);
+  if (liveError) throw liveError;
+  const byId = new Map((liveProducts ?? []).map((p) => [p.id, p]));
+
+  for (const item of items) {
+    const live = byId.get(item.productId);
+    if (!live || !live.is_active) {
+      throw new Error(`“${item.name}” artık satışta değil. Sepeti güncelle.`);
+    }
+    if (Number(live.stock) < item.quantity) {
+      throw new Error(
+        `“${item.name}” için stok yetersiz (kalan: ${live.stock}).`
+      );
+    }
+  }
+
   // Schema: one orders row per product line (no order_items table yet).
+  // unit_price is overwritten by DB trigger from products.price
   const rows = items.map((item) => {
-    const unitPrice = Number(item.price);
+    const live = byId.get(item.productId)!;
+    const unitPrice = Number(live.price);
     const quantity = item.quantity;
     return {
       buyer_id: buyerId,
@@ -79,7 +102,33 @@ export async function createOrdersFromCart(input: CheckoutInput): Promise<Order[
   const { data, error } = await supabase.from('orders').insert(rows).select('*');
 
   if (error) throw error;
-  return data ?? [];
+  const created = data ?? [];
+
+  // Best-effort: notify store owners of new orders (in-app).
+  try {
+    const storeIds = [...new Set(created.map((o) => o.store_id))];
+    if (storeIds.length > 0) {
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id, owner_id, name')
+        .in('id', storeIds);
+      const { notifyUserSafe } = await import('./adminOps');
+      for (const store of stores ?? []) {
+        const count = created.filter((o) => o.store_id === store.id).length;
+        await notifyUserSafe({
+          userId: store.owner_id,
+          title: 'Yeni sipariş',
+          body: `${store.name}: ${count} yeni satır bekliyor.`,
+          kind: 'order',
+          createdBy: buyerId,
+        });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return created;
 }
 
 export async function listBuyerOrders(buyerId: string): Promise<OrderWithProduct[]> {
@@ -89,14 +138,54 @@ export async function listBuyerOrders(buyerId: string): Promise<OrderWithProduct
       `
       *,
       products ( name, image_url ),
-      stores ( name, city, district )
+      stores ( name, city, district ),
+      order_pickup_secrets ( code )
     `
     )
     .eq('buyer_id', buyerId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data as OrderWithProduct[]) ?? [];
+  if (error) {
+    // Fallback if secrets table not migrated yet
+    const legacy = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        products ( name, image_url ),
+        stores ( name, city, district )
+      `
+      )
+      .eq('buyer_id', buyerId)
+      .order('created_at', { ascending: false });
+    if (legacy.error) throw legacy.error;
+    return (legacy.data as OrderWithProduct[]) ?? [];
+  }
+
+  type Row = OrderWithProduct & {
+    order_pickup_secrets?: { code: string } | null;
+  };
+  const mapped = ((data as unknown as Row[]) ?? []).map((row) => {
+    const { order_pickup_secrets, ...rest } = row;
+    return {
+      ...rest,
+      pickup_code: order_pickup_secrets?.code ?? rest.pickup_code ?? null,
+    };
+  });
+
+  // Fallback RPC if join empty on shipped orders
+  await Promise.all(
+    mapped.map(async (row, idx) => {
+      if (row.status === 'shipped' && !row.pickup_code) {
+        const { data: code } = await supabase.rpc('get_order_pickup_code', {
+          p_order_id: row.id,
+        });
+        if (code) mapped[idx] = { ...row, pickup_code: code as string };
+      }
+    })
+  );
+
+  return mapped;
 }
 
 export async function listStoreOrders(storeId: string): Promise<OrderWithProduct[]> {
@@ -132,6 +221,18 @@ export async function countPendingStoreOrders(storeId: string): Promise<number> 
   return count ?? 0;
 }
 
+/** pending + preparing + shipped — seller still needs fulfillment access */
+export async function countOpenStoreOrders(storeId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', storeId)
+    .in('status', ['pending', 'preparing', 'shipped']);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function cancelBuyerOrder(orderId: string, buyerId: string): Promise<Order> {
   const { data, error } = await supabase
     .from('orders')
@@ -139,6 +240,29 @@ export async function cancelBuyerOrder(orderId: string, buyerId: string): Promis
     .eq('id', orderId)
     .eq('buyer_id', buyerId)
     .eq('status', 'pending')
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Seller reject: pending or preparing → cancelled (stock restored by trigger). */
+export async function cancelSellerOrder(orderId: string): Promise<Order> {
+  const { data: current, error: readError } = await supabase
+    .from('orders')
+    .select('id, status, buyer_id')
+    .eq('id', orderId)
+    .single();
+  if (readError) throw readError;
+  if (!current || !['pending', 'preparing'].includes(current.status)) {
+    throw new Error('Bu sipariş artık reddedilemez.');
+  }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', orderId)
     .select('*')
     .single();
 

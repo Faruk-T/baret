@@ -17,8 +17,10 @@ import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { UiCard } from '../../components/ui/UiCard';
 import { useAuth } from '../../context/AuthContext';
+import { notifyBuyerOrderStatus } from '../../services/adminOps';
 import { getMyStore } from '../../services/stores';
 import {
+  cancelSellerOrder,
   confirmOrderPickup,
   listStoreOrders,
   updateSellerOrderStatus,
@@ -89,35 +91,84 @@ export function SellerOrdersScreen() {
     }, [load])
   );
 
+  const runAdvance = async (order: OrderWithProduct, next: NonNullable<typeof SELLER_NEXT[keyof typeof SELLER_NEXT]>) => {
+    try {
+      const updated = await updateSellerOrderStatus(order.id, next);
+      if (user?.id) {
+        await notifyBuyerOrderStatus(
+          { buyer_id: updated.buyer_id, id: updated.id, status: updated.status },
+          user.id
+        );
+      }
+      await load();
+      if (next === 'shipped') {
+        Alert.alert(
+          'Teslime hazır',
+          'Alıcı kendi uygulamasında 6 haneli teslim kodunu görecek. Kod sana görünmez — mağazaya gelince kodu buraya girerek doğrularsın.'
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Güncellenemedi.';
+      Alert.alert('Hata', message);
+    }
+  };
+
   const advance = (order: OrderWithProduct) => {
     const next = SELLER_NEXT[order.status];
     if (!next) return;
+    // Pending → preparing: one tap, no confirm dialog
+    if (order.status === 'pending' && next === 'preparing') {
+      void runAdvance(order, next);
+      return;
+    }
     Alert.alert('Durum güncelle', `Sipariş “${nextStatusLabel(order, next)}” olsun mu?`, [
       { text: 'Vazgeç', style: 'cancel' },
       {
         text: 'Güncelle',
         onPress: () => {
-          void (async () => {
-            try {
-              const updated = await updateSellerOrderStatus(order.id, next);
-              await load();
-              if (next === 'shipped') {
-                Alert.alert(
-                  'Teslim kodu oluştu',
-                  updated.pickup_code
-                    ? 'Alıcı kendi uygulamasında 6 haneli kodu görecek. Mağazaya gelince kodu senden doğrulatır — sen kodu burada girersin.'
-                    : 'Durum güncellendi. Kod görünmüyorsa pickup-code SQL’ini çalıştırıp yenile.'
-                );
-              }
-            } catch (error) {
-              const message =
-                error instanceof Error ? error.message : 'Güncellenemedi.';
-              Alert.alert('Hata', message);
-            }
-          })();
+          void runAdvance(order, next);
         },
       },
     ]);
+  };
+
+  const rejectOrder = (order: OrderWithProduct) => {
+    if (order.status !== 'pending' && order.status !== 'preparing') return;
+    Alert.alert(
+      'Siparişi reddet',
+      'Sipariş iptal edilir, stok geri eklenir. Alıcıya bildirim gider.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Reddet',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                const updated = await cancelSellerOrder(order.id);
+                if (user?.id) {
+                  await notifyBuyerOrderStatus(
+                    {
+                      buyer_id: updated.buyer_id,
+                      id: updated.id,
+                      status: 'cancelled',
+                    },
+                    user.id
+                  );
+                }
+                await load();
+              } catch (error) {
+                Alert.alert(
+                  'Hata',
+                  error instanceof Error ? error.message : 'Reddedilemedi.'
+                );
+              }
+            })();
+          },
+        },
+      ]
+    );
   };
 
   const verifyPickup = async () => {
@@ -129,6 +180,12 @@ export function SellerOrdersScreen() {
     try {
       setVerifying(true);
       const order = await confirmOrderPickup(code);
+      if (user?.id) {
+        await notifyBuyerOrderStatus(
+          { buyer_id: order.buyer_id, id: order.id, status: 'delivered' },
+          user.id
+        );
+      }
       setPickupInput('');
       await load();
       Alert.alert(
@@ -277,22 +334,33 @@ export function SellerOrdersScreen() {
                   · {item.quantity} adet
                 </Text>
                 {item.order_commissions ? (
-                  <Text className="mt-1 text-xs text-stone-500">
-                    Komisyon %{Number(item.order_commissions.commission_rate)} · −₺
-                    {Number(item.order_commissions.commission_amount).toLocaleString(
-                      'tr-TR',
-                      { minimumFractionDigits: 2 }
-                    )}{' '}
-                    · Net ₺
-                    {Number(item.order_commissions.seller_net_amount).toLocaleString(
-                      'tr-TR',
-                      { minimumFractionDigits: 2 }
-                    )}
-                  </Text>
+                  <View className="mt-2 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-2">
+                    <Text className="text-[11px] font-bold uppercase text-stone-500">
+                      Komisyon
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-stone-700">
+                      Platform −₺
+                      {Number(item.order_commissions.commission_amount).toLocaleString(
+                        'tr-TR',
+                        { minimumFractionDigits: 2 }
+                      )}{' '}
+                      (%{Number(item.order_commissions.commission_rate)})
+                    </Text>
+                    <Text className="text-xs font-bold text-green-700">
+                      Senin net ₺
+                      {Number(item.order_commissions.seller_net_amount).toLocaleString(
+                        'tr-TR',
+                        { minimumFractionDigits: 2 }
+                      )}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
             </View>
-            <Text className="text-xs text-stone-500">
+            <Text className="mt-1 text-xs text-amber-800">
+              Stok sipariş anında {item.quantity} adet düşürüldü.
+            </Text>
+            <Text className="mt-1 text-xs text-stone-500">
               {DELIVERY_OPTION_LABELS[item.delivery_option]}
             </Text>
             {item.delivery_address ? (
@@ -312,16 +380,26 @@ export function SellerOrdersScreen() {
               </View>
             ) : null}
 
-            {next ? (
-              <Pressable
-                className="mt-3 self-start rounded-xl bg-brand px-4 py-2.5"
-                onPress={() => advance(item)}
-              >
-                <Text className="font-bold text-white">
-                  → {nextStatusLabel(item, next)}
-                </Text>
-              </Pressable>
-            ) : null}
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {next ? (
+                <Pressable
+                  className="rounded-xl bg-brand px-4 py-2.5"
+                  onPress={() => advance(item)}
+                >
+                  <Text className="font-bold text-white">
+                    → {nextStatusLabel(item, next)}
+                  </Text>
+                </Pressable>
+              ) : null}
+              {item.status === 'pending' || item.status === 'preparing' ? (
+                <Pressable
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5"
+                  onPress={() => rejectOrder(item)}
+                >
+                  <Text className="font-bold text-red-600">Reddet</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </UiCard>
         );
       }}

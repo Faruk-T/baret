@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +23,7 @@ import { uploadProductImage } from '../../services/storage';
 import type { DeliveryOption } from '../../types/database';
 import type { SellerProductsStackParamList } from '../../types/navigation.types';
 import { isLicenseValid } from '../../utils/license';
+import { ui } from '../../theme/ui';
 
 type Props = NativeStackScreenProps<SellerProductsStackParamList, 'ProductForm'>;
 
@@ -146,68 +148,92 @@ export function ProductFormScreen({ navigation, route }: Props) {
       Alert.alert('Teslimat', 'En az bir teslimat seçeneği seç.');
       return;
     }
-
-    let productSaved = false;
+    if (!isEdit && !localImageUri && !imageUrl) {
+      Alert.alert(
+        'Ürün görseli gerekli',
+        'Yeni ürün için galeriden bir fotoğraf seçmelisin.'
+      );
+      return;
+    }
 
     try {
       setIsSaving(true);
-      const payload = {
+      const basePayload = {
         name,
         description,
         price: parsedPrice,
         stock: parsedStock,
         delivery_options: deliveryOptions,
-        is_active: isActive,
         image_url: imageUrl,
       };
 
       let savedId = productId;
+      let finalImageUrl = imageUrl;
 
       if (isEdit && productId) {
-        await updateProduct(productId, payload);
-        productSaved = true;
+        // Upload new image before activating when needed
+        if (localImageUri) {
+          finalImageUrl = await uploadProductImage(
+            storeId,
+            productId,
+            localImageUri,
+            localImageMime
+          );
+        }
+        if (isActive && !finalImageUrl) {
+          Alert.alert(
+            'Görsel gerekli',
+            'Aktif ürün için fotoğraf zorunlu. Galeriden seç veya pasif kaydet.'
+          );
+          return;
+        }
+        await updateProduct(productId, {
+          ...basePayload,
+          image_url: finalImageUrl,
+          is_active: isActive,
+        });
       } else {
-        const created = await createProduct(storeId, payload);
+        // Create inactive shell → upload photo → then set desired active flag
+        const created = await createProduct(storeId, {
+          ...basePayload,
+          is_active: false,
+          image_url: null,
+        });
         savedId = created.id;
-        productSaved = true;
-      }
-
-      if (localImageUri && savedId) {
+        if (!localImageUri || !savedId) {
+          Alert.alert('Görsel gerekli', 'Yeni ürün için fotoğraf yüklenmeli.');
+          return;
+        }
         try {
-          const publicUrl = await uploadProductImage(
+          finalImageUrl = await uploadProductImage(
             storeId,
             savedId,
             localImageUri,
             localImageMime
           );
-          await updateProduct(savedId, {
-            ...payload,
-            image_url: publicUrl,
-          });
         } catch (imageError) {
           const imageMessage =
             imageError instanceof Error
               ? imageError.message
               : 'Görsel yüklenemedi.';
           Alert.alert(
-            'Ürün kaydedildi',
-            `Ürün listene eklendi ama görsel yüklenemedi.\n\n${imageMessage}\n\nSupabase Storage policy / bucket ayarını kontrol et; sonra Düzenle ile görseli tekrar yükleyebilirsin.`
+            'Görsel yüklenemedi',
+            `${imageMessage}\n\nÜrün taslak olarak kaldı (pasif). Storage ayarını kontrol edip Düzenle ile tekrar dene.`
           );
           navigation.goBack();
           return;
         }
+        await updateProduct(savedId, {
+          ...basePayload,
+          image_url: finalImageUrl,
+          is_active: isActive,
+        });
       }
 
       navigation.goBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ürün kaydedilemedi.';
-      Alert.alert(
-        productSaved ? 'Ürün kaydedildi' : 'Hata',
-        productSaved
-          ? `Ürün kaydı tamam ama sonraki adımda hata oluştu:\n${message}`
-          : message
-      );
-      if (productSaved) navigation.goBack();
+      Alert.alert('Hata', message);
     } finally {
       setIsSaving(false);
     }
@@ -228,22 +254,41 @@ export function ProductFormScreen({ navigation, route }: Props) {
     >
       <ScrollView className="flex-1 px-6 pt-4" keyboardShouldPersistTaps="handled">
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün görseli</Text>
-        <Pressable
-          className="mb-4 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-gray-50"
-          onPress={handlePickImage}
-          style={{ height: 180 }}
-        >
-          {previewUri ? (
-            <Image source={{ uri: previewUri }} className="h-full w-full" resizeMode="cover" />
-          ) : (
-            <Text className="text-sm text-gray-500">Galeriden görsel seç</Text>
-          )}
-        </Pressable>
-        {previewUri ? (
-          <Pressable className="mb-4" onPress={handlePickImage}>
-            <Text className="text-center text-sm font-medium text-brand">Görseli değiştir</Text>
+        <View className="mb-4 overflow-hidden rounded-2xl border border-dashed border-stone-300 bg-stone-50">
+          <Pressable
+            className="items-center justify-center"
+            onPress={handlePickImage}
+            style={{ height: 180 }}
+          >
+            {previewUri ? (
+              <Image source={{ uri: previewUri }} className="h-full w-full" resizeMode="cover" />
+            ) : (
+              <View className="items-center px-6">
+                <View
+                  className="mb-3 h-14 w-14 items-center justify-center rounded-2xl"
+                  style={{ backgroundColor: ui.brandSoft }}
+                >
+                  <Ionicons name="images-outline" size={28} color={ui.brand} />
+                </View>
+                <Text className="text-center text-sm font-semibold text-stone-800">
+                  Ürün fotoğrafı ekle
+                </Text>
+                <Text className="mt-1 text-center text-xs text-stone-500">
+                  Dokunarak galeriden seç
+                </Text>
+              </View>
+            )}
           </Pressable>
-        ) : null}
+          <Pressable
+            className="flex-row items-center justify-center border-t border-stone-200 bg-white py-3.5"
+            onPress={handlePickImage}
+          >
+            <Ionicons name="images" size={18} color={ui.brand} />
+            <Text className="ml-2 text-sm font-bold text-brand">
+              {previewUri ? 'Galeriden değiştir' : 'Galeriden seç'}
+            </Text>
+          </Pressable>
+        </View>
 
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün adı *</Text>
         <TextInput

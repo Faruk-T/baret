@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '../../context/AuthContext';
 import { redeemLicenseKey } from '../../services/licenses';
@@ -19,6 +20,7 @@ import {
   updateStore,
   type StoreFormInput,
 } from '../../services/stores';
+import { supabase } from '../../services/supabase';
 import type { Store } from '../../types/database';
 import { getCurrentCoords } from '../../utils/geo';
 import {
@@ -81,9 +83,56 @@ export function StoreSettingsScreen() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    loadStore();
-  }, [loadStore]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadStore();
+      if (!user?.id) return;
+
+      const channel = supabase
+        .channel(`store-approval-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'stores',
+            filter: `owner_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const next = payload.new as Store;
+            setStore(next);
+            setCoords({
+              latitude: next.latitude,
+              longitude: next.longitude,
+            });
+          }
+        )
+        .subscribe();
+
+      // Fallback poll while waiting for admin approval
+      const poll = setInterval(() => {
+        void getMyStore(user.id).then((existing) => {
+          if (!existing) return;
+          setStore((prev) => {
+            if (
+              prev &&
+              prev.is_approved === existing.is_approved &&
+              prev.license_expires_at === existing.license_expires_at
+            ) {
+              return prev;
+            }
+            return existing;
+          });
+          if (existing.is_approved) clearInterval(poll);
+        });
+      }, 4000);
+
+      return () => {
+        clearInterval(poll);
+        void supabase.removeChannel(channel);
+      };
+    }, [loadStore, user?.id])
+  );
 
   const updateField = (key: keyof StoreFormInput, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));

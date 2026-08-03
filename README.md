@@ -270,4 +270,20 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 
 # Durum
 
-✅ **Faz 4 — Gün 19/20** | Soft-delete + admin stats/users + polish. **Sonraki: Gün 20** demo / son merge.
+✅ **Faz 4 — Gün 20** | APK go-live + demo. Play Store daveti alındı. Landing: `landing/`.
+
+---
+
+# Landing page
+
+Uygulamanın tanıtım sitesi `landing/` klasöründe (statik HTML/CSS/JS).
+
+Yerelde açmak:
+
+```powershell
+cd landing
+npx --yes serve .
+```
+
+Tarayıcıda verilen adresi aç (genelde `http://localhost:3000`).  
+Deploy için klasörü Vercel / Netlify / GitHub Pages’e yüklemen yeterli.

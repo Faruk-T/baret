@@ -1,8 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BuyerCartNavigator } from './BuyerCartNavigator';
 import { BuyerHomeNavigator } from './BuyerHomeNavigator';
 import { tabIcon } from './tabIcons';
+import { getTabBarScreenOptions } from './tabBarOptions';
 import { OrdersScreen } from '../screens/buyer/OrdersScreen';
 import { ProfileScreen } from '../screens/buyer/ProfileScreen';
 import { useCart } from '../context/CartContext';
@@ -12,26 +14,10 @@ const Tab = createBottomTabNavigator<BuyerTabParamList>();
 
 export function BuyerNavigator() {
   const { itemCount } = useCart();
+  const insets = useSafeAreaInsets();
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: true,
-        tabBarActiveTintColor: '#FF6B00',
-        tabBarInactiveTintColor: '#78716c',
-        tabBarStyle: {
-          backgroundColor: '#fffaf7',
-          borderTopColor: '#fed7aa',
-          height: 60,
-          paddingBottom: 6,
-          paddingTop: 4,
-        },
-        headerStyle: { backgroundColor: '#FFF8F3' },
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      }}
-    >
+    <Tab.Navigator screenOptions={getTabBarScreenOptions(insets)}>
       <Tab.Screen
         name="Home"
         component={BuyerHomeNavigator}

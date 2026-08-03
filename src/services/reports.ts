@@ -77,12 +77,17 @@ export async function updatePlatformReportStatus(
   status: PlatformReport['status'],
   adminNote?: string | null
 ): Promise<PlatformReport> {
+  const patch: {
+    status: PlatformReport['status'];
+    admin_note?: string | null;
+  } = { status };
+  if (adminNote !== undefined) {
+    patch.admin_note = adminNote?.trim() || null;
+  }
+
   const { data, error } = await supabase
     .from('platform_reports')
-    .update({
-      status,
-      admin_note: adminNote?.trim() || null,
-    })
+    .update(patch)
     .eq('id', id)
     .select('*')
     .single();

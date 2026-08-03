@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   Share,
@@ -10,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '../../context/AuthContext';
@@ -19,11 +21,11 @@ import {
 } from '../../services/licenses';
 import type { LicenseKey } from '../../types/database';
 
-const DURATION_PRESETS = [
-  { days: 30, label: '30 gün' },
-  { days: 90, label: '90 gün' },
-  { days: 365, label: '1 yıl' },
-] as const;
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
 
 export function LicenseKeysScreen() {
   const { user } = useAuth();
@@ -31,15 +33,15 @@ export function LicenseKeysScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [durationDays, setDurationDays] = useState(30);
+  const [expiresAt, setExpiresAt] = useState(() => addDays(new Date(), 30));
+  const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      const data = await listLicenseKeysAdmin();
-      setKeys(data);
+      setKeys(await listLicenseKeysAdmin());
     } catch (e) {
       setError(
         e instanceof Error
@@ -64,35 +66,31 @@ export function LicenseKeysScreen() {
     try {
       setCreating(true);
       const created = await createLicenseKey(user.id, {
-        durationDays,
+        expiresAt,
         notes: notes.trim() || undefined,
       });
       setNotes('');
       setKeys((prev) => [created, ...prev]);
+      const label = expiresAt.toLocaleDateString('tr-TR');
       Alert.alert('Anahtar oluşturuldu', created.code, [
         {
           text: 'Paylaş',
           onPress: () => {
             void Share.share({
-              message: `Baret satıcı lisansı (${durationDays} gün):\n${created.code}`,
+              message: `Baret satıcı lisansı (bitiş: ${label}):\n${created.code}`,
             });
           },
         },
         { text: 'Tamam' },
       ]);
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : 'Anahtar oluşturulamadı.';
-      Alert.alert('Hata', message);
+      Alert.alert(
+        'Hata',
+        e instanceof Error ? e.message : 'Anahtar oluşturulamadı.'
+      );
     } finally {
       setCreating(false);
     }
-  };
-
-  const handleShare = (item: LicenseKey) => {
-    void Share.share({
-      message: `Baret satıcı lisansı (${item.duration_days} gün):\n${item.code}`,
-    });
   };
 
   if (loading) {
@@ -126,43 +124,45 @@ export function LicenseKeysScreen() {
               Yeni lisans anahtarı
             </Text>
             <Text className="mb-3 text-xs text-stone-500">
-              Satıcıya verilecek tek kullanımlık kod. Aktive edilince süre mağazaya eklenir.
+              Takvimden bitiş tarihi seç. Satıcı aktive edince lisans o güne kadar
+              geçerli olur; sonrasında yeni anahtar olmadan panele giremez.
             </Text>
 
             <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
-              Süre
+              Bitiş tarihi
             </Text>
-            <View className="mb-3 flex-row flex-wrap gap-2">
-              {DURATION_PRESETS.map((preset) => {
-                const selected = durationDays === preset.days;
-                return (
-                  <Pressable
-                    key={preset.days}
-                    className={`rounded-full px-3 py-2 ${
-                      selected
-                        ? 'bg-brand'
-                        : 'border border-stone-200 bg-[#FFF8F3]'
-                    }`}
-                    onPress={() => setDurationDays(preset.days)}
-                  >
-                    <Text
-                      className={`text-sm font-semibold ${
-                        selected ? 'text-white' : 'text-stone-700'
-                      }`}
-                    >
-                      {preset.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable
+              className="mb-2 rounded-xl border border-stone-200 bg-[#FFF8F3] px-3 py-3"
+              onPress={() => setShowPicker(true)}
+            >
+              <Text className="text-base font-bold text-stone-900">
+                {expiresAt.toLocaleDateString('tr-TR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </Text>
+            </Pressable>
 
-            <Text className="mb-1 text-xs font-semibold uppercase text-stone-500">
+            {showPicker ? (
+              <DateTimePicker
+                value={expiresAt}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                minimumDate={addDays(new Date(), 1)}
+                onChange={(_, date) => {
+                  if (Platform.OS === 'android') setShowPicker(false);
+                  if (date) setExpiresAt(date);
+                }}
+              />
+            ) : null}
+
+            <Text className="mb-1 mt-2 text-xs font-semibold uppercase text-stone-500">
               Not (opsiyonel)
             </Text>
             <TextInput
               className="mb-3 rounded-xl border border-stone-200 bg-[#FFF8F3] px-3 py-2.5 text-sm text-stone-900"
-              placeholder="Örn. Ahmet Usta — Mart kampanyası"
+              placeholder="Örn. Livza Yapı — Ağustos lisans"
               placeholderTextColor="#a8a29e"
               value={notes}
               onChangeText={setNotes}
@@ -183,12 +183,8 @@ export function LicenseKeysScreen() {
             </Pressable>
           </View>
 
-          <Text className="mb-1 text-sm text-stone-500">
-            {keys.length} anahtar
-          </Text>
-          {error ? (
-            <Text className="mt-1 text-sm text-red-600">{error}</Text>
-          ) : null}
+          <Text className="mb-1 text-sm text-stone-500">{keys.length} anahtar</Text>
+          {error ? <Text className="mt-1 text-sm text-red-600">{error}</Text> : null}
         </View>
       }
       ListEmptyComponent={
@@ -222,22 +218,26 @@ export function LicenseKeysScreen() {
               </View>
             </View>
             <Text className="text-sm text-stone-600">
-              {item.duration_days} gün
+              {item.expires_at
+                ? `Bitiş: ${new Date(item.expires_at).toLocaleDateString('tr-TR')}`
+                : `${item.duration_days} gün (eski format)`}
               {item.notes ? ` · ${item.notes}` : ''}
             </Text>
             <Text className="mt-1 text-xs text-stone-400">
-              Oluşturulma:{' '}
-              {new Date(item.created_at).toLocaleString('tr-TR')}
+              Oluşturulma: {new Date(item.created_at).toLocaleString('tr-TR')}
             </Text>
-            {used && item.redeemed_at ? (
-              <Text className="mt-1 text-xs text-stone-400">
-                Kullanım: {new Date(item.redeemed_at).toLocaleString('tr-TR')}
-              </Text>
-            ) : null}
             {!used ? (
               <Pressable
                 className="mt-3 items-center rounded-xl border border-brand bg-orange-50 py-2.5"
-                onPress={() => handleShare(item)}
+                onPress={() =>
+                  void Share.share({
+                    message: `Baret satıcı lisansı${
+                      item.expires_at
+                        ? ` (bitiş: ${new Date(item.expires_at).toLocaleDateString('tr-TR')})`
+                        : ''
+                    }:\n${item.code}`,
+                  })
+                }
               >
                 <Text className="text-sm font-semibold text-brand">Paylaş</Text>
               </Pressable>
