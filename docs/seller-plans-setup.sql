@@ -37,16 +37,16 @@ VALUES
     'basic',
     'Basic',
     'Küçük nalburlar için başlangıç paketi. Aylık sabit ücret, sınırlı ürün kapasitesi.',
-    100,
-    499.00,
+    20,
+    4000.00,
     1
   ),
   (
     'pro',
     'Pro',
-    'Orta-büyük mağazalar için. Daha yüksek ürün kapasitesi, aylık sabit ücret.',
-    400,
-    1499.00,
+    'Orta ölçekli mağazalar için. Daha yüksek ürün kapasitesi, aylık sabit ücret.',
+    100,
+    7000.00,
     2
   ),
   (
