@@ -28,6 +28,9 @@ DELETE FROM public.commission_collections;
 
 DO $$
 BEGIN
+  IF to_regclass('public.store_subscriptions') IS NOT NULL THEN
+    DELETE FROM public.store_subscriptions;
+  END IF;
   IF to_regclass('public.order_pickup_secrets') IS NOT NULL THEN
     DELETE FROM public.order_pickup_secrets;
   END IF;
