@@ -15,6 +15,7 @@ import { ProductModerationScreen } from '../screens/admin/ProductModerationScree
 import { ReportsScreen } from '../screens/admin/ReportsScreen';
 import { SellerAdminDetailScreen } from '../screens/admin/SellerAdminDetailScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
+import { SellerPlansScreen } from '../screens/admin/SellerPlansScreen';
 import { StoreCommissionDetailScreen } from '../screens/admin/StoreCommissionDetailScreen';
 import { StoreHealthScreen } from '../screens/admin/StoreHealthScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
@@ -117,6 +118,11 @@ export function AdminNavigator() {
         options={{ title: 'İstatistikler' }}
       />
       <Stack.Screen
+        name="SellerPlans"
+        component={SellerPlansScreen}
+        options={{ title: 'Satıcı planları' }}
+      />
+      <Stack.Screen
         name="LicenseKeys"
         component={LicenseKeysScreen}
         options={{ title: 'Lisans Anahtarları' }}
@@ -124,7 +130,7 @@ export function AdminNavigator() {
       <Stack.Screen
         name="Commission"
         component={CommissionScreen}
-        options={{ title: 'Komisyon' }}
+        options={{ title: 'Eski komisyon (arşiv)' }}
       />
       <Stack.Screen
         name="Reports"
