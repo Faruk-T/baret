@@ -188,7 +188,7 @@ export function AdminHomeScreen() {
                 onPress={() => navigation.navigate('Reports')}
               />
               <Kpi
-                label="Tahsilat bekleyen"
+                label="Eski tahsilat (arşiv)"
                 value={money(unsettled)}
                 tint="#fb923c"
                 onPress={() => navigation.navigate('Commission')}
@@ -214,7 +214,7 @@ export function AdminHomeScreen() {
                 onPress={() => navigation.navigate('PeopleHub')}
               />
               <Kpi
-                label="Toplam komisyon"
+                label="Eski komisyon (arşiv)"
                 value={money(platformCut)}
                 tint="#fda4af"
                 onPress={() => navigation.navigate('Commission')}
@@ -261,16 +261,22 @@ export function AdminHomeScreen() {
           onPress={() => navigation.navigate('SellerApprovals')}
         />
         <MenuCard
-          title="Komisyon & tahsilat"
-          subtitle="Nalbur bazlı borç / alınan"
-          icon="cash"
-          onPress={() => navigation.navigate('Commission')}
+          title="Satıcı planları"
+          subtitle="Basic / Pro / Özel · ürün kapasitesi"
+          icon="pricetags"
+          onPress={() => navigation.navigate('SellerPlans')}
         />
         <MenuCard
           title="Lisans anahtarları"
           subtitle="Takvimden bitiş tarihi seç"
           icon="key"
           onPress={() => navigation.navigate('LicenseKeys')}
+        />
+        <MenuCard
+          title="Eski komisyon (arşiv)"
+          subtitle="Artık kullanılmıyor — geçmiş kayıt"
+          icon="cash"
+          onPress={() => navigation.navigate('Commission')}
         />
         <MenuCard
           title="İçerik denetimi"

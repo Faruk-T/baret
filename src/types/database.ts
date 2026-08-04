@@ -83,6 +83,42 @@ export type AppNotification = {
   created_at: string;
 };
 
+export type SellerPlanCode = 'basic' | 'pro' | 'custom';
+
+export type SellerPlan = {
+  id: string;
+  code: SellerPlanCode;
+  name: string;
+  description: string | null;
+  max_products: number;
+  price_monthly: number;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StoreSubscriptionStatus =
+  | 'active'
+  | 'past_due'
+  | 'cancelled'
+  | 'expired';
+
+export type StoreSubscription = {
+  id: string;
+  store_id: string;
+  plan_id: string;
+  status: StoreSubscriptionStatus;
+  custom_max_products: number | null;
+  custom_price_monthly: number | null;
+  starts_at: string;
+  ends_at: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Product = {
   id: string;
   store_id: string;
@@ -293,6 +329,57 @@ export type Database = {
             columns: ['order_id'];
             isOneToOne: true;
             referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      seller_plans: {
+        Row: SellerPlan;
+        Insert: {
+          id?: string;
+          code: SellerPlanCode;
+          name: string;
+          description?: string | null;
+          max_products: number;
+          price_monthly: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<SellerPlan, 'id' | 'code'>>;
+        Relationships: [];
+      };
+      store_subscriptions: {
+        Row: StoreSubscription;
+        Insert: {
+          id?: string;
+          store_id: string;
+          plan_id: string;
+          status?: StoreSubscriptionStatus;
+          custom_max_products?: number | null;
+          custom_price_monthly?: number | null;
+          starts_at?: string;
+          ends_at: string;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<StoreSubscription, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'store_subscriptions_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'store_subscriptions_plan_id_fkey';
+            columns: ['plan_id'];
+            isOneToOne: false;
+            referencedRelation: 'seller_plans';
             referencedColumns: ['id'];
           },
         ];

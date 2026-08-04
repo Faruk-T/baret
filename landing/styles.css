@@ -185,11 +185,18 @@ a {
   width: min(260px, 26vw);
   aspect-ratio: 1;
   border-radius: 28px;
-  box-shadow: 0 28px 60px rgba(11, 18, 32, 0.18);
-  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 22px 48px rgba(11, 18, 32, 0.2);
+  border: 4px solid rgba(255, 255, 255, 0.95);
   object-fit: cover;
   will-change: transform;
   background: #fff;
+  opacity: 1;
+  filter: none;
+}
+
+.hero-art.is-hero-focus {
+  z-index: 4;
+  box-shadow: 0 32px 64px rgba(11, 18, 32, 0.28);
 }
 
 .hero-art-center {
@@ -204,23 +211,26 @@ a {
   left: max(3%, 9vw);
   top: 20%;
   z-index: 1;
-  opacity: 0.95;
 }
 
 .hero-art-right {
   right: max(3%, 9vw);
   top: 24%;
   z-index: 1;
-  opacity: 0.95;
 }
 
 .hero-fade {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(238, 242, 246, 0.15) 0%, rgba(238, 242, 246, 0.55) 48%, var(--bg) 88%),
-    radial-gradient(ellipse 80% 55% at 50% 100%, var(--bg) 30%, transparent 70%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 42%,
+    rgba(238, 242, 246, 0.35) 68%,
+    var(--bg) 92%
+  );
   z-index: 3;
+  pointer-events: none;
 }
 
 .hero-copy {
@@ -556,6 +566,77 @@ a {
   font-weight: 700;
 }
 
+.plans {
+  padding-top: clamp(1rem, 3vw, 2rem);
+}
+
+.plan-grid {
+  margin: 2.75rem auto 0;
+  max-width: 1040px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.plan-card {
+  padding: 1.6rem 1.4rem 1.7rem;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.plan-card-featured {
+  border-color: rgba(255, 107, 0, 0.45);
+  background: linear-gradient(165deg, #fff 0%, #fff4ea 100%);
+  box-shadow: 0 18px 40px rgba(255, 107, 0, 0.12);
+}
+
+.plan-tag {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.plan-card h3 {
+  margin: 0.45rem 0 0;
+  font-family: var(--display);
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.plan-price {
+  margin: 0.85rem 0 0;
+  font-family: var(--display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.plan-price span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.plan-cap {
+  margin: 0.35rem 0 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-card > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 .download {
   padding-bottom: clamp(4rem, 10vw, 7rem);
 }
@@ -673,7 +754,8 @@ a {
   }
 
   .steps,
-  .role-row {
+  .role-row,
+  .plan-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
@@ -682,6 +764,7 @@ a {
   .showcase,
   .roles,
   .features,
+  .plans,
   .download {
     padding: 2.75rem 1.15rem;
   }
@@ -709,12 +792,10 @@ a {
     position: relative;
     inset: auto;
     order: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     width: 100%;
     height: auto;
-    min-height: 0;
+    min-height: min(280px, 58vw);
     padding: 0;
   }
 
@@ -726,28 +807,25 @@ a {
   .hero-art-left,
   .hero-art-right,
   .hero-art-center {
-    position: relative !important;
-    left: auto !important;
+    position: absolute !important;
+    left: 50% !important;
     right: auto !important;
-    top: auto !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-
-  .hero-art-left,
-  .hero-art-right {
-    display: none !important;
-  }
-
-  .hero-art-center {
-    display: block;
+    top: 0 !important;
+    transform: translateX(-50%) !important;
+    opacity: 0 !important;
+    margin: 0;
     width: min(220px, 62vw);
     max-width: 100%;
     aspect-ratio: 3 / 4;
-    margin: 0 auto;
     border-radius: 22px;
     border-width: 3px;
     box-shadow: 0 16px 36px rgba(11, 18, 32, 0.14);
+    display: block !important;
+  }
+
+  .hero-art.is-hero-focus {
+    opacity: 1 !important;
+    z-index: 2;
   }
 
   .hero-copy {
@@ -853,6 +931,11 @@ a {
   .role-row {
     margin-top: 2rem;
     text-align: left;
+  }
+
+  .plan-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .download-inner {

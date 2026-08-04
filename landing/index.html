@@ -33,12 +33,13 @@
       </a>
       <nav class="nav-links">
         <a href="#nasil">Nasıl çalışır</a>
+        <a href="#planlar">Planlar</a>
         <a href="#vitrin">Öne çıkanlar</a>
         <a href="#roller">Roller</a>
       </nav>
       <a
         class="btn btn-sm"
-        href="https://expo.dev/artifacts/eas/dDFyb-7zhtB2YgBxD1iDVf_P4J-32fde2PtX6zXernw.apk"
+        href="https://expo.dev/artifacts/eas/jTfX9ZvDlcJKmPGvvKUDdGZIKbQ3a-H6htx453znKU4.apk"
         download="baret.apk"
       >
         APK indir
@@ -47,21 +48,24 @@
 
     <main id="top">
       <section class="hero">
-        <div class="hero-bg" aria-hidden="true">
+        <div class="hero-bg" aria-hidden="true" data-hero-rotate>
           <img
-            class="hero-art hero-art-left"
+            class="hero-art hero-art-left is-hero-focus"
             src="./assets/illu-order-cart.png"
             alt=""
+            data-hero-art
           />
           <img
             class="hero-art hero-art-center"
             src="./assets/illu-hero-market.png"
             alt=""
+            data-hero-art
           />
           <img
             class="hero-art hero-art-right"
             src="./assets/illu-delivery-code.png"
             alt=""
+            data-hero-art
           />
           <div class="hero-fade"></div>
         </div>
@@ -77,7 +81,7 @@
           <div class="hero-cta" data-animate="fade-up" data-delay="0.24">
             <a
               class="btn"
-              href="https://expo.dev/artifacts/eas/dDFyb-7zhtB2YgBxD1iDVf_P4J-32fde2PtX6zXernw.apk"
+              href="https://expo.dev/artifacts/eas/jTfX9ZvDlcJKmPGvvKUDdGZIKbQ3a-H6htx453znKU4.apk"
               download="baret.apk"
             >
               APK indir
@@ -90,9 +94,9 @@
       <section class="marquee" aria-hidden="true">
         <div class="marquee-track">
           <span>Katalog</span><span>Sepet</span><span>Sipariş</span><span>Teslim kodu</span>
-          <span>Komisyon</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
+          <span>Abonelik planı</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
           <span>Katalog</span><span>Sepet</span><span>Sipariş</span><span>Teslim kodu</span>
-          <span>Komisyon</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
+          <span>Abonelik planı</span><span>Onaylı mağaza</span><span>Alıcı</span><span>Satıcı</span>
         </div>
       </section>
 
@@ -118,6 +122,45 @@
             <p>Hazır olunca teslim kodunu satıcıya göster; sipariş güvenle tamamlanır.</p>
           </li>
         </ol>
+      </section>
+
+      <section class="plans" id="planlar">
+        <h2 class="section-title" data-animate="fade-up">Satıcı planları</h2>
+        <p class="section-sub" data-animate="fade-up" data-delay="0.08">
+          Ürün kapasitesine göre aylık sabit paket.
+        </p>
+        <div class="plan-grid">
+          <article class="plan-card" data-animate="fade-up">
+            <p class="plan-tag">Basic</p>
+            <h3>Başlangıç</h3>
+            <p class="plan-price">₺4.000<span>/ay</span></p>
+            <p class="plan-cap">20 ürün kapasitesi</p>
+            <p>
+              Küçük nalburlar için. Sabit aylık ücret, sınırlı ürün kotası —
+             
+            </p>
+          </article>
+          <article class="plan-card plan-card-featured" data-animate="fade-up" data-delay="0.1">
+            <p class="plan-tag">Pro</p>
+            <h3>Orta plan</h3>
+            <p class="plan-price">₺7.000<span>/ay</span></p>
+            <p class="plan-cap">100 ürün kapasitesi</p>
+            <p>
+              Orta ölçekli mağazalar için. Daha yüksek ürün yükleme limiti,
+              aynı şeffaf abonelik modeli.
+            </p>
+          </article>
+          <article class="plan-card" data-animate="fade-up" data-delay="0.2">
+            <p class="plan-tag">Özel</p>
+            <h3>Özel sipariş</h3>
+            <p class="plan-price">Anlaşmalı</p>
+            <p class="plan-cap">Kapasite + fiyat birlikte</p>
+            <p>
+              Yüksek hacim veya özel ihtiyaçta ürün sayısı ve aylık ücret
+              seninle birlikte belirlenir.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section class="showcase" id="vitrin">
@@ -206,11 +249,11 @@
               <article class="carousel-slide">
                 <img src="./assets/illu-fair-commission.png" alt="" />
                 <div class="carousel-copy">
-                  <p class="carousel-kicker">07 · Komisyon</p>
-                  <h3>Adil platform payı</h3>
+                  <p class="carousel-kicker">07 · Planlar</p>
+                  <h3>Komisyon yok, kapasite var</h3>
                   <p>
-                    Tutar dilimlerine göre komisyon. Küçük sipariş ezilmez, büyük
-                    işlemde denge korunur.
+                    Basic, Pro veya Özel abonelik. Ürün kotana göre aylık sabit
+                    ücret — sipariş tutarından kesinti yok.
                   </p>
                 </div>
               </article>
@@ -266,11 +309,11 @@
           </article>
           <article data-animate="fade-up" data-delay="0.1">
             <h3>Satıcı</h3>
-            <p>Nalburlar ürün ekler, stok takip eder, sipariş durumunu ve lisansı yönetir.</p>
+            <p>Nalburlar ürün, stok, sipariş, gelir ve abonelik planını panelden yönetir.</p>
           </article>
           <article data-animate="fade-up" data-delay="0.2">
             <h3>Admin</h3>
-            <p>Mağaza onayı, lisans anahtarları, tutar dilimli komisyon ve şikayetler.</p>
+            <p>Mağaza onayı, lisans, satıcı planları ve şikayet yönetimi.</p>
           </article>
         </div>
       </section>
@@ -281,7 +324,7 @@
           <li data-animate="fade-up"><strong>Onaylı mağazalar</strong> — Katalogda yalnızca admin onaylı nalburlar.</li>
           <li data-animate="fade-up" data-delay="0.08"><strong>Güvenli iletişim</strong> — Telefon sipariş kabulünden önce kapalı.</li>
           <li data-animate="fade-up" data-delay="0.16"><strong>Teslim kodu</strong> — Gel-al / yolda siparişte doğrulamalı teslim.</li>
-          <li data-animate="fade-up" data-delay="0.24"><strong>Adil komisyon</strong> — Tutar dilimlerine göre platform payı.</li>
+          <li data-animate="fade-up" data-delay="0.24"><strong>Abonelik planları</strong> — Ürün kapasitesine göre aylık paket.</li>
         </ul>
       </section>
 
@@ -296,7 +339,7 @@
           <div class="download-actions">
             <a
               class="btn"
-              href="https://expo.dev/artifacts/eas/dDFyb-7zhtB2YgBxD1iDVf_P4J-32fde2PtX6zXernw.apk"
+              href="https://expo.dev/artifacts/eas/jTfX9ZvDlcJKmPGvvKUDdGZIKbQ3a-H6htx453znKU4.apk"
               download="baret.apk"
             >
               APK indir

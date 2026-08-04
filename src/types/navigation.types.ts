@@ -54,6 +54,7 @@ export type AdminStackParamList = {
   NotificationsCenter: undefined;
   AdminRoles: undefined;
   PlatformStats: undefined;
+  SellerPlans: undefined;
   LicenseKeys: undefined;
   Commission: undefined;
   Reports: undefined;

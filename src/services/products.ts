@@ -38,6 +38,19 @@ export async function createProduct(
   storeId: string,
   input: ProductFormInput
 ): Promise<Product> {
+  const { getStorePlanUsage } = await import('./plans');
+  const usage = await getStorePlanUsage(storeId).catch(() => null);
+  if (!usage?.isActive) {
+    throw new Error(
+      'Aktif abonelik planı yok. Admin Basic / Pro / Özel plan atamalı.'
+    );
+  }
+  if (usage.remainingSlots <= 0) {
+    throw new Error(
+      `Ürün kapasitesi dolu (${usage.maxProducts}). Planını yükselt veya admin ile konuş.`
+    );
+  }
+
   const { data, error } = await supabase
     .from('products')
     .insert({

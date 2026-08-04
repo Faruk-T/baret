@@ -16,6 +16,11 @@ import { MenuTile } from '../../components/ui/MenuTile';
 import { UiCard } from '../../components/ui/UiCard';
 import { LOW_STOCK_THRESHOLD, isLowStock } from '../../constants/inventory';
 import { useAuth } from '../../context/AuthContext';
+import {
+  getSellerFinanceSnapshot,
+  getStorePlanUsage,
+  type EffectivePlan,
+} from '../../services/plans';
 import { listStoreProducts } from '../../services/products';
 import { getMyStore } from '../../services/stores';
 import {
@@ -36,6 +41,10 @@ import { ui } from '../../theme/ui';
 
 type TabNav = BottomTabNavigationProp<SellerTabParamList>;
 
+function money(n: number): string {
+  return `₺${n.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`;
+}
+
 export function SellerDashboardScreen() {
   const navigation = useNavigation<TabNav>();
   const { user } = useAuth();
@@ -46,6 +55,10 @@ export function SellerDashboardScreen() {
   const [summary, setSummary] = useState({ average: 0, count: 0 });
   const [reviews, setReviews] = useState<ReviewWithBuyer[]>([]);
   const [lowStock, setLowStock] = useState<Product[]>([]);
+  const [planUsage, setPlanUsage] = useState<EffectivePlan | null>(null);
+  const [finance, setFinance] = useState<Awaited<
+    ReturnType<typeof getSellerFinanceSnapshot>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -64,20 +77,26 @@ export function SellerDashboardScreen() {
         setReviews([]);
         setSummary({ average: 0, count: 0 });
         setLowStock([]);
+        setPlanUsage(null);
+        setFinance(null);
         return;
       }
       setStoreName(store.name);
       setIsApproved(store.is_approved);
       setLicenseExpiresAt(store.license_expires_at);
-      const [rating, rows, products, pending] = await Promise.all([
+      const [rating, rows, products, pending, usage, fin] = await Promise.all([
         getStoreRatingSummary(store.id),
         listStoreReviews(store.id),
         listStoreProducts(store.id),
         countPendingStoreOrders(store.id),
+        getStorePlanUsage(store.id).catch(() => null),
+        getSellerFinanceSnapshot(store.id).catch(() => null),
       ]);
       setSummary(rating);
       setReviews(rows);
       setPendingOrders(pending);
+      setPlanUsage(usage);
+      setFinance(fin);
       setLowStock(
         products
           .filter((p) => isLowStock(p.stock, p.is_active))
@@ -183,8 +202,98 @@ export function SellerDashboardScreen() {
     >
       <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
       <Text className="mb-3 text-sm text-stone-500">
-        Mağaza paneli · stok, lisans ve siparişler
+        Kontrol merkezi · gelir, plan, stok ve sipariş
       </Text>
+
+      {finance ? (
+        <View className="mb-4 rounded-3xl border border-stone-800 bg-[#0B1220] p-4">
+          <Text className="text-xs font-bold uppercase tracking-wide text-stone-400">
+            Bu ay (finans)
+          </Text>
+          <View className="mt-3 flex-row flex-wrap justify-between">
+            <View className="mb-3 w-[48%]">
+              <Text className="text-xs text-stone-400">Gelir (teslim)</Text>
+              <Text className="text-xl font-bold text-white">
+                {money(finance.revenueDelivered)}
+              </Text>
+            </View>
+            <View className="mb-3 w-[48%]">
+              <Text className="text-xs text-stone-400">Açık sipariş cirosu</Text>
+              <Text className="text-xl font-bold text-sky-300">
+                {money(finance.revenueOpen)}
+              </Text>
+            </View>
+            <View className="mb-3 w-[48%]">
+              <Text className="text-xs text-stone-400">Gider (plan)</Text>
+              <Text className="text-xl font-bold text-orange-300">
+                {money(finance.planCostMonthly)}
+              </Text>
+            </View>
+            <View className="mb-3 w-[48%]">
+              <Text className="text-xs text-stone-400">Tahmini net</Text>
+              <Text
+                className={`text-xl font-bold ${
+                  finance.estimatedNetThisMonth >= 0
+                    ? 'text-green-300'
+                    : 'text-red-300'
+                }`}
+              >
+                {money(finance.estimatedNetThisMonth)}
+              </Text>
+            </View>
+          </View>
+          <Text className="text-[11px] text-stone-500">
+            {finance.orderCountDelivered} teslim · {finance.orderCountOpen} açık ·{' '}
+            {finance.cancelledCount} iptal · komisyon yok (abonelik modeli)
+          </Text>
+        </View>
+      ) : null}
+
+      {planUsage ? (
+        <View
+          className={`mb-4 rounded-2xl border p-4 ${
+            planUsage.isActive
+              ? 'border-stone-200 bg-white'
+              : 'border-amber-200 bg-amber-50'
+          }`}
+        >
+          <Text className="text-xs font-bold uppercase text-stone-500">
+            Ürün planı
+          </Text>
+          {planUsage.isActive ? (
+            <>
+              <Text className="mt-1 text-lg font-bold text-stone-900">
+                {planUsage.plan?.name ?? 'Plan'} · {planUsage.productCount}/
+                {planUsage.maxProducts} ürün
+              </Text>
+              <Text className="mt-1 text-sm text-stone-600">
+                {money(planUsage.priceMonthly)}/ay · kalan slot:{' '}
+                {planUsage.remainingSlots}
+                {planUsage.endsAt
+                  ? ` · bitiş ${new Date(planUsage.endsAt).toLocaleDateString('tr-TR')}`
+                  : ''}
+              </Text>
+              <View className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
+                <View
+                  className="h-full rounded-full bg-brand"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      planUsage.maxProducts > 0
+                        ? (planUsage.productCount / planUsage.maxProducts) * 100
+                        : 0
+                    )}%`,
+                  }}
+                />
+              </View>
+            </>
+          ) : (
+            <Text className="mt-2 text-sm text-amber-900">
+              Aktif abonelik yok. Admin plan atayana kadar yeni ürün ekleyemezsin.
+            </Text>
+          )}
+        </View>
+      ) : null}
 
       <View className="mb-4 rounded-2xl border border-stone-200 bg-white px-3 py-3">
         <Text className="text-sm text-stone-600">

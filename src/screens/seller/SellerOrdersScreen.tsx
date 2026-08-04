@@ -333,10 +333,11 @@ export function SellerOrdersScreen() {
                   })}{' '}
                   · {item.quantity} adet
                 </Text>
-                {item.order_commissions ? (
+                {item.order_commissions &&
+                Number(item.order_commissions.commission_amount) > 0 ? (
                   <View className="mt-2 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-2">
                     <Text className="text-[11px] font-bold uppercase text-stone-500">
-                      Komisyon
+                      Eski komisyon kaydı
                     </Text>
                     <Text className="mt-0.5 text-xs text-stone-700">
                       Platform −₺
@@ -354,7 +355,11 @@ export function SellerOrdersScreen() {
                       )}
                     </Text>
                   </View>
-                ) : null}
+                ) : (
+                  <Text className="mt-1 text-xs text-green-700">
+                    Sipariş tutarının tamamı sana ait · abonelik modeli
+                  </Text>
+                )}
               </View>
             </View>
             <Text className="mt-1 text-xs text-amber-800">
