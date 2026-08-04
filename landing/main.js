@@ -34,18 +34,16 @@
       gsap.set(".hero-art-center", { xPercent: -50 });
       gsap.set(".hero-art-left", { rotation: -8 });
       gsap.set(".hero-art-right", { rotation: 8 });
-    } else {
-      gsap.set(".hero-art", { clearProps: "transform,x,y,rotation,xPercent,scale" });
     }
 
     const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
     if (isDesktop) {
       heroTl
-        .from(".hero-art-center", { y: 80, scale: 0.92, opacity: 0, duration: 1.1 }, 0)
-        .from(".hero-art-left", { x: -60, rotation: -16, opacity: 0, duration: 1 }, 0.15)
-        .from(".hero-art-right", { x: 60, rotation: 16, opacity: 0, duration: 1 }, 0.2);
+        .from(".hero-art-center", { y: 60, scale: 0.94, duration: 1 }, 0)
+        .from(".hero-art-left", { x: -50, rotation: -14, duration: 0.9 }, 0.12)
+        .from(".hero-art-right", { x: 50, rotation: 14, duration: 0.9 }, 0.16);
     } else {
-      heroTl.from(".hero-art-center", { y: 28, opacity: 0, duration: 0.7 }, 0);
+      heroTl.from(".hero-art.is-hero-focus", { y: 24, duration: 0.65 }, 0);
     }
     heroTl.from(
       ".hero-copy [data-animate]",
@@ -54,23 +52,61 @@
     );
 
     if (!prefersReduced) {
-      if (isDesktop) {
-        gsap.to(".hero-art-left", {
-          y: 80,
-          ease: "none",
-          scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+      const heroArts = Array.from(document.querySelectorAll("[data-hero-art]"));
+      let heroIndex = Math.max(
+        0,
+        heroArts.findIndex((el) => el.classList.contains("is-hero-focus"))
+      );
+
+      function setHeroFocus(next) {
+        heroArts.forEach((el, i) => {
+          el.classList.toggle("is-hero-focus", i === next);
         });
-        gsap.to(".hero-art-right", {
-          y: 110,
-          ease: "none",
-          scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
-        });
-        gsap.to(".hero-art-center", {
-          y: 50,
-          ease: "none",
-          scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
-        });
+        if (!hasGsap) return;
+
+        if (isDesktop) {
+          heroArts.forEach((el, i) => {
+            const active = i === next;
+            const isCenter = el.classList.contains("hero-art-center");
+            const baseRot = el.classList.contains("hero-art-left")
+              ? -8
+              : el.classList.contains("hero-art-right")
+                ? 8
+                : 0;
+            gsap.to(el, {
+              scale: active ? 1.1 : 0.92,
+              y: active ? -18 : 6,
+              rotation: active ? baseRot * 0.25 : baseRot,
+              xPercent: isCenter ? -50 : 0,
+              duration: 0.75,
+              ease: "power2.inOut",
+              overwrite: "auto",
+            });
+          });
+        } else {
+          heroArts.forEach((el, i) => {
+            gsap.set(el, { clearProps: "transform,x,y,rotation,scale,xPercent" });
+            gsap.fromTo(
+              el,
+              { opacity: i === next ? 0 : Number(getComputedStyle(el).opacity), y: i === next ? 18 : 0 },
+              {
+                opacity: i === next ? 1 : 0,
+                y: 0,
+                duration: 0.55,
+                ease: "power2.out",
+                overwrite: "auto",
+              }
+            );
+          });
+        }
       }
+
+      setHeroFocus(heroIndex);
+
+      setInterval(() => {
+        heroIndex = (heroIndex + 1) % heroArts.length;
+        setHeroFocus(heroIndex);
+      }, 2800);
 
       gsap.to(".orb-a", {
         x: 40,
