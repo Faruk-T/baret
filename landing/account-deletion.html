@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hesap silme — Baret</title>
+    <meta
+      name="description"
+      content="Baret hesap ve ilişkili verilerin silinmesi talebi."
+    />
+    <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .legal {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 6.5rem 1.25rem 4rem;
+      }
+      .legal h1 {
+        font-family: var(--display);
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        letter-spacing: -0.03em;
+        margin: 0 0 0.5rem;
+      }
+      .legal .meta {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+      }
+      .legal h2 {
+        font-size: 1.15rem;
+        margin: 1.75rem 0 0.55rem;
+      }
+      .legal p,
+      .legal li {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      .legal ul,
+      .legal ol {
+        padding-left: 1.2rem;
+      }
+      .legal a {
+        color: var(--brand);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mesh" aria-hidden="true"></div>
+    <header class="nav">
+      <a class="nav-brand" href="./">
+        <img src="./assets/icon.png" alt="" width="36" height="36" />
+        <span>Baret</span>
+      </a>
+      <a class="btn btn-sm" href="./">Ana sayfa</a>
+    </header>
+
+    <main class="legal">
+      <h1>Hesap ve veri silme</h1>
+      <p class="meta">Baret (com.baret.app) · Son güncelleme: 5 Ağustos 2026</p>
+
+      <p>
+        Bu sayfa, Baret kullanıcılarının hesaplarını ve ilişkili verilerini
+        silme talebinde bulunması içindir.
+      </p>
+
+      <h2>Nasıl talep edilir?</h2>
+      <ol>
+        <li>Kayıtlı olduğunuz e-posta adresinden bir mail gönderin.</li>
+        <li>
+          Alıcı:
+          <strong>Google Play geliştirici iletişim e-postası</strong>
+          (Play Console’da yayıncı hesabında görünen adres) veya uygulama içi
+          şikayet / destek kanalı.
+        </li>
+        <li>Konu satırına yazın: <code>Baret hesap silme talebi</code></li>
+        <li>
+          Mailde belirtin: hesap e-postası, rol (alıcı / satıcı), talebin
+          “kalıcı silme” olduğu.
+        </li>
+      </ol>
+
+      <h2>Ne silinir?</h2>
+      <ul>
+        <li>Kimlik doğrulama hesabı (giriş bilgileri)</li>
+        <li>Profil bilgileri (ad, telefon, rol)</li>
+        <li>
+          Satıcıysa: mağaza kaydı, ürünler, abonelik planı kaydı (iş kuralına
+          göre)
+        </li>
+        <li>Uygulama içi bildirimler</li>
+      </ul>
+
+      <h2>Ne tutulabilir?</h2>
+      <p>
+        Yasal zorunluluk, muhasebe veya uyuşmazlık için sipariş / işlem
+        kayıtlarının bir kısmı sınırlı süreyle saklanabilir. Saklanan kayıtlar
+        mümkün olduğunca kimlikten arındırılır veya erişim kısıtlanır.
+      </p>
+
+      <h2>Süre</h2>
+      <p>
+        Talebiniz alındıktan sonra makul süre içinde (genelde 30 gün içinde)
+        işlenir. İşlem tamamlanınca e-posta ile bilgilendirilirsiniz.
+      </p>
+
+      <h2>Hesabı silmeden düzeltme</h2>
+      <p>
+        Profil ad / telefon gibi alanları uygulamadaki Profil ekranından
+        güncelleyebilirsiniz. Tam hesap silme için yukarıdaki e-posta süreci
+        gerekir.
+      </p>
+
+      <p>
+        Gizlilik politikası:
+        <a href="./privacy.html">landing-ten-pi-68.vercel.app/privacy.html</a>
+      </p>
+    </main>
+
+    <footer class="footer">
+      <img src="./assets/icon.png" alt="" width="28" height="28" />
+      <p>
+        © <span id="year"></span> Baret ·
+        <a href="./privacy.html">Gizlilik</a>
+      </p>
+    </footer>
+    <script>
+      document.getElementById("year").textContent = String(new Date().getFullYear());
+    </script>
+  </body>
+</html>
