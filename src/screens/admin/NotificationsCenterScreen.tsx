@@ -154,7 +154,8 @@ export function NotificationsCenterScreen() {
           ListHeaderComponent={
             <View className="mb-4">
               <Text className="mb-2 text-sm text-stone-500">
-                Uygulama içi bildirim. Cihaz push (FCM) sonraki adımda; satıcı
+                Uygulama içi + cihaz bildirimi (sesli kanal). Uygulama kapalıyken
+                uzak push için FCM kimlik bilgisi sonraki adımda bağlanır.
                 paneline düşer.
               </Text>
               <TextInput
