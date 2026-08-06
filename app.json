@@ -6,10 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#FFF8F3",
     "scheme": "baret",
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#00000000",
+      "translucent": true
+    },
+    "androidNavigationBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#00000000"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baret.app",
+      "backgroundColor": "#FFF8F3",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Mağazaya uzaklığını göstermek ve haritada yol tarifi için konumuna ihtiyacımız var.",
         "NSPhotoLibraryUsageDescription": "Ürün görselleri seçmek için galeri erişimine izin verin."
@@ -18,6 +29,7 @@
     "android": {
       "package": "com.baret.app",
       "softwareKeyboardLayoutMode": "resize",
+      "userInterfaceStyle": "light",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -58,6 +70,14 @@
           "defaultChannel": "baret_alerts"
         }
       ],
+      [
+        "expo-navigation-bar",
+        {
+          "style": "light",
+          "enforceContrast": true
+        }
+      ],
+      "expo-system-ui",
       "expo-font",
       "expo-status-bar",
       "@react-native-community/datetimepicker"
