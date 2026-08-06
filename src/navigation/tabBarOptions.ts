@@ -3,18 +3,18 @@ import { Platform } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 /**
- * Android 3-button nav often reports insets.bottom = 0 even when the
- * system bar sits flush under the tab bar. Force a comfortable clearance.
+ * Edge-to-edge (Android 15+): content draws under system bars; insets come from
+ * SafeAreaProvider. Prefer the real bottom inset; only fall back when the OS
+ * reports 0 (common with some 3-button nav configs).
  */
 function tabBarBottomInset(insets: EdgeInsets): number {
   if (Platform.OS === 'android') {
-    // Prefer real inset when gesture/nav bar reports it; otherwise ~system bar height.
-    return Math.max(insets.bottom, 48);
+    return Math.max(insets.bottom, 24);
   }
   return Math.max(insets.bottom, 8);
 }
 
-/** Shared buyer/seller tab bar — clears Android system navigation. */
+/** Shared buyer/seller tab bar — clears Android system navigation under edge-to-edge. */
 export function getTabBarScreenOptions(
   insets: EdgeInsets
 ): BottomTabNavigationOptions {
