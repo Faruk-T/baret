@@ -4,6 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AboutScreen } from '../screens/about/AboutScreen';
+import { ContactScreen } from '../screens/about/ContactScreen';
+import { LicensesScreen } from '../screens/about/LicensesScreen';
 import { NotificationBellButton } from '../components/notifications/NotificationBellButton';
 import { useAuth } from '../context/AuthContext';
 import { SellerDashboardScreen } from '../screens/seller/SellerDashboardScreen';
@@ -214,6 +217,17 @@ export function SellerNavigator() {
         name="Notifications"
         component={SellerNotificationsScreen}
         options={{ title: 'Bildirimler' }}
+      />
+      <Stack.Screen name="About" component={AboutScreen} options={{ title: 'Hakkında' }} />
+      <Stack.Screen
+        name="Licenses"
+        component={LicensesScreen}
+        options={{ title: 'Lisanslar' }}
+      />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{ title: 'Bize ulaşın' }}
       />
     </Stack.Navigator>
   );

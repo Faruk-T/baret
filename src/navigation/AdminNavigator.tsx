@@ -1,5 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { AboutScreen } from '../screens/about/AboutScreen';
+import { ContactScreen } from '../screens/about/ContactScreen';
+import { LicensesScreen } from '../screens/about/LicensesScreen';
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { AdminHomeScreen } from '../screens/admin/AdminHomeScreen';
 import { AdminOrdersScreen } from '../screens/admin/AdminOrdersScreen';
@@ -136,6 +139,17 @@ export function AdminNavigator() {
         name="Reports"
         component={ReportsScreen}
         options={{ title: 'Şikayetler' }}
+      />
+      <Stack.Screen name="About" component={AboutScreen} options={{ title: 'Hakkında' }} />
+      <Stack.Screen
+        name="Licenses"
+        component={LicensesScreen}
+        options={{ title: 'Lisanslar' }}
+      />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{ title: 'Bize ulaşın' }}
       />
     </Stack.Navigator>
   );
