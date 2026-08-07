@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
+import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 import type { RootStackParamList } from '../types/navigation.types';
 import { AdminNavigator } from './AdminNavigator';
 import { AuthNavigator } from './AuthNavigator';
@@ -12,13 +13,21 @@ import { SellerNavigator } from './SellerNavigator';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
-  const { session, user, role, isLoading } = useAuth();
+  const { session, user, role, isLoading, isPasswordRecovery } = useAuth();
 
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#FF6B00" />
       </View>
+    );
+  }
+
+  if (isPasswordRecovery) {
+    return (
+      <NavigationContainer>
+        <ResetPasswordScreen />
+      </NavigationContainer>
     );
   }
 

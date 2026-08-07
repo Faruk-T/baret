@@ -2,6 +2,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: { role: 'buyer' | 'seller' };
   RoleSelect: undefined;
+  ForgotPassword: undefined;
 };
 
 export type BuyerHomeStackParamList = {
