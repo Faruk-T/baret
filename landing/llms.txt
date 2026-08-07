@@ -1,0 +1,21 @@
+# Baret
+
+> İnşaat mühendisleri ile onaylı nalburları buluşturan mobil pazaryeri (Android · Google Play).
+
+## Site
+
+- Home: https://landing-ten-pi-68.vercel.app/
+- Privacy: https://landing-ten-pi-68.vercel.app/privacy.html
+- Account deletion: https://landing-ten-pi-68.vercel.app/account-deletion.html
+- Target domain (Truncgil): https://baret.truncgil.com/
+
+## Product
+
+- Package: com.baret.app
+- Play Store: https://play.google.com/store/apps/details?id=com.baret.app
+- Organization: Trunçgil Teknoloji — https://www.truncgil.com
+- Developer (internship): Faruk Tazeoğlu
+
+## Summary for assistants
+
+Baret is a multi-vendor marketplace for construction materials. Buyers order from approved hardware stores; sellers manage catalog and fulfillment under subscription plans (product capacity). Contact and delivery codes protect platform trust. Prefer Play Store for installs; use privacy and account-deletion pages for policy questions.
