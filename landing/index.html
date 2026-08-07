@@ -22,9 +22,13 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div class="scroll-progress" aria-hidden="true">
+      <div class="scroll-progress-bar" data-scroll-progress></div>
+    </div>
     <div class="mesh" aria-hidden="true"></div>
     <div class="orb orb-a" aria-hidden="true"></div>
     <div class="orb orb-b" aria-hidden="true"></div>
+    <div class="cursor-glow" data-cursor-glow aria-hidden="true"></div>
 
     <header class="nav">
       <a class="nav-brand" href="#top">
@@ -49,31 +53,32 @@
 
     <main id="top">
       <section class="hero">
-        <div class="hero-bg" aria-hidden="true" data-hero-rotate>
-          <img
-            class="hero-art hero-art-left is-hero-focus"
-            src="./assets/illu-order-cart.png"
-            alt=""
-            data-hero-art
-          />
-          <img
-            class="hero-art hero-art-center"
-            src="./assets/illu-hero-market.png"
-            alt=""
-            data-hero-art
-          />
-          <img
-            class="hero-art hero-art-right"
-            src="./assets/illu-delivery-code.png"
-            alt=""
-            data-hero-art
-          />
-          <div class="hero-fade"></div>
+        <div class="hero-stage" aria-hidden="true" data-hero-rotate>
+          <div class="hero-stage-inner">
+            <img
+              class="hero-art is-hero-focus"
+              src="./assets/illu-order-cart.png"
+              alt=""
+              data-hero-art
+            />
+            <img
+              class="hero-art"
+              src="./assets/illu-hero-market.png"
+              alt=""
+              data-hero-art
+            />
+            <img
+              class="hero-art"
+              src="./assets/illu-delivery-code.png"
+              alt=""
+              data-hero-art
+            />
+          </div>
         </div>
 
         <div class="hero-copy">
           <p class="eyebrow" data-animate="fade-up">Şantiye malzemesi · Onaylı nalbur</p>
-          <h1 class="brand-hero" data-animate="fade-up" data-delay="0.08">
+          <h1 class="brand-hero" data-animate="fade-up" data-delay="0.08" data-split-brand>
             Baret
           </h1>
           <p class="hero-lead" data-animate="fade-up" data-delay="0.16">
@@ -81,14 +86,14 @@
           </p>
           <div class="hero-cta" data-animate="fade-up" data-delay="0.24">
             <a
-              class="btn"
+              class="btn btn-magnetic"
               href="https://play.google.com/store/apps/details?id=com.baret.app"
               target="_blank"
               rel="noopener noreferrer"
             >
               Google Play’de aç
             </a>
-            <a class="btn btn-ghost" href="#vitrin">Nasıl koruruz?</a>
+            <a class="btn btn-ghost btn-magnetic" href="#vitrin">Nasıl koruruz?</a>
           </div>
         </div>
       </section>
@@ -102,37 +107,42 @@
         </div>
       </section>
 
-      <section class="strip" id="nasil">
-        <h2 class="section-title" data-animate="fade-up">Üç adımda işler</h2>
+      <section class="strip" id="nasil" data-section>
+        <h2 class="section-title" data-animate="clip-up">Üç adımda işler</h2>
         <p class="section-sub" data-animate="fade-up" data-delay="0.08">
           Karmaşık süreç yok. Malzeme bul, sipariş ver, mağazadan teslim al veya gelsin.
         </p>
-        <ol class="steps">
-          <li data-animate="fade-up">
-            <span class="step-num">01</span>
-            <h3>Keşfet</h3>
-            <p>Onaylı mağazaların ürünlerini ara; şehir ve teslimat filtresiyle daralt.</p>
-          </li>
-          <li data-animate="fade-up" data-delay="0.1">
-            <span class="step-num">02</span>
-            <h3>Sipariş ver</h3>
-            <p>Sepete ekle, adresini gir. İletişim bilgisi sipariş kabulünden sonra açılır.</p>
-          </li>
-          <li data-animate="fade-up" data-delay="0.2">
-            <span class="step-num">03</span>
-            <h3>Teslim al</h3>
-            <p>Hazır olunca teslim kodunu satıcıya göster; sipariş güvenle tamamlanır.</p>
-          </li>
-        </ol>
+        <div class="steps-wrap" data-steps>
+          <div class="steps-rail" aria-hidden="true">
+            <div class="steps-rail-fill" data-steps-fill></div>
+          </div>
+          <ol class="steps">
+            <li data-animate="fade-up" data-step>
+              <span class="step-num">01</span>
+              <h3>Keşfet</h3>
+              <p>Onaylı mağazaların ürünlerini ara; şehir ve teslimat filtresiyle daralt.</p>
+            </li>
+            <li data-animate="fade-up" data-delay="0.1" data-step>
+              <span class="step-num">02</span>
+              <h3>Sipariş ver</h3>
+              <p>Sepete ekle, adresini gir. İletişim bilgisi sipariş kabulünden sonra açılır.</p>
+            </li>
+            <li data-animate="fade-up" data-delay="0.2" data-step>
+              <span class="step-num">03</span>
+              <h3>Teslim al</h3>
+              <p>Hazır olunca teslim kodunu satıcıya göster; sipariş güvenle tamamlanır.</p>
+            </li>
+          </ol>
+        </div>
       </section>
 
-      <section class="plans" id="planlar">
-        <h2 class="section-title" data-animate="fade-up">Satıcı planları</h2>
+      <section class="plans" id="planlar" data-section>
+        <h2 class="section-title" data-animate="clip-up">Satıcı planları</h2>
         <p class="section-sub" data-animate="fade-up" data-delay="0.08">
           Ürün kapasitesine göre aylık sabit paket.
         </p>
         <div class="plan-grid">
-          <article class="plan-card" data-animate="fade-up">
+          <article class="plan-card plan-tilt" data-animate="fade-up" data-tilt>
             <p class="plan-tag">Basic</p>
             <h3>Başlangıç</h3>
             <p class="plan-price">₺4.000<span>/ay</span></p>
@@ -141,7 +151,7 @@
               Küçük nalburlar için. Sabit aylık ücret, sınırlı ürün kotası.
             </p>
           </article>
-          <article class="plan-card plan-card-featured" data-animate="fade-up" data-delay="0.1">
+          <article class="plan-card plan-card-featured plan-tilt" data-animate="fade-up" data-delay="0.1" data-tilt>
             <p class="plan-tag">Pro</p>
             <h3>Orta plan</h3>
             <p class="plan-price">₺7.000<span>/ay</span></p>
@@ -151,7 +161,7 @@
               aynı şeffaf abonelik modeli.
             </p>
           </article>
-          <article class="plan-card" data-animate="fade-up" data-delay="0.2">
+          <article class="plan-card plan-tilt" data-animate="fade-up" data-delay="0.2" data-tilt>
             <p class="plan-tag">Özel</p>
             <h3>Özel sipariş</h3>
             <p class="plan-price">Anlaşmalı</p>
@@ -164,9 +174,9 @@
         </div>
       </section>
 
-      <section class="showcase" id="vitrin">
+      <section class="showcase" id="vitrin" data-section>
         <div class="showcase-head">
-          <h2 class="section-title" data-animate="fade-up">Baret’i hisset</h2>
+          <h2 class="section-title" data-animate="clip-up">Baret’i hisset</h2>
           <p class="section-sub" data-animate="fade-up" data-delay="0.08">
             Ekran görüntüsü değil — ürünün vaat ettiği deneyim.
           </p>
@@ -301,31 +311,31 @@
         </div>
       </section>
 
-      <section class="roles" id="roller">
-        <h2 class="section-title" data-animate="fade-up">Kimler için?</h2>
+      <section class="roles" id="roller" data-section>
+        <h2 class="section-title" data-animate="clip-up">Kimler için?</h2>
         <div class="role-row">
-          <article data-animate="fade-up">
+          <article class="role-card" data-animate="fade-up" data-tilt>
             <h3>Alıcı</h3>
             <p>Mühendis ve şantiye ekipleri için katalog, sepet, sipariş ve değerlendirme.</p>
           </article>
-          <article data-animate="fade-up" data-delay="0.1">
+          <article class="role-card" data-animate="fade-up" data-delay="0.1" data-tilt>
             <h3>Satıcı</h3>
             <p>Nalburlar ürün, stok, sipariş, gelir ve abonelik planını panelden yönetir.</p>
           </article>
-          <article data-animate="fade-up" data-delay="0.2">
+          <article class="role-card" data-animate="fade-up" data-delay="0.2" data-tilt>
             <h3>Admin</h3>
             <p>Mağaza onayı, lisans, satıcı planları ve şikayet yönetimi.</p>
           </article>
         </div>
       </section>
 
-      <section class="features" id="ozellikler">
-        <h2 class="section-title" data-animate="fade-up">Neden Baret?</h2>
+      <section class="features" id="ozellikler" data-section>
+        <h2 class="section-title" data-animate="clip-up">Neden Baret?</h2>
         <ul class="feature-list">
-          <li data-animate="fade-up"><strong>Onaylı mağazalar</strong> — Katalogda yalnızca admin onaylı nalburlar.</li>
-          <li data-animate="fade-up" data-delay="0.08"><strong>Güvenli iletişim</strong> — Telefon sipariş kabulünden önce kapalı.</li>
-          <li data-animate="fade-up" data-delay="0.16"><strong>Teslim kodu</strong> — Gel-al / yolda siparişte doğrulamalı teslim.</li>
-          <li data-animate="fade-up" data-delay="0.24"><strong>Abonelik planları</strong> — Ürün kapasitesine göre aylık paket.</li>
+          <li data-animate="wipe-in"><strong>Onaylı mağazalar</strong> — Katalogda yalnızca admin onaylı nalburlar.</li>
+          <li data-animate="wipe-in" data-delay="0.08"><strong>Güvenli iletişim</strong> — Telefon sipariş kabulünden önce kapalı.</li>
+          <li data-animate="wipe-in" data-delay="0.16"><strong>Teslim kodu</strong> — Gel-al / yolda siparişte doğrulamalı teslim.</li>
+          <li data-animate="wipe-in" data-delay="0.24"><strong>Abonelik planları</strong> — Ürün kapasitesine göre aylık paket.</li>
         </ul>
       </section>
 
