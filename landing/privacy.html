@@ -8,6 +8,10 @@
       name="description"
       content="Baret mobil uygulaması gizlilik politikası."
     />
+    <meta name="theme-color" content="#FF6B00" />
+    <link rel="canonical" href="https://landing-ten-pi-68.vercel.app/privacy.html" />
+    <meta property="og:title" content="Gizlilik Politikası — Baret" />
+    <meta property="og:url" content="https://landing-ten-pi-68.vercel.app/privacy.html" />
     <link rel="icon" href="./assets/icon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -142,7 +146,16 @@
 
     <footer class="footer">
       <img src="./assets/icon.png" alt="" width="28" height="28" />
-      <p>© <span id="year"></span> Baret</p>
+      <div class="footer-copy">
+        <p>© <span id="year"></span> Baret · Faruk Tazeoğlu · Trunçgil Teknoloji</p>
+        <p class="footer-links">
+          <a href="./index.html">Ana sayfa</a>
+          ·
+          <a href="https://www.truncgil.com" target="_blank" rel="noopener noreferrer"
+            >İletişim</a
+          >
+        </p>
+      </div>
     </footer>
     <script>
       document.getElementById("year").textContent = String(new Date().getFullYear());

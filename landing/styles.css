@@ -872,13 +872,33 @@ a {
 
 .footer {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 0.65rem;
-  padding: 1.5rem;
+  padding: 1.5rem clamp(1rem, 4vw, 2rem);
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.footer-copy {
+  text-align: left;
+  max-width: 40rem;
+}
+
+.footer-copy p {
+  margin: 0;
+}
+
+.footer-links {
+  margin-top: 0.45rem !important;
+  line-height: 1.6;
+}
+
+.footer-credits {
+  margin-top: 0.55rem !important;
+  font-size: 0.8rem;
+  color: rgba(91, 107, 124, 0.9);
 }
 
 .footer a {
@@ -1130,7 +1150,12 @@ a {
   .footer {
     flex-wrap: wrap;
     padding: 1.25rem 1rem;
-    text-align: center;
+    text-align: left;
+  }
+
+  .footer-copy {
+    flex: 1;
+    min-width: 0;
   }
 }
 

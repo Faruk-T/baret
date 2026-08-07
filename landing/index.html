@@ -8,7 +8,72 @@
       name="description"
       content="Baret, onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri. Google Play’den indir."
     />
+    <meta name="theme-color" content="#FF6B00" />
+    <link rel="canonical" href="https://landing-ten-pi-68.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:site_name" content="Baret" />
+    <meta property="og:title" content="Baret — İnşaat & nalbur pazaryeri" />
+    <meta
+      property="og:description"
+      content="Onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri. Google Play’den indir."
+    />
+    <meta property="og:url" content="https://landing-ten-pi-68.vercel.app/" />
+    <meta
+      property="og:image"
+      content="https://landing-ten-pi-68.vercel.app/assets/icon.png"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Baret — İnşaat & nalbur pazaryeri" />
+    <meta
+      name="twitter:description"
+      content="Onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri."
+    />
     <link rel="icon" href="./assets/icon.png" type="image/png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "Trunçgil Teknoloji",
+            "url": "https://www.truncgil.com",
+            "sameAs": ["https://www.truncgil.com"]
+          },
+          {
+            "@type": "MobileApplication",
+            "name": "Baret",
+            "operatingSystem": "Android",
+            "applicationCategory": "BusinessApplication",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "TRY"
+            },
+            "url": "https://landing-ten-pi-68.vercel.app/",
+            "downloadUrl": "https://play.google.com/store/apps/details?id=com.baret.app",
+            "installUrl": "https://play.google.com/store/apps/details?id=com.baret.app",
+            "description": "Onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri.",
+            "author": {
+              "@type": "Person",
+              "name": "Faruk Tazeoğlu"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Trunçgil Teknoloji",
+              "url": "https://www.truncgil.com"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "name": "Baret",
+            "url": "https://landing-ten-pi-68.vercel.app/",
+            "inLanguage": "tr-TR",
+            "description": "Baret tanıtım sitesi — Google Play indirme ve ürün bilgisi."
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -393,19 +458,33 @@
 
     <footer class="footer">
       <img src="./assets/icon.png" alt="" width="28" height="28" />
-      <p>
-        © <span id="year"></span> Baret · Faruk Tazeoğlu ·
-        <a href="./privacy.html">Gizlilik</a>
-        ·
-        <a href="./account-deletion.html">Hesap silme</a>
-        ·
-        <a
-          href="https://play.google.com/store/apps/details?id=com.baret.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Play Store</a
-        >
-      </p>
+      <div class="footer-copy">
+        <p>
+          © <span id="year"></span> Baret · Faruk Tazeoğlu · Trunçgil Teknoloji
+        </p>
+        <p class="footer-links">
+          <a href="./privacy.html">Gizlilik</a>
+          ·
+          <a href="./account-deletion.html">Hesap silme</a>
+          ·
+          <a
+            href="https://play.google.com/store/apps/details?id=com.baret.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Play Store</a
+          >
+          ·
+          <a href="https://www.truncgil.com" target="_blank" rel="noopener noreferrer"
+            >İletişim / Truncgil</a
+          >
+          ·
+          <a href="./llms.txt">llms.txt</a>
+        </p>
+        <p class="footer-credits">
+          Credits: Faruk Tazeoğlu (Geliştirici) · Ümit Tunç (Danışman) · Trunçgil
+          Teknoloji
+        </p>
+      </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
