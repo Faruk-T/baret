@@ -54,6 +54,7 @@ Bu repo geliştirme sürecinde aşağıdaki prensiplere göre yönetilmektedir.
 | [`docs/licenses-setup.md`](docs/licenses-setup.md) | Mağaza lisans / onay akışı |
 | [`docs/next-release-gaps.md`](docs/next-release-gaps.md) | Play sonrası 1.0.1+ backlog |
 | [`docs/password-reset.md`](docs/password-reset.md) | Şifremi unuttum / deep link (Supabase) |
+| [`docs/about-and-seo.md`](docs/about-and-seo.md) | Credits, iletişim, landing SEO / domain |
 
 > Eski **sipariş komisyonu** dokümanları (`docs/commission-*.md`) arşiv niteliğindedir; canlı monetizasyon **plan kapasitesi** üzerinden yürür.
 
