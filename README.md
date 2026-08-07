@@ -53,6 +53,7 @@ Bu repo geliştirme sürecinde aşağıdaki prensiplere göre yönetilmektedir.
 | [`docs/seller-plans-setup.sql`](docs/seller-plans-setup.sql) | Satıcı abonelik planları (Basic / Pro / Özel), ürün kotası |
 | [`docs/licenses-setup.md`](docs/licenses-setup.md) | Mağaza lisans / onay akışı |
 | [`docs/next-release-gaps.md`](docs/next-release-gaps.md) | Play sonrası 1.0.1+ backlog |
+| [`docs/password-reset.md`](docs/password-reset.md) | Şifremi unuttum / deep link (Supabase) |
 
 > Eski **sipariş komisyonu** dokümanları (`docs/commission-*.md`) arşiv niteliğindedir; canlı monetizasyon **plan kapasitesi** üzerinden yürür.
 
