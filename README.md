@@ -17,15 +17,16 @@ Bu proje, Trunçgil Teknoloji Yaz Staj Programı kapsamında geliştirilmektedir
 
 ---
 
-# Kullanılacak Teknolojiler
+# Teknoloji yığını
 
-- React Native (Expo)
-- TypeScript
-- Supabase
-- PostgreSQL
-- React Navigation
-- NativeWind
-- Context API
+- **React Native** — Expo SDK **57** (`com.baret.app`)
+- **TypeScript**
+- **Supabase** — Auth, PostgreSQL, Storage, Realtime
+- **React Navigation** (stack + tabs)
+- **NativeWind** (Tailwind)
+- **Context API** — sepet, oturum
+- **EAS Build** — Android AAB / APK profilleri
+- **expo-notifications** — uygulama açıkken tray bildirimleri (Realtime köprüsü)
 
 ---
 
@@ -44,9 +45,16 @@ Bu repo geliştirme sürecinde aşağıdaki prensiplere göre yönetilmektedir.
 
 # Dokümantasyon
 
-Projenin ayrıntılı geliştirme planı aşağıdaki dosyada bulunmaktadır.
+| Dosya | İçerik |
+|-------|--------|
+| [`implementation_plan.md`](implementation_plan.md) | Tarihsel geliştirme planı (4 faz) |
+| [`docs/rls-and-triggers.md`](docs/rls-and-triggers.md) | RLS, trigger ve güvenlik |
+| [`docs/storage-setup.md`](docs/storage-setup.md) | Ürün görselleri bucket |
+| [`docs/seller-plans-setup.sql`](docs/seller-plans-setup.sql) | Satıcı abonelik planları (Basic / Pro / Özel), ürün kotası |
+| [`docs/licenses-setup.md`](docs/licenses-setup.md) | Mağaza lisans / onay akışı |
+| [`docs/next-release-gaps.md`](docs/next-release-gaps.md) | Play sonrası 1.0.1+ backlog |
 
-- implementation_plan.md
+> Eski **sipariş komisyonu** dokümanları (`docs/commission-*.md`) arşiv niteliğindedir; canlı monetizasyon **plan kapasitesi** üzerinden yürür.
 
 ---
 
@@ -86,7 +94,7 @@ Sepet kalemleri, adet seçici, indirim kodu alanı, sipariş özeti ve siparişi
 
 # Cihaz Ekran Görüntüleri (Çalışan Uygulama)
 
-Expo Go üzerinde alınan gerçek ekranlar (auth + satıcı paneli).
+Geliştirme ve demo sırasında alınan gerçek ekranlar (auth, alıcı, satıcı, admin).
 
 ### Auth (Gün 11)
 
@@ -266,24 +274,46 @@ Doğrulama: SQL Editor'de tablolar görünüyor mu; uygulamada `.env` doluysa cl
 2. Policy SQL ve adımlar: [`docs/storage-setup.md`](docs/storage-setup.md)
 3. Uygulama: `src/services/storage.ts` + ürün formunda galeri yükleme
 
+## 5. Satıcı planları (Gün 22+)
+
+Temel şemadan sonra Supabase SQL Editor’de [`docs/seller-plans-setup.sql`](docs/seller-plans-setup.sql) çalıştır. Admin panelden plan tanımları ve mağazaya atama; satıcı dashboard’da kullanım / limit gösterimi.
+
 ---
 
-# Durum
+# Durum (güncel)
 
-✅ **Faz 4 — Gün 20** | APK go-live + demo. Play Store daveti alındı. Landing: `landing/`.
+**Android — Google Play** · paket `com.baret.app` · sürüm **1.0.0** (production AAB, `versionCode` 4).  
+İndirme: [Google Play](https://play.google.com/store/apps/details?id=com.baret.app)
+
+**Landing** · [landing-ten-pi-68.vercel.app](https://landing-ten-pi-68.vercel.app) — planlar, gizlilik politikası, hesap silme, Play Store CTA.
+
+| Alan | Özet |
+|------|------|
+| Roller | Alıcı, satıcı, admin |
+| Monetizasyon | **Satıcı abonelik planları** (ürün kotası); sipariş komisyonu devre dışı |
+| Admin | Mağaza onayı, plan yönetimi, satıcıya plan atama, bildirim merkezi |
+| Güvenlik | Fiyat kilidi, lisans kapısı, pickup kodu, sipariş durum makinesi |
+| Bildirim | Realtime + yerel tray (uygulama bağlıyken); FCM → backlog |
+| Sonraki binary | Edge-to-edge (`day-24`) ve 1.0.1 maddeleri → [`docs/next-release-gaps.md`](docs/next-release-gaps.md) |
+
+Geliştirme akışı: günlük feature branch’ler (`day-03` … `day-25-play-store-landing`), PR → `main`.
 
 ---
 
 # Landing page
 
-Uygulamanın tanıtım sitesi `landing/` klasöründe (statik HTML/CSS/JS).
+Kaynak: `landing/` (statik HTML/CSS/JS). Canlı site Vercel üzerinde; indirme linkleri **Play Store**’a yönlendirir.
 
-Yerelde açmak:
+Yerelde:
 
 ```powershell
 cd landing
 npx --yes serve .
 ```
 
-Tarayıcıda verilen adresi aç (genelde `http://localhost:3000`).  
-Deploy için klasörü Vercel / Netlify / GitHub Pages’e yüklemen yeterli.
+Prod deploy (Vercel CLI):
+
+```powershell
+cd landing
+vercel --prod
+```
