@@ -2,6 +2,14 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: { role: 'buyer' | 'seller' };
   RoleSelect: undefined;
+  ForgotPassword: undefined;
+};
+
+/** Shared about hub (mounted on buyer / seller / admin stacks). */
+export type AboutStackParamList = {
+  About: undefined;
+  Licenses: undefined;
+  Contact: undefined;
 };
 
 export type BuyerHomeStackParamList = {
@@ -13,6 +21,10 @@ export type BuyerCartStackParamList = {
   CartList: undefined;
   Checkout: undefined;
 };
+
+export type BuyerProfileStackParamList = {
+  ProfileHome: undefined;
+} & AboutStackParamList;
 
 export type BuyerTabParamList = {
   Home: undefined;
@@ -31,7 +43,7 @@ export type SellerTabParamList = {
 export type SellerStackParamList = {
   SellerTabs: undefined;
   Notifications: undefined;
-};
+} & AboutStackParamList;
 
 export type SellerProductsStackParamList = {
   ProductList: undefined;
@@ -58,7 +70,7 @@ export type AdminStackParamList = {
   LicenseKeys: undefined;
   Commission: undefined;
   Reports: undefined;
-};
+} & AboutStackParamList;
 
 export type RootStackParamList = {
   Auth: undefined;

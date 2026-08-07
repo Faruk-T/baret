@@ -84,6 +84,13 @@ export function LoginScreen() {
             onChangeText={setPassword}
           />
 
+          <Pressable
+            className="mb-5 self-end"
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
+            <Text className="text-sm font-semibold text-brand">Şifremi unuttum</Text>
+          </Pressable>
+
           <PrimaryButton
             label="Giriş Yap"
             loading={isSubmitting}

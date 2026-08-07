@@ -1,0 +1,12 @@
+{
+  "name": "Baret",
+  "tagline": "İnşaat & nalbur pazaryeri",
+  "description": "Baret, onaylı nalburlarla şantiye malzemesini buluşturan mobil pazaryeri. Google Play’den indir.",
+  "url": "https://landing-ten-pi-68.vercel.app",
+  "canonicalTarget": "https://baret.truncgil.com",
+  "playStore": "https://play.google.com/store/apps/details?id=com.baret.app",
+  "packageId": "com.baret.app",
+  "organization": "Trunçgil Teknoloji",
+  "organizationUrl": "https://www.truncgil.com",
+  "locale": "tr_TR"
+}

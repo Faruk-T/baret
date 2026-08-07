@@ -36,6 +36,7 @@ Ship the items below in **1.0.1+** (or 1.1.0) after go-live feedback.
 | Closed-app push (FCM) | Tray alerts only while app/Realtime connected | Expo push + FCM credentials + store device tokens |
 | Buyer push | Mostly seller/admin inbox today | Order status → buyer push |
 | Notification sound asset | Uses system default | Optional branded `.wav` via `expo-notifications` sounds |
+| Password reset | Shipped on `day-26-forgot-password` | Confirm Supabase redirect URLs in prod; ship in 1.0.1 AAB |
 
 ## Ops / admin
 

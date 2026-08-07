@@ -8,7 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 
+import {
+  createSessionFromUrl,
+  requestPasswordReset as sendPasswordResetEmail,
+  updatePassword as setNewPassword,
+} from '../services/passwordReset';
 import { supabase } from '../services/supabase';
 import { updateUserProfile, type ProfileUpdateInput } from '../services/users';
 import type { User, UserRole } from '../types/database';
@@ -24,9 +30,14 @@ type AuthContextValue = {
   session: Session | null;
   role: UserRole | null;
   isLoading: boolean;
+  /** True after opening a password-recovery deep link / PASSWORD_RECOVERY event. */
+  isPasswordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, metadata: SignUpMetadata) => Promise<void>;
   signOut: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+  clearPasswordRecovery: () => void;
   updateProfile: (input: ProfileUpdateInput) => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -51,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const syncProfile = useCallback(async (nextSession: Session | null) => {
     if (!nextSession?.user) {
@@ -77,7 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       setSession(nextSession);
       try {
         await syncProfile(nextSession);
@@ -93,6 +108,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [syncProfile]);
+
+  useEffect(() => {
+    let alive = true;
+
+    const handleUrl = async (url: string | null) => {
+      if (!url || !alive) return;
+      try {
+        const handled = await createSessionFromUrl(url);
+        if (handled && alive) {
+          setIsPasswordRecovery(true);
+        }
+      } catch {
+        // Invalid / expired link — stay on auth; user can request again.
+      }
+    };
+
+    void Linking.getInitialURL().then(handleUrl);
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      void handleUrl(url);
+    });
+
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -118,8 +159,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    setIsPasswordRecovery(false);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    await sendPasswordResetEmail(email);
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    await setNewPassword(newPassword);
+    setIsPasswordRecovery(false);
+  }, []);
+
+  const clearPasswordRecovery = useCallback(() => {
+    setIsPasswordRecovery(false);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -144,13 +199,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       role: user?.role ?? null,
       isLoading,
+      isPasswordRecovery,
       signIn,
       signUp,
       signOut,
+      requestPasswordReset,
+      updatePassword,
+      clearPasswordRecovery,
       updateProfile,
       refreshProfile,
     }),
-    [user, session, isLoading, signIn, signUp, signOut, updateProfile, refreshProfile]
+    [
+      user,
+      session,
+      isLoading,
+      isPasswordRecovery,
+      signIn,
+      signUp,
+      signOut,
+      requestPasswordReset,
+      updatePassword,
+      clearPasswordRecovery,
+      updateProfile,
+      refreshProfile,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
