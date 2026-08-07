@@ -787,6 +787,115 @@ a {
   display: inline-flex;
 }
 
+.credits {
+  padding: clamp(3rem, 8vw, 5.5rem) clamp(1rem, 4vw, 3rem);
+}
+
+.credits-grid {
+  margin: 2.75rem auto 0;
+  max-width: 1040px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.credits-card {
+  padding: 1.6rem 1.4rem 1.7rem;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.credits-card-wide {
+  grid-column: 1 / -1;
+}
+
+.credits-tag {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.credits-card h3 {
+  margin: 0.45rem 0 0;
+  font-family: var(--display);
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.credits-meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.credits-link {
+  display: inline-block;
+  margin-top: 0.85rem;
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.credits-link:hover {
+  text-decoration: underline;
+}
+
+.credits-list {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+}
+
+.credits-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.98rem;
+}
+
+.credits-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.credits-list span {
+  color: var(--muted);
+}
+
+.credits-list strong {
+  color: var(--ink);
+  font-weight: 700;
+  text-align: right;
+}
+
+.credits-card-wide > p {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  max-width: 36rem;
+}
+
+.credits-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.credits-oss {
+  margin: 1.15rem 0 0 !important;
+  font-size: 0.82rem !important;
+  color: var(--muted);
+}
+
 .download {
   padding-bottom: clamp(4rem, 10vw, 7rem);
 }
@@ -988,6 +1097,7 @@ a {
   .features,
   .plans,
   .rating,
+  .credits,
   .download {
     padding: 2.75rem 1.15rem;
   }
@@ -1131,6 +1241,14 @@ a {
   .plan-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .credits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .credits-card-wide {
+    grid-column: auto;
   }
 
   .download-inner {

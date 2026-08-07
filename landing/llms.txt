@@ -5,6 +5,7 @@
 ## Site
 
 - Home: https://landing-ten-pi-68.vercel.app/
+- Credits: https://landing-ten-pi-68.vercel.app/#credits
 - Privacy: https://landing-ten-pi-68.vercel.app/privacy.html
 - Account deletion: https://landing-ten-pi-68.vercel.app/account-deletion.html
 - Target domain (Truncgil): https://baret.truncgil.com/

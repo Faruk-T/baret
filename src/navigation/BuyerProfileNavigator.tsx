@@ -24,7 +24,17 @@ export function BuyerProfileNavigator() {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="About" component={AboutScreen} options={{ title: 'Hakkında' }} />
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{
+          title: 'Credits',
+          headerStyle: { backgroundColor: '#0B1220' },
+          headerTintColor: '#FF6B00',
+          headerTitleStyle: { fontWeight: '700', color: '#fff' },
+          contentStyle: { backgroundColor: '#0B1220' },
+        }}
+      />
       <Stack.Screen
         name="Licenses"
         component={LicensesScreen}

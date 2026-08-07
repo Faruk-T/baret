@@ -29,9 +29,9 @@ export type CreditRow = {
 };
 
 export const CREDITS: CreditRow[] = [
-  { role: 'Geliştirici', name: 'Faruk Tazeoğlu' },
-  { role: 'Proje danışmanı', name: 'Ümit Tunç' },
-  { role: 'Proje ekibi', name: 'Trunçgil Teknoloji' },
+  { role: 'Developer', name: 'Faruk Tazeoğlu' },
+  { role: 'Project Lead', name: 'Ümit Tunç' },
+  { role: 'Project Team', name: 'Trunçgil Teknoloji' },
 ];
 
 export type OssLicenseRow = {
