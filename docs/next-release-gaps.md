@@ -53,7 +53,7 @@ Ship the items below in **1.0.1+** (or 1.1.0) after go-live feedback.
 | Production opt-in testers | Personal accounts need ~12 opted-in for 14 days before production access (if policy applies) | Keep closed-test cohort alive; track opt-ins |
 | Screenshots / feature graphic | Store listing assets | Refresh after UI polish |
 | Mapping / crash reporting | No Sentry yet | Optional Sentry + R8 mapping |
-| iOS | Android-first | Apple Developer + EAS iOS when ready |
+| iOS / App Store | Android-first; sektör iPhone ağırlıklı | Config on `day-28-ios-app-store` — see [`docs/ios-app-store.md`](ios-app-store.md); needs Apple Developer + TestFlight |
 
 ## Suggested 1.0.1 scope (minimal)
 
