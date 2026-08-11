@@ -10,6 +10,9 @@
       "environment": "development",
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
       }
     },
     "preview": {
@@ -17,6 +20,10 @@
       "environment": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false,
+        "resourceClass": "m-medium"
       }
     },
     "production": {
@@ -24,10 +31,16 @@
       "environment": "production",
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {},
+      "android": {}
+    }
   }
 }
