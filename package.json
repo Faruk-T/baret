@@ -51,7 +51,8 @@
     "build:ios:preview": "npx eas-cli build -p ios --profile preview",
     "build:ios:store": "npx eas-cli build -p ios --profile production",
     "build:ios": "npx eas-cli build -p ios --profile production",
-    "submit:ios": "npx eas-cli submit -p ios --profile production --latest"
+    "submit:ios": "npx eas-cli submit -p ios --profile production --latest",
+    "submit:android": "npx eas-cli submit -p android --profile production --latest"
   },
   "private": true
 }
