@@ -24,7 +24,7 @@ Ship the items below in **1.0.1+** (or 1.1.0) after go-live feedback.
 
 | Gap | Why | Next step |
 |-----|-----|-----------|
-| Plan assignment UX | Admin assigns per store; no global “who is on which plan” list | Admin subscriptions table (store · plan · ends_at · usage) |
+| Plan assignment UX | Admin assigns per store; no global “who is on which plan” list | **Tamamlandı** — `AdminSubscriptionsScreen` (mağaza · plan · kalan gün · kota barı) |
 | Payment for plans | Plans are tracked in DB; money is offline | Invoice / bank transfer flow or iyzico later |
 | Expired plan behavior | Product create blocked; catalog still license-based | Decide: soft-hide products vs keep visible read-only |
 | Landing plan prices | Static HTML; admin can change DB seeds | Sync landing from live `seller_plans` or document “edit HTML after price change” |
@@ -43,8 +43,8 @@ Ship the items below in **1.0.1+** (or 1.1.0) after go-live feedback.
 | Gap | Why | Next step |
 |-----|-----|-----------|
 | Strict `admin_role` | Roles UI mostly cosmetic | Enforce role checks in RLS / RPCs |
-| Finance KPIs | Still show archived commission metrics | Replace with subscription MRR / active plans |
-| Audit trail for plan changes | Assign works; audit optional | Log plan assign/renew in `admin_audit_logs` |
+| Finance KPIs | Still show archived commission metrics | **Tamamlandı** — Canlı Abonelik MRR & Aktif Paketler KPI eklendi |
+| Audit trail for plan changes | Assign works; audit optional | **Tamamlandı** — Plan atama ve iptalleri `admin_audit_logs`a kaydediliyor |
 
 ## Quality / store
 

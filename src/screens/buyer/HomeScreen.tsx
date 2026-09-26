@@ -41,6 +41,7 @@ export function HomeScreen() {
   const [maxPrice, setMaxPrice] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption | null>(null);
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -55,15 +56,17 @@ export function HomeScreen() {
           minPrice.trim() ||
           maxPrice.trim() ||
           selectedCategory ||
-          deliveryOption
+          deliveryOption ||
+          inStockOnly
       ),
-    [search, city, district, minPrice, maxPrice, selectedCategory, deliveryOption]
+    [search, city, district, minPrice, maxPrice, selectedCategory, deliveryOption, inStockOnly]
   );
 
   const activeFilterSummary = useMemo(() => {
     const parts: string[] = [];
     if (search.trim()) parts.push(`“${search.trim()}”`);
     if (selectedCategory) parts.push(selectedCategory);
+    if (inStockOnly) parts.push('Sadece Stokta');
     if (city.trim()) parts.push(city.trim());
     if (district.trim()) parts.push(district.trim());
     if (minPrice.trim() || maxPrice.trim()) {
@@ -74,6 +77,7 @@ export function HomeScreen() {
   }, [
     search,
     selectedCategory,
+    inStockOnly,
     city,
     district,
     minPrice,
@@ -88,17 +92,15 @@ export function HomeScreen() {
         else setIsLoading(true);
         setErrorMessage(null);
 
-        const searchTerm = selectedCategory
-          ? selectedCategory
-          : search.trim() || undefined;
-
         const rows = await listCatalogProducts({
-          search: searchTerm,
+          search: search.trim() || undefined,
+          category: selectedCategory || undefined,
           city: city.trim() || undefined,
           district: district.trim() || undefined,
           deliveryOption,
           minPrice: parseOptionalPrice(minPrice),
           maxPrice: parseOptionalPrice(maxPrice),
+          inStockOnly,
         });
         setProducts(rows);
       } catch (error) {
@@ -111,7 +113,7 @@ export function HomeScreen() {
         setIsRefreshing(false);
       }
     },
-    [search, city, district, minPrice, maxPrice, selectedCategory, deliveryOption]
+    [search, city, district, minPrice, maxPrice, selectedCategory, deliveryOption, inStockOnly]
   );
 
   useEffect(() => {
@@ -129,11 +131,11 @@ export function HomeScreen() {
     setMaxPrice('');
     setSelectedCategory(null);
     setDeliveryOption(null);
+    setInStockOnly(false);
   };
 
   const toggleCategory = (label: string) => {
     setSelectedCategory((prev) => (prev === label ? null : label));
-    setSearch('');
   };
 
   const toggleDelivery = (option: DeliveryOption) => {
@@ -292,6 +294,25 @@ export function HomeScreen() {
                 );
               })}
             </View>
+
+            <Pressable
+              className={`mb-3 flex-row items-center justify-between rounded-xl border px-3 py-2.5 ${
+                inStockOnly ? 'border-brand bg-orange-50/60' : 'border-stone-200 bg-white'
+              }`}
+              onPress={() => setInStockOnly(!inStockOnly)}
+            >
+              <View className="flex-row items-center gap-2">
+                <Ionicons
+                  name={inStockOnly ? 'checkbox' : 'square-outline'}
+                  size={18}
+                  color={inStockOnly ? '#FF6B00' : '#a8a29e'}
+                />
+                <Text className="text-xs font-semibold text-stone-800">
+                  Sadece Stokta Olan Ürünler
+                </Text>
+              </View>
+              <Text className="text-[11px] font-medium text-stone-500">Stok &gt; 0</Text>
+            </Pressable>
 
             <View className="flex-row items-center justify-between gap-3">
               {hasActiveFilters ? (

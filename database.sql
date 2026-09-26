@@ -1,4 +1,8 @@
 -- 1. ADIM: TAM TEMİZLİK (Eski Kalıntıları Siliyoruz)
+DROP TABLE IF EXISTS public.store_subscriptions CASCADE;
+DROP TABLE IF EXISTS public.seller_plans CASCADE;
+DROP TABLE IF EXISTS public.app_notifications CASCADE;
+DROP TABLE IF EXISTS public.admin_audit_logs CASCADE;
 DROP TABLE IF EXISTS public.platform_reports CASCADE;
 DROP TABLE IF EXISTS public.order_commissions CASCADE;
 DROP TABLE IF EXISTS public.commission_collections CASCADE;
@@ -26,6 +30,7 @@ CREATE TABLE public.users (
   full_name   TEXT,
   phone       TEXT,
   role        public.user_role NOT NULL DEFAULT 'buyer',
+  admin_role  TEXT CHECK (admin_role IS NULL OR admin_role IN ('super', 'support', 'finance')),
   avatar_url  TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -729,9 +734,425 @@ $$;
 REVOKE ALL ON FUNCTION public.collect_store_commissions(UUID, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.collect_store_commissions(UUID, TEXT) TO authenticated;
 
--- Remaining live-DB hardening (price lock, status machine, store column protect,
--- notify_user RPC, pickup secrets migration) — apply on existing projects:
---   docs/security-hardening-setup.sql
--- Fresh wipes from this file already include license gate RLS, pickup secrets,
--- commission/stock cancel rules, and absolute license redeem.
+-- =============================================================================
+-- 10. ADIM: YÖNETİM, BİLDİRİMLER & PLAN ABONELİKLERİ
+-- =============================================================================
+
+-- 10.1 Admin Denetim Kayıtları (Audit Logs)
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id    UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  action      TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id   TEXT,
+  meta        JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created
+  ON public.admin_audit_logs(created_at DESC);
+
+ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "admin_audit_logs_admin_all" ON public.admin_audit_logs;
+CREATE POLICY "admin_audit_logs_admin_all"
+  ON public.admin_audit_logs
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- 10.2 Uygulama İçi Bildirimler (App Notifications)
+CREATE TABLE IF NOT EXISTS public.app_notifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'info',
+  is_read     BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by  UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_notifications_user
+  ON public.app_notifications(user_id, created_at DESC);
+
+ALTER TABLE public.app_notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "app_notifications_select_own" ON public.app_notifications;
+CREATE POLICY "app_notifications_select_own"
+  ON public.app_notifications FOR SELECT TO authenticated
+  USING (user_id = auth.uid() OR public.is_admin());
+
+DROP POLICY IF EXISTS "app_notifications_update_own" ON public.app_notifications;
+CREATE POLICY "app_notifications_update_own"
+  ON public.app_notifications FOR UPDATE TO authenticated
+  USING (user_id = auth.uid() OR public.is_admin())
+  WITH CHECK (user_id = auth.uid() OR public.is_admin());
+
+DROP POLICY IF EXISTS "app_notifications_insert_auth" ON public.app_notifications;
+CREATE POLICY "app_notifications_insert_auth"
+  ON public.app_notifications FOR INSERT TO authenticated
+  WITH CHECK (
+    public.is_admin()
+    OR (created_by = auth.uid())
+  );
+
+-- Kullanıcıya bildirim gönderme RPC (güvenli)
+CREATE OR REPLACE FUNCTION public.notify_user(
+  p_user_id UUID,
+  p_title TEXT,
+  p_body TEXT,
+  p_kind TEXT DEFAULT 'info'
+)
+RETURNS public.app_notifications
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.app_notifications;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Giriş gerekli';
+  END IF;
+
+  INSERT INTO public.app_notifications (
+    user_id, title, body, kind, created_by
+  ) VALUES (
+    p_user_id, p_title, p_body, COALESCE(p_kind, 'info'), auth.uid()
+  )
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.notify_user(UUID, TEXT, TEXT, TEXT) TO authenticated;
+
+-- 10.3 Satıcı Abonelik Planları Kataloğu (Seller Plans)
+CREATE TABLE IF NOT EXISTS public.seller_plans (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code            TEXT NOT NULL UNIQUE
+                  CHECK (code IN ('basic', 'pro', 'custom')),
+  name            TEXT NOT NULL,
+  description     TEXT,
+  max_products    INTEGER NOT NULL CHECK (max_products > 0),
+  price_monthly   NUMERIC(12, 2) NOT NULL CHECK (price_monthly >= 0),
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO public.seller_plans (code, name, description, max_products, price_monthly, sort_order)
+VALUES
+  (
+    'basic',
+    'Basic',
+    'Küçük nalburlar için başlangıç paketi. Aylık sabit ücret, sınırlı ürün kapasitesi.',
+    20,
+    4000.00,
+    1
+  ),
+  (
+    'pro',
+    'Pro',
+    'Orta ölçekli mağazalar için. Daha yüksek ürün kapasitesi, aylık sabit ücret.',
+    100,
+    7000.00,
+    2
+  ),
+  (
+    'custom',
+    'Özel',
+    'İşletmene özel kapasite ve fiyat. Admin ile birlikte belirlenir; yüksek hacim / özel ihtiyaç.',
+    1000,
+    0.00,
+    3
+  )
+ON CONFLICT (code) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  max_products = EXCLUDED.max_products,
+  price_monthly = EXCLUDED.price_monthly,
+  sort_order = EXCLUDED.sort_order,
+  updated_at = NOW();
+
+-- 10.4 Mağaza Abonelikleri (Store Subscriptions)
+CREATE TABLE IF NOT EXISTS public.store_subscriptions (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id             UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  plan_id              UUID NOT NULL REFERENCES public.seller_plans(id) ON DELETE RESTRICT,
+  status               TEXT NOT NULL DEFAULT 'active'
+                       CHECK (status IN ('active', 'past_due', 'cancelled', 'expired')),
+  custom_max_products  INTEGER CHECK (custom_max_products IS NULL OR custom_max_products > 0),
+  custom_price_monthly NUMERIC(12, 2) CHECK (custom_price_monthly IS NULL OR custom_price_monthly >= 0),
+  starts_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ends_at              TIMESTAMPTZ NOT NULL,
+  note                 TEXT,
+  created_by           UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_store_subscriptions_store
+  ON public.store_subscriptions(store_id, status, ends_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_store_subscriptions_one_active
+  ON public.store_subscriptions(store_id)
+  WHERE status = 'active';
+
+ALTER TABLE public.seller_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "seller_plans_select_auth" ON public.seller_plans;
+CREATE POLICY "seller_plans_select_auth"
+  ON public.seller_plans FOR SELECT TO authenticated
+  USING (is_active = TRUE OR public.is_admin());
+
+DROP POLICY IF EXISTS "seller_plans_admin_all" ON public.seller_plans;
+CREATE POLICY "seller_plans_admin_all"
+  ON public.seller_plans FOR ALL TO authenticated
+  USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "seller_plans_select_anon" ON public.seller_plans;
+CREATE POLICY "seller_plans_select_anon"
+  ON public.seller_plans FOR SELECT TO anon
+  USING (is_active = TRUE);
+
+DROP POLICY IF EXISTS "store_subscriptions_select_own" ON public.store_subscriptions;
+CREATE POLICY "store_subscriptions_select_own"
+  ON public.store_subscriptions FOR SELECT TO authenticated
+  USING (
+    public.is_admin()
+    OR public.is_store_owner(store_id)
+  );
+
+DROP POLICY IF EXISTS "store_subscriptions_admin_all" ON public.store_subscriptions;
+CREATE POLICY "store_subscriptions_admin_all"
+  ON public.store_subscriptions FOR ALL TO authenticated
+  USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- 10.5 Plan Kapasitesi ve Kontrol Fonksiyonları
+CREATE OR REPLACE FUNCTION public.store_product_limit(p_store_id UUID)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (
+      SELECT COALESCE(s.custom_max_products, p.max_products)
+      FROM public.store_subscriptions s
+      JOIN public.seller_plans p ON p.id = s.plan_id
+      WHERE s.store_id = p_store_id
+        AND s.status = 'active'
+        AND s.ends_at > NOW()
+      ORDER BY s.ends_at DESC
+      LIMIT 1
+    ),
+    0
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.store_has_active_subscription(p_store_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.store_subscriptions s
+    WHERE s.store_id = p_store_id
+      AND s.status = 'active'
+      AND s.ends_at > NOW()
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.enforce_product_plan_limit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_limit INTEGER;
+  v_count INTEGER;
+BEGIN
+  IF public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  IF NOT public.store_has_active_subscription(NEW.store_id) THEN
+    RAISE EXCEPTION 'Aktif abonelik planı yok. Admin ile iletişime geç veya planını yenile.';
+  END IF;
+
+  v_limit := public.store_product_limit(NEW.store_id);
+  SELECT COUNT(*) INTO v_count
+  FROM public.products
+  WHERE store_id = NEW.store_id;
+
+  IF TG_OP = 'INSERT' AND v_count >= v_limit THEN
+    RAISE EXCEPTION 'Ürün kapasitesi doldu (limit: %). Planını yükselt veya admin ile konuş.', v_limit;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_products_plan_limit ON public.products;
+CREATE TRIGGER trg_products_plan_limit
+  BEFORE INSERT ON public.products
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_product_plan_limit();
+
+-- =============================================================================
+-- 11. ADIM: GÜVENLİK SERTLEŞTİRME TETİKLEYİCİLERİ (SECURITY HARDENING)
+-- =============================================================================
+
+-- 11.1 Fiyat Kilidi (Price Lock Trigger)
+CREATE OR REPLACE FUNCTION public.enforce_order_price_lock()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_product_price NUMERIC(12, 2);
+  v_product_active BOOLEAN;
+  v_store_id UUID;
+BEGIN
+  SELECT price, is_active, store_id
+  INTO v_product_price, v_product_active, v_store_id
+  FROM public.products
+  WHERE id = NEW.product_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Sipariş verilen ürün bulunamadı.';
+  END IF;
+
+  IF NOT v_product_active THEN
+    RAISE EXCEPTION 'Bu ürün şu anda satışta değil.';
+  END IF;
+
+  IF NEW.store_id <> v_store_id THEN
+    RAISE EXCEPTION 'Ürün ile mağaza eşleşmiyor.';
+  END IF;
+
+  -- Alıcının gönderdiği fiyatı yoksay, ürünün gerçek fiyatını kilitle
+  NEW.unit_price := v_product_price;
+  NEW.total_amount := v_product_price * NEW.quantity;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_order_price_lock ON public.orders;
+CREATE TRIGGER trg_order_price_lock
+  BEFORE INSERT ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_order_price_lock();
+
+-- 11.2 Sipariş Durum Makinesi (Status Transition Machine)
+CREATE OR REPLACE FUNCTION public.enforce_order_status_transition()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF OLD.status = NEW.status THEN
+    RETURN NEW;
+  END IF;
+
+  IF public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.status = 'cancelled' THEN
+    RAISE EXCEPTION 'İptal edilmiş bir siparişin durumu değiştirilemez.';
+  END IF;
+
+  IF OLD.status = 'delivered' THEN
+    RAISE EXCEPTION 'Teslim edilmiş bir siparişin durumu değiştirilemez.';
+  END IF;
+
+  IF auth.uid() = OLD.buyer_id THEN
+    IF NEW.status <> 'cancelled' OR OLD.status <> 'pending' THEN
+      RAISE EXCEPTION 'Alıcı yalnızca bekleyen siparişini iptal edebilir.';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF public.is_store_owner(OLD.store_id) THEN
+    IF OLD.status = 'pending' AND NEW.status NOT IN ('preparing', 'cancelled') THEN
+      RAISE EXCEPTION 'Bekleyen sipariş yalnızca hazırlanıyor veya iptal edilebilir.';
+    ELSIF OLD.status = 'preparing' AND NEW.status NOT IN ('shipped', 'delivered', 'cancelled') THEN
+      RAISE EXCEPTION 'Hazırlanan sipariş yalnızca kargoya/yola verilebilir veya iptal edilebilir.';
+    ELSIF OLD.status = 'shipped' AND NEW.status NOT IN ('delivered', 'cancelled') THEN
+      RAISE EXCEPTION 'Yoldaki sipariş yalnızca teslim edildi veya iptal edilebilir.';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RAISE EXCEPTION 'Yetkisiz sipariş durum değişikliği.';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_order_status_transition ON public.orders;
+CREATE TRIGGER trg_order_status_transition
+  BEFORE UPDATE OF status ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_order_status_transition();
+
+-- 11.3 Mağaza Admin Sütunlarını Koruma (Store Column Protection)
+CREATE OR REPLACE FUNCTION public.protect_store_admin_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  -- Satıcı onay durumunu veya lisans süresini kendi değiştiremez
+  IF OLD.is_approved IS DISTINCT FROM NEW.is_approved THEN
+    NEW.is_approved := OLD.is_approved;
+  END IF;
+
+  IF OLD.license_expires_at IS DISTINCT FROM NEW.license_expires_at THEN
+    NEW.license_expires_at := OLD.license_expires_at;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_store_admin_columns ON public.stores;
+CREATE TRIGGER trg_protect_store_admin_columns
+  BEFORE UPDATE ON public.stores
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_store_admin_columns();
+
+-- 11.4 Realtime Yayınları
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.app_notifications;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.store_subscriptions;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+END;
+$$;
+
 

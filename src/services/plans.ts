@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { writeAuditLog } from './adminOps';
 import type { SellerPlan, StoreSubscription } from '../types/database';
 
 export type StoreSubscriptionWithPlan = StoreSubscription & {
@@ -128,6 +129,23 @@ export async function assignStoreSubscription(input: {
     .single();
 
   if (error) throw error;
+
+  void writeAuditLog({
+    actorId: input.adminId,
+    action: 'assign_plan',
+    entityType: 'store_subscription',
+    entityId: data.id,
+    meta: {
+      store_id: input.storeId,
+      plan_id: input.planId,
+      months: input.months,
+      starts_at: data.starts_at,
+      ends_at: data.ends_at,
+      custom_max_products: input.customMaxProducts,
+      custom_price_monthly: input.customPriceMonthly,
+    },
+  });
+
   return data as StoreSubscription;
 }
 
@@ -142,6 +160,172 @@ export async function listStoreSubscriptionsAdmin(
     .limit(20);
   if (error) throw error;
   return (data as StoreSubscriptionWithPlan[]) ?? [];
+}
+
+export type AdminSubscriptionItem = {
+  id: string;
+  storeId: string;
+  storeName: string;
+  storeCity: string;
+  storeDistrict: string | null;
+  storeIsApproved: boolean;
+  storePhone: string;
+  planCode: string;
+  planName: string;
+  maxProducts: number;
+  productCount: number;
+  priceMonthly: number;
+  status: 'active' | 'past_due' | 'cancelled' | 'expired';
+  startsAt: string;
+  endsAt: string;
+  remainingDays: number;
+  isExpired: boolean;
+  note: string | null;
+};
+
+export async function listAllStoreSubscriptionsAdmin(): Promise<{
+  items: AdminSubscriptionItem[];
+  totalActiveMrr: number;
+  activeCount: number;
+  expiredCount: number;
+}> {
+  const { data: subs, error } = await supabase
+    .from('store_subscriptions')
+    .select(`
+      *,
+      seller_plans (*),
+      stores:store_id (
+        id,
+        name,
+        city,
+        district,
+        phone,
+        is_approved
+      )
+    `)
+    .order('ends_at', { ascending: false });
+
+  if (error) throw error;
+
+  const storeIds = Array.from(new Set((subs ?? []).map((s: any) => s.store_id)));
+  const productCountMap: Record<string, number> = {};
+
+  if (storeIds.length > 0) {
+    const { data: prods } = await supabase
+      .from('products')
+      .select('store_id');
+    if (prods) {
+      for (const p of prods) {
+        productCountMap[p.store_id] = (productCountMap[p.store_id] || 0) + 1;
+      }
+    }
+  }
+
+  const now = new Date();
+  let totalActiveMrr = 0;
+  let activeCount = 0;
+  let expiredCount = 0;
+
+  const items: AdminSubscriptionItem[] = [];
+
+  for (const s of (subs ?? []) as any[]) {
+    const plan = s.seller_plans;
+    const store = s.stores;
+    if (!store) continue;
+
+    const endsDate = new Date(s.ends_at);
+    const diffMs = endsDate.getTime() - now.getTime();
+    const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const isExpired = remainingDays <= 0 || s.status !== 'active';
+
+    const maxProducts = Number(s.custom_max_products ?? plan?.max_products ?? 0);
+    const priceMonthly = Number(s.custom_price_monthly ?? plan?.price_monthly ?? 0);
+    const productCount = productCountMap[s.store_id] ?? 0;
+
+    if (!isExpired && s.status === 'active') {
+      totalActiveMrr += priceMonthly;
+      activeCount += 1;
+    } else {
+      expiredCount += 1;
+    }
+
+    items.push({
+      id: s.id,
+      storeId: s.store_id,
+      storeName: store.name || 'İsimsiz Mağaza',
+      storeCity: store.city || '',
+      storeDistrict: store.district || null,
+      storeIsApproved: Boolean(store.is_approved),
+      storePhone: store.phone || '',
+      planCode: plan?.code || 'basic',
+      planName: plan?.name || 'Paketsiz',
+      maxProducts,
+      productCount,
+      priceMonthly,
+      status: s.status,
+      startsAt: s.starts_at,
+      endsAt: s.ends_at,
+      remainingDays,
+      isExpired,
+      note: s.note,
+    });
+  }
+
+  return {
+    items,
+    totalActiveMrr,
+    activeCount,
+    expiredCount,
+  };
+}
+
+export async function getAdminSubscriptionsSummary(): Promise<{
+  activeCount: number;
+  totalMrr: number;
+}> {
+  const { data, error } = await supabase
+    .from('store_subscriptions')
+    .select('custom_price_monthly, status, ends_at, seller_plans (price_monthly)')
+    .eq('status', 'active')
+    .gt('ends_at', new Date().toISOString());
+
+  if (error) return { activeCount: 0, totalMrr: 0 };
+
+  let totalMrr = 0;
+  for (const row of (data ?? []) as any[]) {
+    const cost = Number(row.custom_price_monthly ?? row.seller_plans?.price_monthly ?? 0);
+    totalMrr += cost;
+  }
+
+  return {
+    activeCount: data?.length ?? 0,
+    totalMrr,
+  };
+}
+
+export async function cancelStoreSubscriptionAdmin(
+  subscriptionId: string,
+  adminId: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('store_subscriptions')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('id', subscriptionId)
+    .select('store_id, plan_id')
+    .single();
+
+  if (error) throw error;
+
+  void writeAuditLog({
+    actorId: adminId,
+    action: 'cancel_plan',
+    entityType: 'store_subscription',
+    entityId: subscriptionId,
+    meta: {
+      store_id: data.store_id,
+      plan_id: data.plan_id,
+    },
+  });
 }
 
 /** Seller finance snapshot for dashboard (no commission). */

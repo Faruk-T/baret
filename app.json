@@ -13,10 +13,6 @@
       "backgroundColor": "#00000000",
       "translucent": true
     },
-    "androidNavigationBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#00000000"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baret.app",

@@ -20,6 +20,7 @@ import {
   getCommissionSummary,
   listStoreCommissionSummaries,
 } from '../../services/commission';
+import { getAdminSubscriptionsSummary } from '../../services/plans';
 import { listPendingStores } from '../../services/stores';
 import { supabase } from '../../services/supabase';
 import type { AdminStackParamList } from '../../types/navigation.types';
@@ -43,18 +44,21 @@ export function AdminHomeScreen() {
   const [ordersToday, setOrdersToday] = useState(0);
   const [revenueToday, setRevenueToday] = useState(0);
   const [openReports, setOpenReports] = useState(0);
+  const [activeSubsCount, setActiveSubsCount] = useState(0);
+  const [subscriptionMrr, setSubscriptionMrr] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [pending, stats, summary, storeRows, pulse] = await Promise.all([
+      const [pending, stats, summary, storeRows, pulse, subSummary] = await Promise.all([
         listPendingStores().catch(() => []),
         getPlatformStats().catch(() => null),
         getCommissionSummary().catch(() => null),
         listStoreCommissionSummaries().catch(() => []),
         getTodayPulse().catch(() => null),
+        getAdminSubscriptionsSummary().catch(() => ({ activeCount: 0, totalMrr: 0 })),
       ]);
       setPendingCount(pending.length);
       if (stats) {
@@ -70,6 +74,10 @@ export function AdminHomeScreen() {
         setOrdersToday(pulse.ordersToday);
         setRevenueToday(pulse.revenueToday);
         setOpenReports(pulse.openReports);
+      }
+      if (subSummary) {
+        setActiveSubsCount(subSummary.activeCount);
+        setSubscriptionMrr(subSummary.totalMrr);
       }
     } finally {
       setLoading(false);
@@ -214,10 +222,10 @@ export function AdminHomeScreen() {
                 onPress={() => navigation.navigate('PeopleHub')}
               />
               <Kpi
-                label="Eski komisyon (arşiv)"
-                value={money(platformCut)}
-                tint="#fda4af"
-                onPress={() => navigation.navigate('Commission')}
+                label="Abonelik MRR"
+                value={money(subscriptionMrr)}
+                tint="#38bdf8"
+                onPress={() => navigation.navigate('AdminSubscriptions')}
               />
             </View>
           </View>
@@ -229,6 +237,13 @@ export function AdminHomeScreen() {
           Operasyon
         </Text>
 
+        <MenuCard
+          title="Aktif abonelikler"
+          subtitle={`Planlar, süreler, kota takibi (${activeSubsCount} aktif)`}
+          icon="card"
+          badge={activeSubsCount}
+          onPress={() => navigation.navigate('AdminSubscriptions')}
+        />
         <MenuCard
           title="Alıcılar & Satıcılar"
           subtitle="Hesaplar, stok, puan, sipariş"

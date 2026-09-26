@@ -20,11 +20,13 @@ export type CatalogProduct = Product & {
 
 export type CatalogFilters = {
   search?: string;
+  category?: string;
   city?: string;
   district?: string;
   deliveryOption?: DeliveryOption | null;
   minPrice?: number | null;
   maxPrice?: number | null;
+  inStockOnly?: boolean;
 };
 
 /**
@@ -60,7 +62,16 @@ export async function listCatalogProducts(
 
   const search = filters.search?.trim();
   if (search) {
-    query = query.ilike('name', `%${search}%`);
+    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+  }
+
+  const category = filters.category?.trim();
+  if (category) {
+    query = query.or(`name.ilike.%${category}%,description.ilike.%${category}%`);
+  }
+
+  if (filters.inStockOnly) {
+    query = query.gt('stock', 0);
   }
 
   const city = filters.city?.trim();
