@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -6,6 +6,7 @@ import {
   Image,
   Pressable,
   RefreshControl,
+  ScrollView,
   Text,
   View,
 } from 'react-native';
@@ -14,6 +15,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 
+import { OrderProgressStepper } from '../../components/buyer/OrderProgressStepper';
 import { OrderReviewBlock } from '../../components/buyer/OrderReviewBlock';
 import { OrderStoreContactCard } from '../../components/buyer/OrderStoreContactCard';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -44,8 +46,29 @@ export function OrdersScreen() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<OrderWithProduct[]>([]);
   const [reviewsByOrder, setReviewsByOrder] = useState<Record<string, Review>>({});
+  const [tab, setTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const activeOrders = useMemo(
+    () => orders.filter((o) => ['pending', 'preparing', 'shipped'].includes(o.status)),
+    [orders]
+  );
+  const deliveredOrders = useMemo(
+    () => orders.filter((o) => o.status === 'delivered'),
+    [orders]
+  );
+  const cancelledOrders = useMemo(
+    () => orders.filter((o) => o.status === 'cancelled'),
+    [orders]
+  );
+
+  const displayedOrders = useMemo(() => {
+    if (tab === 'active') return activeOrders;
+    if (tab === 'delivered') return deliveredOrders;
+    if (tab === 'cancelled') return cancelledOrders;
+    return orders;
+  }, [tab, orders, activeOrders, deliveredOrders, cancelledOrders]);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -174,7 +197,7 @@ export function OrdersScreen() {
   return (
     <FlatList
       className="flex-1 bg-[#FFF8F3]"
-      data={orders}
+      data={displayedOrders}
       keyExtractor={(item) => item.id}
       contentContainerClassName="px-4 py-4"
       refreshControl={
@@ -186,6 +209,69 @@ export function OrdersScreen() {
           }}
           tintColor={ui.brand}
         />
+      }
+      ListHeaderComponent={
+        <View className="mb-3">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+            <Pressable
+              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
+                tab === 'all' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
+              }`}
+              onPress={() => setTab('all')}
+            >
+              <Text className={`text-xs font-bold ${tab === 'all' ? 'text-white' : 'text-stone-700'}`}>
+                Tümü ({orders.length})
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
+                tab === 'active' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
+              }`}
+              onPress={() => setTab('active')}
+            >
+              <Text className={`text-xs font-bold ${tab === 'active' ? 'text-white' : 'text-stone-700'}`}>
+                Aktif ({activeOrders.length})
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
+                tab === 'delivered' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
+              }`}
+              onPress={() => setTab('delivered')}
+            >
+              <Text className={`text-xs font-bold ${tab === 'delivered' ? 'text-white' : 'text-stone-700'}`}>
+                Teslim Edilen ({deliveredOrders.length})
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
+                tab === 'cancelled' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
+              }`}
+              onPress={() => setTab('cancelled')}
+            >
+              <Text className={`text-xs font-bold ${tab === 'cancelled' ? 'text-white' : 'text-stone-700'}`}>
+                İptal ({cancelledOrders.length})
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      }
+      ListEmptyComponent={
+        <View className="my-8 items-center justify-center p-4">
+          <Ionicons name="receipt-outline" size={40} color="#d6d3d1" />
+          <Text className="mt-2 text-sm font-bold text-stone-700">
+            {tab === 'active'
+              ? 'Aktif sipariş bulunmuyor.'
+              : tab === 'delivered'
+              ? 'Henüz teslim edilmiş siparişiniz yok.'
+              : tab === 'cancelled'
+              ? 'İptal edilmiş siparişiniz yok.'
+              : 'Henüz sipariş bulunmuyor.'}
+          </Text>
+        </View>
       }
       renderItem={({ item }) => (
         <UiCard className="mb-3" padded={false}>
@@ -234,6 +320,12 @@ export function OrdersScreen() {
             <Text className="text-xs text-stone-400">
               {new Date(item.created_at).toLocaleString('tr-TR')}
             </Text>
+
+            {/* Visual Order Stepper */}
+            <OrderProgressStepper
+              status={item.status}
+              deliveryOption={item.delivery_option}
+            />
 
             <View className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
               <Text className="text-xs font-bold uppercase tracking-wide text-stone-500">
