@@ -23,6 +23,7 @@ import { uploadProductImage } from '../../services/storage';
 import type { DeliveryOption } from '../../types/database';
 import type { SellerProductsStackParamList } from '../../types/navigation.types';
 import { isLicenseValid } from '../../utils/license';
+import { getStorePlanUsage, type EffectivePlan } from '../../services/plans';
 import { ui } from '../../theme/ui';
 
 type Props = NativeStackScreenProps<SellerProductsStackParamList, 'ProductForm'>;
@@ -42,6 +43,7 @@ export function ProductFormScreen({ navigation, route }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
   const [localImageMime, setLocalImageMime] = useState<string | null>(null);
+  const [planUsage, setPlanUsage] = useState<EffectivePlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +69,30 @@ export function ProductFormScreen({ navigation, route }: Props) {
           );
           return;
         }
+
+        const planInfo = await getStorePlanUsage(store.id).catch(() => null);
         if (!mounted) return;
+        setPlanUsage(planInfo);
+
+        if (!productId && planInfo) {
+          if (!planInfo.isActive) {
+            Alert.alert(
+              'Abonelik Planı Gerekli',
+              'Yeni ürün eklemek için aktif bir satıcı aboneliğiniz olmalıdır. Lütfen yönetici ile iletişime geçin.',
+              [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+            );
+            return;
+          }
+          if (planInfo.remainingSlots <= 0) {
+            Alert.alert(
+              'Ürün Kotası Doldu',
+              `Mevcut paketinizin ürün kapasitesine (${planInfo.maxProducts} ürün) ulaştınız. Yeni ürün eklemek için lütfen paketinizi yükseltin.`,
+              [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+            );
+            return;
+          }
+        }
+
         setStoreId(store.id);
 
         if (productId) {
@@ -253,6 +278,32 @@ export function ProductFormScreen({ navigation, route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView className="flex-1 px-6 pt-4" keyboardShouldPersistTaps="handled">
+        {!isEdit && planUsage ? (
+          <View className="mb-4 flex-row items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 p-3.5">
+            <View className="flex-row items-center gap-2">
+              <View className="rounded-lg bg-orange-100 p-1.5">
+                <Ionicons name="pricetag" size={16} color={ui.brand} />
+              </View>
+              <View>
+                <Text className="text-xs font-bold text-stone-800">
+                  {planUsage.plan?.name ?? 'Aktif'} Paketi
+                </Text>
+                <Text className="text-[11px] text-stone-500">
+                  Maksimum {planUsage.maxProducts} ürün kapasitesi
+                </Text>
+              </View>
+            </View>
+            <View className="items-end">
+              <Text className="text-xs font-bold text-brand">
+                {planUsage.remainingSlots} hak kaldı
+              </Text>
+              <Text className="text-[10px] text-stone-400">
+                {planUsage.productCount} yüklendi
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <Text className="mb-2 text-sm font-medium text-gray-700">Ürün görseli</Text>
         <View className="mb-4 overflow-hidden rounded-2xl border border-dashed border-stone-300 bg-stone-50">
           <Pressable

@@ -1,6 +1,7 @@
 import type { CartItem } from '../context/CartContext';
 import type { DeliveryOption, Order, OrderStatus } from '../types/database';
 import { supabase } from './supabase';
+import { notifyBuyerOrderStatus } from './adminOps';
 
 export type OrderWithProduct = Order & {
   products: {
@@ -267,6 +268,8 @@ export async function cancelSellerOrder(orderId: string): Promise<Order> {
     .single();
 
   if (error) throw error;
+  const { data: authData } = await supabase.auth.getUser();
+  void notifyBuyerOrderStatus(data, authData?.user?.id ?? data.buyer_id);
   return data;
 }
 
@@ -282,6 +285,8 @@ export async function updateSellerOrderStatus(
     .single();
 
   if (error) throw error;
+  const { data: authData } = await supabase.auth.getUser();
+  void notifyBuyerOrderStatus(data, authData?.user?.id ?? data.buyer_id);
   return data;
 }
 
@@ -293,5 +298,8 @@ export async function confirmOrderPickup(code: string): Promise<Order> {
 
   if (error) throw error;
   if (!data) throw new Error('Teslim doğrulanamadı.');
-  return data as Order;
+  const orderRow = data as Order;
+  const { data: authData } = await supabase.auth.getUser();
+  void notifyBuyerOrderStatus(orderRow, authData?.user?.id ?? orderRow.buyer_id);
+  return orderRow;
 }
