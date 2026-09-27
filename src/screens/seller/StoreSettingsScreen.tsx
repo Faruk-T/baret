@@ -10,7 +10,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../../context/AuthContext';
 import { redeemLicenseKey } from '../../services/licenses';
@@ -27,6 +28,7 @@ import {
   formatLicenseExpiry,
   getLicenseStatus,
 } from '../../utils/license';
+import { ui } from '../../theme/ui';
 
 const emptyForm: StoreFormInput = {
   name: '',
@@ -39,6 +41,7 @@ const emptyForm: StoreFormInput = {
 };
 
 export function StoreSettingsScreen() {
+  const navigation = useNavigation();
   const { user, signOut } = useAuth();
   const [store, setStore] = useState<Store | null>(null);
   const [form, setForm] = useState<StoreFormInput>(emptyForm);
@@ -402,6 +405,25 @@ export function StoreSettingsScreen() {
               {store ? 'Güncelle' : 'Mağazayı Oluştur'}
             </Text>
           )}
+        </Pressable>
+
+        <Pressable
+          className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3.5"
+          onPress={() => navigation.getParent()?.navigate('About' as never)}
+        >
+          <View
+            className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
+            style={{ backgroundColor: ui.brandSoft }}
+          >
+            <Ionicons name="information-circle-outline" size={22} color={ui.brand} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-stone-900">Hakkında</Text>
+            <Text className="mt-0.5 text-xs text-stone-500">
+              Credits · lisanslar · bize ulaşın
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#a8a29e" />
         </Pressable>
 
         <Pressable

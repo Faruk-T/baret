@@ -3,10 +3,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BuyerCartNavigator } from './BuyerCartNavigator';
 import { BuyerHomeNavigator } from './BuyerHomeNavigator';
+import { BuyerProfileNavigator } from './BuyerProfileNavigator';
 import { tabIcon } from './tabIcons';
 import { getTabBarScreenOptions } from './tabBarOptions';
 import { OrdersScreen } from '../screens/buyer/OrdersScreen';
-import { ProfileScreen } from '../screens/buyer/ProfileScreen';
 import { useCart } from '../context/CartContext';
 import type { BuyerTabParamList } from '../types/navigation.types';
 
@@ -47,7 +47,7 @@ export function BuyerNavigator() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={BuyerProfileNavigator}
         options={{
           title: 'Profil',
           headerShown: false,

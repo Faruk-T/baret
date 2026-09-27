@@ -315,6 +315,12 @@ export function AdminHomeScreen() {
           icon="stats-chart"
           onPress={() => navigation.navigate('PlatformStats')}
         />
+        <MenuCard
+          title="Hakkında"
+          subtitle="Credits · lisanslar · bize ulaşın"
+          icon="information-circle"
+          onPress={() => navigation.navigate('About')}
+        />
 
         <Pressable
           className={`mt-4 items-center rounded-2xl border border-red-200 bg-red-50 py-3.5 ${

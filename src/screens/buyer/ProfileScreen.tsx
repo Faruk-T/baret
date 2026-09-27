@@ -18,8 +18,14 @@ import { UiCard } from '../../components/ui/UiCard';
 import { USER_ROLE_LABELS } from '../../constants/enums';
 import { useAuth } from '../../context/AuthContext';
 import { ui } from '../../theme/ui';
+import type { BuyerProfileStackParamList } from '../../types/navigation.types';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type ProfileNav = NativeStackNavigationProp<BuyerProfileStackParamList, 'ProfileHome'>;
 
 export function ProfileScreen() {
+  const navigation = useNavigation<ProfileNav>();
   const { user, signOut, updateProfile } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -164,6 +170,26 @@ export function ProfileScreen() {
               <NotificationsInbox userId={user.id} limit={8} />
             </UiCard>
           ) : null}
+
+          <Pressable
+            className="mb-4 flex-row items-center rounded-2xl border border-stone-200 bg-white px-4 py-3.5"
+            style={ui.shadow}
+            onPress={() => navigation.navigate('About')}
+          >
+            <View
+              className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
+              style={{ backgroundColor: ui.brandSoft }}
+            >
+              <Ionicons name="information-circle-outline" size={22} color={ui.brand} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-bold text-stone-900">Hakkında</Text>
+              <Text className="mt-0.5 text-xs text-stone-500">
+                Credits · lisanslar · bize ulaşın
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#a8a29e" />
+          </Pressable>
 
           <Text className="mb-4 px-1 text-sm leading-5 text-stone-500">
             Baret — inşaat & nalbur pazaryeri. Siparişlerin bu hesapla bağlıdır.
