@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -48,6 +49,8 @@ function money(n: number): string {
 export function SellerDashboardScreen() {
   const navigation = useNavigation<TabNav>();
   const { user } = useAuth();
+  const isIOS = Platform.OS === 'ios';
+
   const [storeName, setStoreName] = useState<string | null>(null);
   const [isApproved, setIsApproved] = useState(false);
   const [licenseExpiresAt, setLicenseExpiresAt] = useState<string | null>(null);
@@ -200,287 +203,295 @@ export function SellerDashboardScreen() {
         />
       }
     >
-      <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
-      <Text className="mb-3 text-sm text-stone-500">
-        Kontrol merkezi · gelir, plan, stok ve sipariş
-      </Text>
+      <View style={{ maxWidth: 1080, width: '100%', alignSelf: 'center' }}>
+        <Text className="mb-1 text-2xl font-bold text-stone-900">{storeName}</Text>
+        <Text className="mb-3 text-sm text-stone-500">
+          Kontrol merkezi · gelir, kapasite, stok ve şantiye ihaleleri
+        </Text>
 
-      {finance ? (
-        <View className="mb-4 rounded-3xl border border-stone-800 bg-[#0B1220] p-4">
-          <Text className="text-xs font-bold uppercase tracking-wide text-stone-400">
-            Bu ay (finans)
-          </Text>
-          <View className="mt-3 flex-row flex-wrap justify-between">
-            <View className="mb-3 w-[48%]">
-              <Text className="text-xs text-stone-400">Gelir (teslim)</Text>
-              <Text className="text-xl font-bold text-white">
-                {money(finance.revenueDelivered)}
-              </Text>
-            </View>
-            <View className="mb-3 w-[48%]">
-              <Text className="text-xs text-stone-400">Açık sipariş cirosu</Text>
-              <Text className="text-xl font-bold text-sky-300">
-                {money(finance.revenueOpen)}
-              </Text>
-            </View>
-            <View className="mb-3 w-[48%]">
-              <Text className="text-xs text-stone-400">Gider (plan)</Text>
-              <Text className="text-xl font-bold text-orange-300">
-                {money(finance.planCostMonthly)}
-              </Text>
-            </View>
-            <View className="mb-3 w-[48%]">
-              <Text className="text-xs text-stone-400">Tahmini net</Text>
-              <Text
-                className={`text-xl font-bold ${
-                  finance.estimatedNetThisMonth >= 0
-                    ? 'text-green-300'
-                    : 'text-red-300'
-                }`}
-              >
-                {money(finance.estimatedNetThisMonth)}
-              </Text>
-            </View>
-          </View>
-          <Text className="text-[11px] text-stone-500">
-            {finance.orderCountDelivered} teslim · {finance.orderCountOpen} açık ·{' '}
-            {finance.cancelledCount} iptal · komisyon yok (abonelik modeli)
-          </Text>
-        </View>
-      ) : null}
-
-      {planUsage ? (
-        <View
-          className={`mb-4 rounded-2xl border p-4 ${
-            planUsage.isActive
-              ? 'border-stone-200 bg-white'
-              : 'border-amber-200 bg-amber-50'
-          }`}
-        >
-          <Text className="text-xs font-bold uppercase text-stone-500">
-            Ürün planı
-          </Text>
-          {planUsage.isActive ? (
-            <>
-              <Text className="mt-1 text-lg font-bold text-stone-900">
-                {planUsage.plan?.name ?? 'Plan'} · {planUsage.productCount}/
-                {planUsage.maxProducts} ürün
-              </Text>
-              <Text className="mt-1 text-sm text-stone-600">
-                {money(planUsage.priceMonthly)}/ay · kalan slot:{' '}
-                {planUsage.remainingSlots}
-                {planUsage.endsAt
-                  ? ` · bitiş ${new Date(planUsage.endsAt).toLocaleDateString('tr-TR')}`
-                  : ''}
-              </Text>
-              <View className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
-                <View
-                  className="h-full rounded-full bg-brand"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      planUsage.maxProducts > 0
-                        ? (planUsage.productCount / planUsage.maxProducts) * 100
-                        : 0
-                    )}%`,
-                  }}
-                />
-              </View>
-            </>
-          ) : (
-            <Text className="mt-2 text-sm text-amber-900">
-              Aktif abonelik yok. Admin plan atayana kadar yeni ürün ekleyemezsin.
+        {finance ? (
+          <View className="mb-4 rounded-3xl border border-stone-800 bg-[#0B1220] p-4">
+            <Text className="text-xs font-bold uppercase tracking-wide text-stone-400">
+              Bu ay (satış özeti)
             </Text>
-          )}
-        </View>
-      ) : null}
+            <View className="mt-3 flex-row flex-wrap justify-between">
+              <View className="mb-3 w-[48%]">
+                <Text className="text-xs text-stone-400">Teslim Edilen Ciro</Text>
+                <Text className="text-xl font-bold text-white">
+                  {money(finance.revenueDelivered)}
+                </Text>
+              </View>
+              <View className="mb-3 w-[48%]">
+                <Text className="text-xs text-stone-400">Açık Sipariş Cirosu</Text>
+                <Text className="text-xl font-bold text-sky-300">
+                  {money(finance.revenueOpen)}
+                </Text>
+              </View>
+              {!isIOS ? (
+                <>
+                  <View className="mb-3 w-[48%]">
+                    <Text className="text-xs text-stone-400">Gider (Plan)</Text>
+                    <Text className="text-xl font-bold text-orange-300">
+                      {money(finance.planCostMonthly)}
+                    </Text>
+                  </View>
+                  <View className="mb-3 w-[48%]">
+                    <Text className="text-xs text-stone-400">Tahmini Net</Text>
+                    <Text
+                      className={`text-xl font-bold ${
+                        finance.estimatedNetThisMonth >= 0
+                          ? 'text-green-300'
+                          : 'text-red-300'
+                      }`}
+                    >
+                      {money(finance.estimatedNetThisMonth)}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
+            </View>
+            <Text className="text-[11px] text-stone-500">
+              {finance.orderCountDelivered} teslim · {finance.orderCountOpen} açık ·{' '}
+              {finance.cancelledCount} iptal · %0 sipariş komisyonu
+            </Text>
+          </View>
+        ) : null}
 
-      <View className="mb-4 rounded-2xl border border-stone-200 bg-white px-3 py-3">
-        <Text className="text-sm text-stone-600">
-          Bildirimler sağ üstteki zil ikonunda. Okunmamışlar kırmızı rozetle
-          görünür; listede kalır, zaman damgasıyla izlenir.
-        </Text>
-      </View>
-
-      <View
-        className={`mb-4 rounded-2xl border px-3 py-3 ${
-          isApproved
-            ? 'border-green-200 bg-green-50'
-            : 'border-amber-200 bg-amber-50'
-        }`}
-      >
-        <Text
-          className={`text-sm font-bold ${
-            isApproved ? 'text-green-800' : 'text-amber-900'
-          }`}
-        >
-          {isApproved ? 'Mağaza onaylandı' : 'Onay bekleniyor'}
-        </Text>
-        <Text
-          className={`mt-1 text-xs ${
-            isApproved ? 'text-green-700' : 'text-amber-800'
-          }`}
-        >
-          {isApproved
-            ? 'Ürünlerin alıcı kataloğunda görünür.'
-            : 'Admin onaylayınca burada otomatik güncellenir — çıkış yapmana gerek yok.'}
-        </Text>
-      </View>
-
-      <View className="mb-4 flex-row gap-3">
-        <UiCard className="flex-1 items-center py-3">
-          <Text className="text-2xl font-bold text-brand">{pendingOrders}</Text>
-          <Text className="mt-1 text-center text-xs text-stone-500">Bekleyen</Text>
-        </UiCard>
-        <UiCard className="flex-1 items-center py-3">
-          <Text className="text-2xl font-bold text-stone-900">{summary.average || '—'}</Text>
-          <Text className="mt-1 text-center text-xs text-stone-500">Puan</Text>
-        </UiCard>
-        <UiCard className="flex-1 items-center py-3">
-          <Text className="text-2xl font-bold text-amber-700">{lowStock.length}</Text>
-          <Text className="mt-1 text-center text-xs text-stone-500">Düşük stok</Text>
-        </UiCard>
-      </View>
-
-      <MenuTile
-        title="Bekleyen siparişler"
-        subtitle="Yeni gelen siparişleri işle"
-        icon="receipt-outline"
-        badge={pendingOrders}
-        onPress={() => navigation.navigate('Orders')}
-      />
-      <MenuTile
-        title="Ürünlerim"
-        subtitle="Stok ve fiyat güncelle"
-        icon="cube-outline"
-        onPress={() => navigation.navigate('Products')}
-      />
-
-      {(() => {
-        const status: LicenseStatus = getLicenseStatus(licenseExpiresAt);
-        if (status === 'active') return null;
-        const isExpired = status === 'expired' || status === 'missing';
-        return (
+        {planUsage ? (
           <View
             className={`mb-4 rounded-2xl border p-4 ${
-              isExpired
-                ? 'border-red-200 bg-red-50'
+              planUsage.isActive
+                ? 'border-stone-200 bg-white'
                 : 'border-amber-200 bg-amber-50'
             }`}
           >
-            <Text
-              className={`mb-1 text-sm font-bold ${
-                isExpired ? 'text-red-900' : 'text-amber-900'
-              }`}
-            >
-              {status === 'missing'
-                ? 'Lisans gerekli'
-                : status === 'expired'
-                  ? 'Lisans süresi doldu'
-                  : 'Lisans yakında bitiyor'}
+            <Text className="text-xs font-bold uppercase text-stone-500">
+              Mağaza Ürün Kapasitesi
             </Text>
-            <Text
-              className={`mb-3 text-xs ${
-                isExpired ? 'text-red-800' : 'text-amber-800'
-              }`}
-            >
-              {status === 'missing'
-                ? 'Yeni ürün eklemek için admin’den lisans anahtarı alıp Mağaza sekmesinde aktive et.'
-                : status === 'expired'
-                  ? 'Süreyi uzatmak için yeni bir anahtar gir. Mevcut ürünler görünür kalır.'
-                  : `Bitiş: ${
-                      licenseExpiresAt
-                        ? formatLicenseExpiry(licenseExpiresAt)
-                        : ''
-                    }. Yenilemeyi unutma.`}
+            {planUsage.isActive ? (
+              <>
+                <Text className="mt-1 text-lg font-bold text-stone-900">
+                  {planUsage.plan?.name ?? 'Kurumsal'} · {planUsage.productCount}/
+                  {planUsage.maxProducts} ürün
+                </Text>
+                <Text className="mt-1 text-sm text-stone-600">
+                  {!isIOS ? `${money(planUsage.priceMonthly)}/ay · ` : ''}
+                  Kalan ürün hakkı: {planUsage.remainingSlots}
+                  {planUsage.endsAt
+                    ? ` · Dönem sonu: ${new Date(planUsage.endsAt).toLocaleDateString('tr-TR')}`
+                    : ''}
+                </Text>
+                <View className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
+                  <View
+                    className="h-full rounded-full bg-brand"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        planUsage.maxProducts > 0
+                          ? (planUsage.productCount / planUsage.maxProducts) * 100
+                          : 0
+                      )}%`,
+                    }}
+                  />
+                </View>
+              </>
+            ) : (
+              <Text className="mt-2 text-sm text-amber-900">
+                Aktif ürün kapasite tanımı bekleniyor. Yönetici onayından sonra ürün ekleyebilirsiniz.
+              </Text>
+            )}
+          </View>
+        ) : null}
+
+        <View
+          className={`mb-4 rounded-2xl border px-3 py-3 ${
+            isApproved
+              ? 'border-green-200 bg-green-50'
+              : 'border-amber-200 bg-amber-50'
+          }`}
+        >
+          <Text
+            className={`text-sm font-bold ${
+              isApproved ? 'text-green-800' : 'text-amber-900'
+            }`}
+          >
+            {isApproved ? 'Mağaza onaylandı' : 'Onay bekleniyor'}
+          </Text>
+          <Text
+            className={`mt-1 text-xs ${
+              isApproved ? 'text-green-700' : 'text-amber-800'
+            }`}
+          >
+            {isApproved
+              ? 'Ürünlerin alıcı kataloğunda görünür.'
+              : 'Admin onaylayınca burada otomatik güncellenir — çıkış yapmana gerek yok.'}
+          </Text>
+        </View>
+
+        <View className="mb-4 flex-row gap-3">
+          <UiCard className="flex-1 items-center py-3">
+            <Text className="text-2xl font-bold text-brand">{pendingOrders}</Text>
+            <Text className="mt-1 text-center text-xs text-stone-500">Bekleyen</Text>
+          </UiCard>
+          <UiCard className="flex-1 items-center py-3">
+            <Text className="text-2xl font-bold text-stone-900">{summary.average || '—'}</Text>
+            <Text className="mt-1 text-center text-xs text-stone-500">Puan</Text>
+          </UiCard>
+          <UiCard className="flex-1 items-center py-3">
+            <Text className="text-2xl font-bold text-amber-700">{lowStock.length}</Text>
+            <Text className="mt-1 text-center text-xs text-stone-500">Düşük stok</Text>
+          </UiCard>
+        </View>
+
+        <MenuTile
+          title="Bekleyen siparişler"
+          subtitle="Yeni gelen siparişleri işle ve sevk et"
+          icon="receipt-outline"
+          badge={pendingOrders}
+          onPress={() => navigation.navigate('Orders')}
+        />
+        <MenuTile
+          title="Şantiye İhale Havuzu (RFQ)"
+          subtitle="Bölgedeki toplu malzeme taleplerine fiyat teklifi ver"
+          icon="document-text-outline"
+          onPress={() => navigation.navigate('RfqPool')}
+        />
+        <MenuTile
+          title="Ürünlerim & Toptan Kademeler"
+          subtitle="Stok, birim ve kademeli toptan fiyatları yönet"
+          icon="cube-outline"
+          onPress={() => navigation.navigate('Products')}
+        />
+
+        {!isIOS &&
+          (() => {
+            const status: LicenseStatus = getLicenseStatus(licenseExpiresAt);
+            if (status === 'active') return null;
+            const isExpired = status === 'expired' || status === 'missing';
+            return (
+              <View
+                className={`mb-4 rounded-2xl border p-4 ${
+                  isExpired
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-amber-200 bg-amber-50'
+                }`}
+              >
+                <Text
+                  className={`mb-1 text-sm font-bold ${
+                    isExpired ? 'text-red-900' : 'text-amber-900'
+                  }`}
+                >
+                  {status === 'missing'
+                    ? 'Lisans gerekli'
+                    : status === 'expired'
+                      ? 'Lisans süresi doldu'
+                      : 'Lisans yakında bitiyor'}
+                </Text>
+                <Text
+                  className={`mb-3 text-xs ${
+                    isExpired ? 'text-red-800' : 'text-amber-800'
+                  }`}
+                >
+                  {status === 'missing'
+                    ? 'Yeni ürün eklemek için admin’den lisans anahtarı alıp Mağaza sekmesinde aktive et.'
+                    : status === 'expired'
+                      ? 'Süreyi uzatmak için yeni bir anahtar gir. Mevcut ürünler görünür kalır.'
+                      : `Bitiş: ${
+                          licenseExpiresAt
+                            ? formatLicenseExpiry(licenseExpiresAt)
+                            : ''
+                        }. Yenilemeyi unutma.`}
+                </Text>
+                <Pressable
+                  className={`items-center rounded-xl py-2.5 ${
+                    isExpired ? 'bg-red-600' : 'bg-amber-600'
+                  }`}
+                  onPress={() => navigation.navigate('StoreSettings')}
+                >
+                  <Text className="font-semibold text-white">Lisansı yönet</Text>
+                </Pressable>
+              </View>
+            );
+          })()}
+
+        {lowStock.length > 0 ? (
+          <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <Text className="mb-1 text-sm font-bold text-amber-900">
+              Düşük stok uyarısı
             </Text>
+            <Text className="mb-3 text-xs text-amber-800">
+              {lowStock.length} aktif ürün stoku {LOW_STOCK_THRESHOLD} veya altında.
+            </Text>
+            {lowStock.slice(0, 5).map((p) => (
+              <View
+                key={p.id}
+                className="mb-2 flex-row items-center justify-between rounded-xl bg-white/80 px-3 py-2"
+              >
+                <Text className="flex-1 pr-2 text-sm font-medium text-stone-800" numberOfLines={1}>
+                  {p.name}
+                </Text>
+                <Text className="text-sm font-bold text-amber-700">
+                  {p.stock} {p.unit ?? 'adet'}
+                </Text>
+              </View>
+            ))}
             <Pressable
-              className={`items-center rounded-xl py-2.5 ${
-                isExpired ? 'bg-red-600' : 'bg-amber-600'
-              }`}
-              onPress={() => navigation.navigate('StoreSettings')}
+              className="mt-1 items-center rounded-xl bg-amber-600 py-2.5"
+              onPress={() => navigation.navigate('Products')}
             >
-              <Text className="font-semibold text-white">Lisansı yönet</Text>
+              <Text className="font-semibold text-white">Ürünlerime git</Text>
             </Pressable>
           </View>
-        );
-      })()}
-
-      {lowStock.length > 0 ? (
-        <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <Text className="mb-1 text-sm font-bold text-amber-900">
-            Düşük stok uyarısı
-          </Text>
-          <Text className="mb-3 text-xs text-amber-800">
-            {lowStock.length} aktif ürün stoku {LOW_STOCK_THRESHOLD} veya altında.
-          </Text>
-          {lowStock.slice(0, 5).map((p) => (
-            <View
-              key={p.id}
-              className="mb-2 flex-row items-center justify-between rounded-xl bg-white/80 px-3 py-2"
-            >
-              <Text className="flex-1 pr-2 text-sm font-medium text-stone-800" numberOfLines={1}>
-                {p.name}
-              </Text>
-              <Text className="text-sm font-bold text-amber-700">{p.stock} adet</Text>
-            </View>
-          ))}
-          <Pressable
-            className="mt-1 items-center rounded-xl bg-amber-600 py-2.5"
-            onPress={() => navigation.navigate('Products')}
-          >
-            <Text className="font-semibold text-white">Ürünlerime git</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View className="mb-4 rounded-2xl border border-green-100 bg-green-50 p-4">
-          <Text className="text-sm font-semibold text-green-800">Stok durumu iyi</Text>
-          <Text className="mt-1 text-xs text-green-700">
-            Aktif ürünlerde {LOW_STOCK_THRESHOLD} altı stok yok.
-          </Text>
-        </View>
-      )}
-
-      <UiCard className="mb-4">
-        <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-          Değerlendirme
-        </Text>
-        {summary.count === 0 ? (
-          <Text className="text-sm text-stone-500">Henüz yorum yok.</Text>
         ) : (
-          <View className="flex-row items-center">
-            <StarRating value={Math.round(summary.average)} readonly />
-            <Text className="ml-3 text-lg font-semibold text-stone-900">
-              {summary.average}
+          <View className="mb-4 rounded-2xl border border-green-100 bg-green-50 p-4">
+            <Text className="text-sm font-semibold text-green-800">Stok durumu iyi</Text>
+            <Text className="mt-1 text-xs text-green-700">
+              Aktif ürünlerde {LOW_STOCK_THRESHOLD} altı stok yok.
             </Text>
-            <Text className="ml-2 text-sm text-stone-500">({summary.count})</Text>
           </View>
         )}
-      </UiCard>
 
-      <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-        Son yorumlar
-      </Text>
-      {reviews.length === 0 ? (
-        <Text className="text-sm text-stone-500">Gösterilecek yorum yok.</Text>
-      ) : (
-        reviews.map((review) => (
-          <UiCard key={review.id} className="mb-3">
-            <View className="mb-1 flex-row items-center justify-between">
-              <Text className="font-medium text-stone-800">Alıcı</Text>
-              <StarRating value={review.rating} readonly size="sm" />
+        <UiCard className="mb-4">
+          <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
+            Değerlendirme
+          </Text>
+          {summary.count === 0 ? (
+            <Text className="text-sm text-stone-500">Henüz yorum yok.</Text>
+          ) : (
+            <View className="flex-row items-center">
+              <StarRating value={Math.round(summary.average)} readonly />
+              <Text className="ml-3 text-lg font-semibold text-stone-900">
+                {summary.average}
+              </Text>
+              <Text className="ml-2 text-sm text-stone-500">({summary.count})</Text>
             </View>
-            {review.comment ? (
-              <Text className="text-sm text-stone-600">{review.comment}</Text>
-            ) : (
-              <Text className="text-sm italic text-stone-400">Yorum yok</Text>
-            )}
-            <Text className="mt-2 text-xs text-stone-400">
-              {new Date(review.created_at).toLocaleString('tr-TR')}
-            </Text>
-          </UiCard>
-        ))
-      )}
+          )}
+        </UiCard>
+
+        <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
+          Son yorumlar
+        </Text>
+        {reviews.length === 0 ? (
+          <Text className="text-sm text-stone-500">Gösterilecek yorum yok.</Text>
+        ) : (
+          reviews.map((review) => (
+            <UiCard key={review.id} className="mb-3">
+              <View className="mb-1 flex-row items-center justify-between">
+                <Text className="font-medium text-stone-800">Alıcı</Text>
+                <StarRating value={review.rating} readonly size="sm" />
+              </View>
+              {review.comment ? (
+                <Text className="text-sm text-stone-600">{review.comment}</Text>
+              ) : (
+                <Text className="text-sm italic text-stone-400">Yorum yok</Text>
+              )}
+              <Text className="mt-2 text-xs text-stone-400">
+                {new Date(review.created_at).toLocaleString('tr-TR')}
+              </Text>
+            </UiCard>
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
