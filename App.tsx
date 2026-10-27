@@ -6,6 +6,7 @@ import {
 } from 'react-native-safe-area-context';
 
 import { NotificationRealtimeBridge } from './src/components/notifications/NotificationRealtimeBridge';
+import { DialogProvider } from './src/components/ui/DialogProvider';
 import { AuthProvider } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -18,13 +19,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <AuthProvider>
-        <CartProvider>
-          <NotificationRealtimeBridge />
-          <RootNavigator />
-          <StatusBar style="dark" />
-        </CartProvider>
-      </AuthProvider>
+      <DialogProvider>
+        <AuthProvider>
+          <CartProvider>
+            <NotificationRealtimeBridge />
+            <RootNavigator />
+            <StatusBar style="dark" />
+          </CartProvider>
+        </AuthProvider>
+      </DialogProvider>
     </SafeAreaProvider>
   );
 }

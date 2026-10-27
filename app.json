@@ -2,8 +2,8 @@
   "expo": {
     "name": "Baret",
     "slug": "baret",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "2.0.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#FFF8F3",
@@ -13,17 +13,38 @@
       "backgroundColor": "#00000000",
       "translucent": true
     },
-    "androidNavigationBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#00000000"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baret.app",
+      "buildNumber": "2",
       "backgroundColor": "#FFF8F3",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Mağazaya uzaklığını göstermek ve haritada yol tarifi için konumuna ihtiyacımız var.",
-        "NSPhotoLibraryUsageDescription": "Ürün görselleri seçmek için galeri erişimine izin verin."
+        "NSPhotoLibraryUsageDescription": "Ürün görselleri seçmek için galeri erişimine izin verin.",
+        "NSCameraUsageDescription": "Ürün fotoğrafı çekmek için kamera erişimine izin verin."
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "NSPrivacyAccessedAPITypeReasons": ["E174.1"]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategorySystemBootTime",
+            "NSPrivacyAccessedAPITypeReasons": ["35F9.1"]
+          }
+        ]
       }
     },
     "android": {
@@ -47,13 +68,19 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Baret — B2B İnşaat, Şantiye & Nalbur Pazaryeri",
+      "shortName": "Baret Pro",
+      "lang": "tr",
+      "themeColor": "#EA580C",
+      "backgroundColor": "#FFF8F3"
     },
     "plugins": [
       [
         "expo-image-picker",
         {
-          "photosPermission": "Ürün görselleri seçmek için galeri erişimine izin verin."
+          "photosPermission": "Ürün görselleri seçmek için galeri erişimine izin verin.",
+          "cameraPermission": "Ürün fotoğrafı çekmek için kamera erişimine izin verin."
         }
       ],
       [

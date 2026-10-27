@@ -19,6 +19,7 @@ import { ReportsScreen } from '../screens/admin/ReportsScreen';
 import { SellerAdminDetailScreen } from '../screens/admin/SellerAdminDetailScreen';
 import { SellerApprovalScreen } from '../screens/admin/SellerApprovalScreen';
 import { SellerPlansScreen } from '../screens/admin/SellerPlansScreen';
+import { AdminSubscriptionsScreen } from '../screens/admin/AdminSubscriptionsScreen';
 import { StoreCommissionDetailScreen } from '../screens/admin/StoreCommissionDetailScreen';
 import { StoreHealthScreen } from '../screens/admin/StoreHealthScreen';
 import { UserManagementScreen } from '../screens/admin/UserManagementScreen';
@@ -124,6 +125,11 @@ export function AdminNavigator() {
         name="SellerPlans"
         component={SellerPlansScreen}
         options={{ title: 'Satıcı planları' }}
+      />
+      <Stack.Screen
+        name="AdminSubscriptions"
+        component={AdminSubscriptionsScreen}
+        options={{ title: 'Aktif Abonelikler' }}
       />
       <Stack.Screen
         name="LicenseKeys"

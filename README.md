@@ -55,6 +55,7 @@ Bu repo geliştirme sürecinde aşağıdaki prensiplere göre yönetilmektedir.
 | [`docs/next-release-gaps.md`](docs/next-release-gaps.md) | Play sonrası 1.0.1+ backlog |
 | [`docs/password-reset.md`](docs/password-reset.md) | Şifremi unuttum / deep link (Supabase) |
 | [`docs/about-and-seo.md`](docs/about-and-seo.md) | Credits, iletişim, landing SEO / domain |
+| [`docs/ios-app-store.md`](docs/ios-app-store.md) | Apple Developer, EAS iOS build, TestFlight / App Store |
 
 > Eski **sipariş komisyonu** dokümanları (`docs/commission-*.md`) arşiv niteliğindedir; canlı monetizasyon **plan kapasitesi** üzerinden yürür.
 
@@ -284,8 +285,10 @@ Temel şemadan sonra Supabase SQL Editor’de [`docs/seller-plans-setup.sql`](do
 
 # Durum (güncel)
 
-**Android — Google Play** · paket `com.baret.app` · sürüm **1.0.0** (production AAB, `versionCode` 4).  
+**Android — Google Play** · paket `com.baret.app` · sürüm **1.0.0** (production AAB).  
 İndirme: [Google Play](https://play.google.com/store/apps/details?id=com.baret.app)
+
+**iOS — App Store** · bundle `com.baret.app` · yapılandırma ve yayın adımları: [`docs/ios-app-store.md`](docs/ios-app-store.md) (Apple Developer + EAS → TestFlight).
 
 **Landing** · [landing-ten-pi-68.vercel.app](https://landing-ten-pi-68.vercel.app) — planlar, gizlilik politikası, hesap silme, Play Store CTA.
 

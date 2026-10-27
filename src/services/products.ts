@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import type { DeliveryOption, Product } from '../types/database';
+import type { BulkPriceTier, DeliveryOption, Product } from '../types/database';
+import { normalizeBulkTiers } from '../utils/pricing';
 
 export type ProductFormInput = {
   name: string;
@@ -10,6 +11,13 @@ export type ProductFormInput = {
   expiry_date?: string | null;
   is_active?: boolean;
   image_url?: string | null;
+  category?: string | null;
+  unit?: string | null;
+  min_order_qty?: number;
+  bulk_pricing?: BulkPriceTier[];
+  sku?: string | null;
+  brand?: string | null;
+  vat_rate?: number;
 };
 
 export async function listStoreProducts(storeId: string): Promise<Product[]> {
@@ -51,23 +59,46 @@ export async function createProduct(
     );
   }
 
+  const basePayload = {
+    store_id: storeId,
+    name: input.name.trim(),
+    description: input.description?.trim() || null,
+    image_url: input.image_url ?? null,
+    price: input.price,
+    stock: input.stock,
+    delivery_options: input.delivery_options,
+    expiry_date: input.expiry_date || null,
+    is_active: input.is_active ?? true,
+  };
+
+  const v2Payload = {
+    ...basePayload,
+    category: input.category?.trim() || null,
+    unit: input.unit?.trim() || 'adet',
+    min_order_qty: Math.max(1, Math.floor(input.min_order_qty ?? 1)),
+    bulk_pricing: normalizeBulkTiers(input.bulk_pricing),
+    sku: input.sku?.trim() || null,
+    brand: input.brand?.trim() || null,
+    vat_rate: input.vat_rate ?? 20,
+  };
+
   const { data, error } = await supabase
     .from('products')
-    .insert({
-      store_id: storeId,
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      image_url: input.image_url ?? null,
-      price: input.price,
-      stock: input.stock,
-      delivery_options: input.delivery_options,
-      expiry_date: input.expiry_date || null,
-      is_active: input.is_active ?? true,
-    })
+    .insert(v2Payload)
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // Graceful fallback if remote DB hasn't applied V2 product columns yet
+    const fallback = await supabase
+      .from('products')
+      .insert(basePayload)
+      .select('*')
+      .single();
+    if (fallback.error) throw fallback.error;
+    return fallback.data;
+  }
+
   return data;
 }
 
@@ -75,7 +106,7 @@ export async function updateProduct(
   productId: string,
   input: ProductFormInput
 ): Promise<Product> {
-  const patch: Partial<Omit<Product, 'id'>> = {
+  const basePatch: Partial<Omit<Product, 'id'>> = {
     name: input.name.trim(),
     description: input.description?.trim() || null,
     price: input.price,
@@ -86,16 +117,58 @@ export async function updateProduct(
   };
 
   if (input.image_url !== undefined) {
-    patch.image_url = input.image_url;
+    basePatch.image_url = input.image_url;
   }
+
+  const v2Patch: Partial<Omit<Product, 'id'>> = {
+    ...basePatch,
+    ...(input.category !== undefined ? { category: input.category?.trim() || null } : {}),
+    ...(input.unit !== undefined ? { unit: input.unit?.trim() || 'adet' } : {}),
+    ...(input.min_order_qty !== undefined
+      ? { min_order_qty: Math.max(1, Math.floor(input.min_order_qty)) }
+      : {}),
+    ...(input.bulk_pricing !== undefined
+      ? { bulk_pricing: normalizeBulkTiers(input.bulk_pricing) }
+      : {}),
+    ...(input.sku !== undefined ? { sku: input.sku?.trim() || null } : {}),
+    ...(input.brand !== undefined ? { brand: input.brand?.trim() || null } : {}),
+    ...(input.vat_rate !== undefined ? { vat_rate: input.vat_rate } : {}),
+  };
 
   const { data, error } = await supabase
     .from('products')
-    .update(patch)
+    .update(v2Patch)
     .eq('id', productId)
     .select('*')
     .single();
 
+  if (error) {
+    const fallback = await supabase
+      .from('products')
+      .update(basePatch)
+      .eq('id', productId)
+      .select('*')
+      .single();
+    if (fallback.error) throw fallback.error;
+    return fallback.data;
+  }
+
+  return data;
+}
+
+export async function quickUpdateProductStockPrice(
+  productId: string,
+  patch: { price: number; stock: number }
+): Promise<Product> {
+  const { data, error } = await supabase
+    .from('products')
+    .update({
+      price: patch.price,
+      stock: patch.stock,
+    })
+    .eq('id', productId)
+    .select('*')
+    .single();
   if (error) throw error;
   return data;
 }

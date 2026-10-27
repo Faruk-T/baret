@@ -4,12 +4,14 @@ import {
   Alert,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { DELIVERY_OPTION_LABELS, ORDER_STATUS_LABELS } from '../../constants/enums';
@@ -17,7 +19,6 @@ import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { UiCard } from '../../components/ui/UiCard';
 import { useAuth } from '../../context/AuthContext';
-import { notifyBuyerOrderStatus } from '../../services/adminOps';
 import { getMyStore } from '../../services/stores';
 import {
   cancelSellerOrder,
@@ -27,6 +28,7 @@ import {
   type OrderWithProduct,
 } from '../../services/orders';
 import type { OrderStatus } from '../../types/database';
+import { exportCsvFile, toCsv } from '../../utils/csv';
 import { ui } from '../../theme/ui';
 
 /** shipped → delivered only via pickup code verify */
@@ -91,20 +93,19 @@ export function SellerOrdersScreen() {
     }, [load])
   );
 
-  const runAdvance = async (order: OrderWithProduct, next: NonNullable<typeof SELLER_NEXT[keyof typeof SELLER_NEXT]>) => {
+  // Note: notifyBuyerOrderStatus is already triggered inside updateSellerOrderStatus,
+  // cancelSellerOrder, and confirmOrderPickup in src/services/orders.ts.
+  const runAdvance = async (
+    order: OrderWithProduct,
+    next: NonNullable<typeof SELLER_NEXT[keyof typeof SELLER_NEXT]>
+  ) => {
     try {
-      const updated = await updateSellerOrderStatus(order.id, next);
-      if (user?.id) {
-        await notifyBuyerOrderStatus(
-          { buyer_id: updated.buyer_id, id: updated.id, status: updated.status },
-          user.id
-        );
-      }
+      await updateSellerOrderStatus(order.id, next);
       await load();
       if (next === 'shipped') {
         Alert.alert(
           'Teslime hazır',
-          'Alıcı kendi uygulamasında 6 haneli teslim kodunu görecek. Kod sana görünmez — mağazaya gelince kodu buraya girerek doğrularsın.'
+          'Alıcı kendi uygulamasında 6 haneli teslim kodunu görecek. Kod sana görünmez — teslim anında kodu buraya girerek doğrularsın.'
         );
       }
     } catch (error) {
@@ -117,7 +118,6 @@ export function SellerOrdersScreen() {
   const advance = (order: OrderWithProduct) => {
     const next = SELLER_NEXT[order.status];
     if (!next) return;
-    // Pending → preparing: one tap, no confirm dialog
     if (order.status === 'pending' && next === 'preparing') {
       void runAdvance(order, next);
       return;
@@ -146,17 +146,7 @@ export function SellerOrdersScreen() {
           onPress: () => {
             void (async () => {
               try {
-                const updated = await cancelSellerOrder(order.id);
-                if (user?.id) {
-                  await notifyBuyerOrderStatus(
-                    {
-                      buyer_id: updated.buyer_id,
-                      id: updated.id,
-                      status: 'cancelled',
-                    },
-                    user.id
-                  );
-                }
+                await cancelSellerOrder(order.id);
                 await load();
               } catch (error) {
                 Alert.alert(
@@ -180,12 +170,6 @@ export function SellerOrdersScreen() {
     try {
       setVerifying(true);
       const order = await confirmOrderPickup(code);
-      if (user?.id) {
-        await notifyBuyerOrderStatus(
-          { buyer_id: order.buyer_id, id: order.id, status: 'delivered' },
-          user.id
-        );
-      }
       setPickupInput('');
       await load();
       Alert.alert(
@@ -197,11 +181,29 @@ export function SellerOrdersScreen() {
         'Doğrulama',
         error instanceof Error
           ? error.message
-          : 'Kod geçersiz. pickup-code SQL kuruldu mu?'
+          : 'Kod geçersiz.'
       );
     } finally {
       setVerifying(false);
     }
+  };
+
+  const handleExportOrdersCsv = async () => {
+    const csv = toCsv(
+      ['Sipariş No', 'Tarih', 'Ürün', 'Miktar', 'Toplam (TL)', 'Durum', 'Teslimat', 'Adres', 'Not'],
+      orders.map((o) => [
+        o.id,
+        o.created_at,
+        o.products?.name ?? '',
+        o.quantity,
+        o.total_amount,
+        ORDER_STATUS_LABELS[o.status],
+        DELIVERY_OPTION_LABELS[o.delivery_option],
+        o.delivery_address ?? '',
+        o.notes ?? '',
+      ])
+    );
+    await exportCsvFile('baret-satici-siparisler.csv', csv, 'Baret Satıcı Sipariş Raporu');
   };
 
   if (loading) {
@@ -255,22 +257,52 @@ export function SellerOrdersScreen() {
         />
       }
       ListHeaderComponent={
-        <View className="mb-3">
-          <Text className="text-sm text-stone-500">
-            {storeName} · {orders.length} sipariş
-          </Text>
-          {orders.some((o) => o.status === 'pending') ? (
-            <Text className="mt-1 text-xs font-bold text-brand">
-              {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
-            </Text>
-          ) : null}
+        <View style={{ maxWidth: 1080, width: '100%', alignSelf: 'center' }} className="mb-3">
+          <View className="flex-row items-center justify-between flex-wrap gap-2">
+            <View>
+              <Text className="text-sm font-bold text-stone-700">
+                {storeName} · {orders.length} sipariş
+              </Text>
+              {orders.some((o) => o.status === 'pending') ? (
+                <Text className="mt-0.5 text-xs font-bold text-brand">
+                  {orders.filter((o) => o.status === 'pending').length} bekleyen sipariş var
+                </Text>
+              ) : null}
+            </View>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={() => void handleExportOrdersCsv()}
+                className="flex-row items-center rounded-xl border border-stone-200 bg-white px-3 py-2"
+              >
+                <Feather name="download" size={14} color="#1C1917" />
+                <Text className="ml-1.5 text-xs font-bold text-stone-800">
+                  CSV İndir
+                </Text>
+              </Pressable>
+              {Platform.OS === 'web' ? (
+                <Pressable
+                  onPress={() => {
+                    if (typeof window !== 'undefined' && window.print) {
+                      window.print();
+                    }
+                  }}
+                  className="flex-row items-center rounded-xl border border-stone-200 bg-white px-3 py-2"
+                >
+                  <Feather name="printer" size={14} color="#1C1917" />
+                  <Text className="ml-1.5 text-xs font-bold text-stone-800">
+                    Sevk Fişi Yazdır
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
 
           <View className="mt-3 rounded-2xl border border-brand bg-orange-50 p-4">
             <Text className="mb-1 text-sm font-bold text-brand">
-              Teslim kodu doğrula
+              Teslim kodu doğrula (6 Haneli PIN)
             </Text>
             <Text className="mb-3 text-xs leading-4 text-stone-600">
-              Alıcı mağazaya geldiğinde uygulamadaki 6 haneli kodu söyleyecek / gösterecek.
+              Alıcı mağazaya geldiğinde veya şantiyede teslim alırken uygulamadaki 6 haneli kodu söyleyecek / gösterecek.
               {readyCount > 0 ? ` Şu an ${readyCount} sipariş kod bekliyor.` : ''}
             </Text>
             <TextInput
@@ -293,119 +325,95 @@ export function SellerOrdersScreen() {
               {verifying ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="font-bold text-white">Kodu okut / teslim et</Text>
+                <Text className="font-bold text-white">Kodu doğrula ve teslim et</Text>
               )}
             </Pressable>
           </View>
-
-          <Text className="mt-3 text-xs leading-4 text-stone-500">
-            “Hazırlanıyor” → iletişim açılır. “Hazır” → teslim kodu oluşur. WhatsApp ile
-            dışarıda anlaşma yasaktır.
-          </Text>
         </View>
       }
       renderItem={({ item }) => {
         const next = SELLER_NEXT[item.status];
         return (
-          <UiCard className="mb-3">
-            <View className="mb-2 flex-row">
-              {item.products?.image_url ? (
-                <Image
-                  source={{ uri: item.products.image_url }}
-                  className="mr-3 h-14 w-14 rounded-xl bg-stone-200"
-                />
-              ) : (
-                <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-orange-50">
-                  <Text className="text-xs text-brand">Yok</Text>
-                </View>
-              )}
-              <View className="flex-1">
-                <View className="mb-1 flex-row items-start justify-between">
-                  <Text className="flex-1 pr-2 font-bold text-stone-900" numberOfLines={2}>
-                    {item.products?.name ?? 'Ürün'}
-                  </Text>
-                  <OrderStatusChip status={item.status} />
-                </View>
-                <Text className="text-sm font-bold text-brand">
-                  ₺
-                  {Number(item.total_amount).toLocaleString('tr-TR', {
-                    minimumFractionDigits: 2,
-                  })}{' '}
-                  · {item.quantity} adet
-                </Text>
-                {item.order_commissions &&
-                Number(item.order_commissions.commission_amount) > 0 ? (
-                  <View className="mt-2 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-2">
-                    <Text className="text-[11px] font-bold uppercase text-stone-500">
-                      Eski komisyon kaydı
-                    </Text>
-                    <Text className="mt-0.5 text-xs text-stone-700">
-                      Platform −₺
-                      {Number(item.order_commissions.commission_amount).toLocaleString(
-                        'tr-TR',
-                        { minimumFractionDigits: 2 }
-                      )}{' '}
-                      (%{Number(item.order_commissions.commission_rate)})
-                    </Text>
-                    <Text className="text-xs font-bold text-green-700">
-                      Senin net ₺
-                      {Number(item.order_commissions.seller_net_amount).toLocaleString(
-                        'tr-TR',
-                        { minimumFractionDigits: 2 }
-                      )}
-                    </Text>
-                  </View>
+          <View style={{ maxWidth: 1080, width: '100%', alignSelf: 'center' }}>
+            <UiCard className="mb-3">
+              <View className="mb-2 flex-row">
+                {item.products?.image_url ? (
+                  <Image
+                    source={{ uri: item.products.image_url }}
+                    className="mr-3 h-14 w-14 rounded-xl bg-stone-200"
+                  />
                 ) : (
-                  <Text className="mt-1 text-xs text-green-700">
-                    Sipariş tutarının tamamı sana ait · abonelik modeli
-                  </Text>
+                  <View className="mr-3 h-14 w-14 items-center justify-center rounded-xl bg-orange-50">
+                    <Text className="text-xs text-brand">Yok</Text>
+                  </View>
                 )}
-              </View>
-            </View>
-            <Text className="mt-1 text-xs text-amber-800">
-              Stok sipariş anında {item.quantity} adet düşürüldü.
-            </Text>
-            <Text className="mt-1 text-xs text-stone-500">
-              {DELIVERY_OPTION_LABELS[item.delivery_option]}
-            </Text>
-            {item.delivery_address ? (
-              <Text className="mt-1 text-xs text-stone-500" numberOfLines={3}>
-                {item.delivery_address}
-              </Text>
-            ) : null}
-            <Text className="mt-1 text-xs text-stone-400">
-              {new Date(item.created_at).toLocaleString('tr-TR')}
-            </Text>
-
-            {item.status === 'shipped' ? (
-              <View className="mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-                <Text className="text-xs font-bold text-green-800">
-                  Alıcıdaki teslim kodunu yukarıya gir → sipariş tamamlanır
-                </Text>
-              </View>
-            ) : null}
-
-            <View className="mt-3 flex-row flex-wrap gap-2">
-              {next ? (
-                <Pressable
-                  className="rounded-xl bg-brand px-4 py-2.5"
-                  onPress={() => advance(item)}
-                >
-                  <Text className="font-bold text-white">
-                    → {nextStatusLabel(item, next)}
+                <View className="flex-1">
+                  <View className="mb-1 flex-row items-start justify-between">
+                    <Text className="flex-1 pr-2 font-bold text-stone-900" numberOfLines={2}>
+                      {item.products?.name ?? 'Ürün'}
+                    </Text>
+                    <OrderStatusChip status={item.status} />
+                  </View>
+                  <Text className="text-sm font-bold text-brand">
+                    ₺
+                    {Number(item.total_amount).toLocaleString('tr-TR', {
+                      minimumFractionDigits: 2,
+                    })}{' '}
+                    · {item.quantity} birim
                   </Text>
-                </Pressable>
+                  <Text className="mt-1 text-xs font-semibold text-emerald-700">
+                    %0 Komisyon — Sipariş tutarının tamamı mağazanıza aittir
+                  </Text>
+                </View>
+              </View>
+              <Text className="mt-1 text-xs text-stone-500">
+                {DELIVERY_OPTION_LABELS[item.delivery_option]}
+              </Text>
+              {item.delivery_address ? (
+                <Text className="mt-1 text-xs text-stone-600" numberOfLines={3}>
+                  📍 {item.delivery_address}
+                </Text>
               ) : null}
-              {item.status === 'pending' || item.status === 'preparing' ? (
-                <Pressable
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5"
-                  onPress={() => rejectOrder(item)}
-                >
-                  <Text className="font-bold text-red-600">Reddet</Text>
-                </Pressable>
+              {item.notes ? (
+                <Text className="mt-1 text-xs text-stone-700 font-medium">
+                  📋 {item.notes}
+                </Text>
               ) : null}
-            </View>
-          </UiCard>
+              <Text className="mt-1 text-xs text-stone-400">
+                Sipariş No: #{item.id.slice(0, 8).toUpperCase()} ·{' '}
+                {new Date(item.created_at).toLocaleString('tr-TR')}
+              </Text>
+
+              {item.status === 'shipped' ? (
+                <View className="mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                  <Text className="text-xs font-bold text-green-800">
+                    Alıcıdaki 6 haneli teslim kodunu yukarıya gir → sipariş tamamlanır
+                  </Text>
+                </View>
+              ) : null}
+
+              <View className="mt-3 flex-row flex-wrap gap-2">
+                {next ? (
+                  <Pressable
+                    className="rounded-xl bg-brand px-4 py-2.5"
+                    onPress={() => advance(item)}
+                  >
+                    <Text className="font-bold text-white">
+                      → {nextStatusLabel(item, next)}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {item.status === 'pending' || item.status === 'preparing' ? (
+                  <Pressable
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5"
+                    onPress={() => rejectOrder(item)}
+                  >
+                    <Text className="font-bold text-red-600">Reddet</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </UiCard>
+          </View>
         );
       }}
     />

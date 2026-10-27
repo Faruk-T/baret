@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { DeliveryOption } from '../types/database';
+import type { BulkPriceTier, DeliveryOption } from '../types/database';
+import { normalizeBulkTiers, resolveEffectiveUnitPrice } from '../utils/pricing';
 
 const CART_STORAGE_KEY = '@baret/cart_v1';
 
@@ -19,11 +20,15 @@ export type CartItem = {
   storeId: string;
   storeName: string;
   name: string;
+  basePrice: number;
   price: number;
   quantity: number;
   imageUrl: string | null;
   stock: number;
   deliveryOptions: DeliveryOption[];
+  unit?: string;
+  minOrderQty?: number;
+  bulkPricing?: BulkPriceTier[];
 };
 
 export type CartProductInput = {
@@ -35,6 +40,9 @@ export type CartProductInput = {
   image_url: string | null;
   stock: number;
   delivery_options: DeliveryOption[];
+  unit?: string | null;
+  min_order_qty?: number | null;
+  bulk_pricing?: BulkPriceTier[] | null;
 };
 
 export class CartStoreConflictError extends Error {
@@ -60,16 +68,23 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 function buildCartItem(product: CartProductInput, quantity: number): CartItem {
+  const basePrice = Number(product.price);
+  const bulkPricing = normalizeBulkTiers(product.bulk_pricing);
+  const effectivePrice = resolveEffectiveUnitPrice(basePrice, quantity, bulkPricing);
   return {
     productId: product.id,
     storeId: product.store_id,
     storeName: product.storeName,
     name: product.name,
-    price: Number(product.price),
+    basePrice,
+    price: effectivePrice,
     quantity,
     imageUrl: product.image_url,
     stock: product.stock,
     deliveryOptions: product.delivery_options,
+    unit: product.unit ?? 'adet',
+    minOrderQty: Math.max(1, product.min_order_qty ?? 1),
+    bulkPricing,
   };
 }
 
@@ -88,7 +103,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (raw && mounted) {
           const parsed = JSON.parse(raw) as CartItem[];
           if (Array.isArray(parsed)) {
-            setItems(parsed);
+            setItems(
+              parsed.map((item) => ({
+                ...item,
+                basePrice: item.basePrice ?? item.price,
+                price: resolveEffectiveUnitPrice(
+                  item.basePrice ?? item.price,
+                  item.quantity,
+                  item.bulkPricing
+                ),
+              }))
+            );
           }
         }
       } catch {
@@ -109,6 +134,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, isReady]);
 
   const addItem = useCallback((product: CartProductInput, quantity = 1) => {
+    const minQty = Math.max(1, product.min_order_qty ?? 1);
     const qty = Math.max(1, Math.floor(quantity));
     const prev = itemsRef.current;
 
@@ -121,24 +147,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     const existing = prev.find((item) => item.productId === product.id);
-    const nextQty = (existing?.quantity ?? 0) + qty;
+    const nextQty = existing ? existing.quantity + qty : Math.max(minQty, qty);
 
     if (nextQty > product.stock) {
-      throw new Error(`Stok yetersiz. En fazla ${product.stock} adet ekleyebilirsin.`);
+      throw new Error(`Stok yetersiz. En fazla ${product.stock} ${product.unit ?? 'adet'} ekleyebilirsin.`);
     }
+
+    const basePrice = Number(product.price);
+    const bulkPricing = normalizeBulkTiers(product.bulk_pricing);
+    const nextUnitPrice = resolveEffectiveUnitPrice(basePrice, nextQty, bulkPricing);
 
     if (existing) {
       setItems(
         prev.map((item) =>
           item.productId === product.id
-            ? { ...item, quantity: nextQty, stock: product.stock }
+            ? {
+                ...item,
+                quantity: nextQty,
+                basePrice,
+                price: nextUnitPrice,
+                stock: product.stock,
+                bulkPricing,
+                unit: product.unit ?? item.unit ?? 'adet',
+              }
             : item
         )
       );
       return;
     }
 
-    setItems([...prev, buildCartItem(product, qty)]);
+    setItems([...prev, buildCartItem(product, nextQty)]);
   }, []);
 
   const removeItem = useCallback((productId: string) => {
@@ -158,11 +196,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!target) return;
 
     if (qty > target.stock) {
-      throw new Error(`Stok yetersiz. En fazla ${target.stock} adet seçebilirsin.`);
+      throw new Error(`Stok yetersiz. En fazla ${target.stock} ${target.unit ?? 'adet'} seçebilirsin.`);
     }
 
+    const basePrice = target.basePrice ?? target.price;
+    const nextPrice = resolveEffectiveUnitPrice(basePrice, qty, target.bulkPricing);
+
     setItems(
-      prev.map((item) => (item.productId === productId ? { ...item, quantity: qty } : item))
+      prev.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: qty, price: nextPrice }
+          : item
+      )
     );
   }, []);
 

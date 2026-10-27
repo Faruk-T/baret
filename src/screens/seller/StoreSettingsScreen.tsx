@@ -22,6 +22,7 @@ import {
   type StoreFormInput,
 } from '../../services/stores';
 import { supabase } from '../../services/supabase';
+import { deleteMyAccount } from '../../services/users';
 import type { Store } from '../../types/database';
 import { getCurrentCoords } from '../../utils/geo';
 import {
@@ -43,11 +44,14 @@ const emptyForm: StoreFormInput = {
 export function StoreSettingsScreen() {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
+  const isIOS = Platform.OS === 'ios';
+
   const [store, setStore] = useState<Store | null>(null);
   const [form, setForm] = useState<StoreFormInput>(emptyForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [coords, setCoords] = useState<{
     latitude: number | null;
@@ -112,7 +116,6 @@ export function StoreSettingsScreen() {
         )
         .subscribe();
 
-      // Fallback poll while waiting for admin approval
       const poll = setInterval(() => {
         void getMyStore(user.id).then((existing) => {
           if (!existing) return;
@@ -193,6 +196,37 @@ export function StoreSettingsScreen() {
     }
   };
 
+  const handleDeleteAccount = () => {
+    if (!user?.id) return;
+    Alert.alert(
+      'Hesabı Kalıcı Olarak Sil',
+      'Satıcı hesabınızı, mağazanızı ve kişisel verilerinizi kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Evet, Hesabımı Sil',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                setIsDeletingAccount(true);
+                await deleteMyAccount(user.id);
+                Alert.alert('Hesap Silindi', 'Hesabınız ve mağaza verileriniz silindi.');
+              } catch (error) {
+                Alert.alert(
+                  'Hata',
+                  error instanceof Error ? error.message : 'Hesap silinemedi.'
+                );
+              } finally {
+                setIsDeletingAccount(false);
+              }
+            })();
+          },
+        },
+      ]
+    );
+  };
+
   const handleCaptureLocation = async () => {
     try {
       setIsLocating(true);
@@ -254,189 +288,222 @@ export function StoreSettingsScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView className="flex-1 px-6 pt-4" keyboardShouldPersistTaps="handled">
-        <Text className="mb-1 text-2xl font-bold text-gray-900">
-          {store ? 'Mağaza Ayarları' : 'Mağaza Oluştur'}
-        </Text>
-        <Text className="mb-4 text-sm text-gray-500">{user?.email}</Text>
+        <View style={{ maxWidth: 820, width: '100%', alignSelf: 'center' }}>
+          <Text className="mb-1 text-2xl font-bold text-gray-900">
+            {store ? 'Mağaza Ayarları' : 'Mağaza Oluştur'}
+          </Text>
+          <Text className="mb-4 text-sm text-gray-500">{user?.email}</Text>
 
-        {store ? (
-          <View className="mb-4 rounded-xl bg-gray-50 px-4 py-3">
-            <Text className="text-sm text-gray-700">
-              Onay durumu:{' '}
-              <Text className={store.is_approved ? 'font-semibold text-green-600' : 'font-semibold text-orange-600'}>
-                {store.is_approved ? 'Onaylandı' : 'Onay bekliyor'}
-              </Text>
-            </Text>
-          </View>
-        ) : null}
-
-        {store ? (
-          <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Satıcı lisansı</Text>
-            {(() => {
-              const status = getLicenseStatus(store.license_expires_at);
-              if (status === 'missing') {
-                return (
-                  <Text className="mb-3 text-sm text-amber-700">
-                    Henüz lisans yok. Admin’den anahtar alıp aşağıya gir.
-                  </Text>
-                );
-              }
-              if (status === 'expired') {
-                return (
-                  <Text className="mb-3 text-sm text-red-700">
-                    Lisans süresi dolmuş
-                    {store.license_expires_at
-                      ? ` (${formatLicenseExpiry(store.license_expires_at)})`
-                      : ''}
-                    .
-                  </Text>
-                );
-              }
-              if (status === 'expiring_soon') {
-                return (
-                  <Text className="mb-3 text-sm text-amber-700">
-                    Lisans yakında bitiyor:{' '}
-                    {store.license_expires_at
-                      ? formatLicenseExpiry(store.license_expires_at)
-                      : ''}
-                  </Text>
-                );
-              }
-              return (
-                <Text className="mb-3 text-sm text-green-700">
-                  Aktif —{' '}
-                  {store.license_expires_at
-                    ? formatLicenseExpiry(store.license_expires_at)
-                    : ''}{' '}
-                    tarihine kadar
+          {store ? (
+            <View className="mb-4 rounded-xl bg-gray-50 px-4 py-3">
+              <Text className="text-sm text-gray-700">
+                Onay durumu:{' '}
+                <Text className={store.is_approved ? 'font-semibold text-green-600' : 'font-semibold text-orange-600'}>
+                  {store.is_approved ? 'Onaylandı' : 'Onay bekliyor'}
                 </Text>
-              );
-            })()}
-            <TextInput
-              className="mb-3 rounded-xl border border-gray-200 bg-white px-4 py-3 font-mono text-base text-gray-900"
-              placeholder="BARET-XXXX-XXXX"
-              placeholderTextColor="#a8a29e"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              value={licenseCode}
-              onChangeText={setLicenseCode}
-            />
+              </Text>
+            </View>
+          ) : null}
+
+          {store ? (
+            isIOS ? (
+              /* Apple App Store Guideline 3.1.1 / 3.1.3(e) compliant status card on iOS */
+              <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                <Text className="mb-1 text-sm font-semibold text-stone-800">
+                  Kurumsal Satıcı Yetki Durumu
+                </Text>
+                <Text className="text-xs text-stone-600 leading-5">
+                  {getLicenseStatus(store.license_expires_at) === 'active' ||
+                  getLicenseStatus(store.license_expires_at) === 'expiring_soon'
+                    ? `Kurumsal mağaza yetkilendirmeniz aktif (${
+                        store.license_expires_at
+                          ? formatLicenseExpiry(store.license_expires_at)
+                          : ''
+                      }).`
+                    : 'Kurumsal mağaza yetkilendirmesi için Baret operasyon ekibi başvurunuzu inceliyor.'}
+                </Text>
+              </View>
+            ) : (
+              <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                <Text className="mb-1 text-sm font-medium text-stone-700">Satıcı lisansı</Text>
+                {(() => {
+                  const status = getLicenseStatus(store.license_expires_at);
+                  if (status === 'missing') {
+                    return (
+                      <Text className="mb-3 text-sm text-amber-700">
+                        Henüz lisans yok. Admin’den anahtar alıp aşağıya gir.
+                      </Text>
+                    );
+                  }
+                  if (status === 'expired') {
+                    return (
+                      <Text className="mb-3 text-sm text-red-700">
+                        Lisans süresi dolmuş
+                        {store.license_expires_at
+                          ? ` (${formatLicenseExpiry(store.license_expires_at)})`
+                          : ''}
+                        .
+                      </Text>
+                    );
+                  }
+                  if (status === 'expiring_soon') {
+                    return (
+                      <Text className="mb-3 text-sm text-amber-700">
+                        Lisans yakında bitiyor:{' '}
+                        {store.license_expires_at
+                          ? formatLicenseExpiry(store.license_expires_at)
+                          : ''}
+                      </Text>
+                    );
+                  }
+                  return (
+                    <Text className="mb-3 text-sm text-green-700">
+                      Aktif —{' '}
+                      {store.license_expires_at
+                        ? formatLicenseExpiry(store.license_expires_at)
+                        : ''}{' '}
+                      tarihine kadar
+                    </Text>
+                  );
+                })()}
+                <TextInput
+                  className="mb-3 rounded-xl border border-gray-200 bg-white px-4 py-3 font-mono text-base text-gray-900"
+                  placeholder="BARET-XXXX-XXXX"
+                  placeholderTextColor="#a8a29e"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  value={licenseCode}
+                  onChangeText={setLicenseCode}
+                />
+                <Pressable
+                  className={`items-center rounded-xl bg-brand py-3 ${
+                    isRedeeming ? 'opacity-70' : ''
+                  }`}
+                  disabled={isRedeeming}
+                  onPress={() => void handleRedeemLicense()}
+                >
+                  {isRedeeming ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="font-semibold text-white">Lisansı aktive et</Text>
+                  )}
+                </Pressable>
+              </View>
+            )
+          ) : null}
+
+          <Field label="Mağaza adı *" value={form.name} onChangeText={(v) => updateField('name', v)} />
+          <Field
+            label="Açıklama"
+            value={form.description ?? ''}
+            onChangeText={(v) => updateField('description', v)}
+            multiline
+          />
+          <Field label="Adres *" value={form.address} onChangeText={(v) => updateField('address', v)} />
+          <Field label="Şehir *" value={form.city} onChangeText={(v) => updateField('city', v)} />
+          <Field
+            label="İlçe"
+            value={form.district ?? ''}
+            onChangeText={(v) => updateField('district', v)}
+          />
+          <Field
+            label="Telefon *"
+            value={form.phone}
+            onChangeText={(v) => updateField('phone', v)}
+            keyboardType="phone-pad"
+          />
+          <Field
+            label="E-posta"
+            value={form.email ?? ''}
+            onChangeText={(v) => updateField('email', v)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700">Harita konumu</Text>
+            <Text className="mb-3 text-xs text-stone-500">
+              Alıcılar mağazaya uzaklığı görebilsin ve Haritalar’da yol tarifi alsın.
+            </Text>
+            {coords.latitude != null && coords.longitude != null ? (
+              <Text className="mb-3 text-sm text-green-700">
+                Kayıtlı: {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+              </Text>
+            ) : (
+              <Text className="mb-3 text-sm text-amber-700">Henüz konum yok</Text>
+            )}
             <Pressable
-              className={`items-center rounded-xl bg-brand py-3 ${
-                isRedeeming ? 'opacity-70' : ''
+              className={`items-center rounded-xl border border-brand bg-orange-50 py-3 ${
+                isLocating ? 'opacity-70' : ''
               }`}
-              disabled={isRedeeming}
-              onPress={() => void handleRedeemLicense()}
+              disabled={isLocating}
+              onPress={() => void handleCaptureLocation()}
             >
-              {isRedeeming ? (
-                <ActivityIndicator color="#fff" />
+              {isLocating ? (
+                <ActivityIndicator color="#FF6B00" />
               ) : (
-                <Text className="font-semibold text-white">Lisansı aktive et</Text>
+                <Text className="font-semibold text-brand">Cihaz / Tarayıcı konumunu kullan</Text>
               )}
             </Pressable>
           </View>
-        ) : null}
 
-        <Field label="Mağaza adı *" value={form.name} onChangeText={(v) => updateField('name', v)} />
-        <Field
-          label="Açıklama"
-          value={form.description ?? ''}
-          onChangeText={(v) => updateField('description', v)}
-          multiline
-        />
-        <Field label="Adres *" value={form.address} onChangeText={(v) => updateField('address', v)} />
-        <Field label="Şehir *" value={form.city} onChangeText={(v) => updateField('city', v)} />
-        <Field
-          label="İlçe"
-          value={form.district ?? ''}
-          onChangeText={(v) => updateField('district', v)}
-        />
-        <Field
-          label="Telefon *"
-          value={form.phone}
-          onChangeText={(v) => updateField('phone', v)}
-          keyboardType="phone-pad"
-        />
-        <Field
-          label="E-posta"
-          value={form.email ?? ''}
-          onChangeText={(v) => updateField('email', v)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        <View className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
-          <Text className="mb-1 text-sm font-medium text-stone-700">Harita konumu</Text>
-          <Text className="mb-3 text-xs text-stone-500">
-            Alıcılar mağazaya uzaklığı görebilsin ve Haritalar’da yol tarifi alsın.
-          </Text>
-          {coords.latitude != null && coords.longitude != null ? (
-            <Text className="mb-3 text-sm text-green-700">
-              Kayıtlı: {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-            </Text>
-          ) : (
-            <Text className="mb-3 text-sm text-amber-700">Henüz konum yok</Text>
-          )}
           <Pressable
-            className={`items-center rounded-xl border border-brand bg-orange-50 py-3 ${
-              isLocating ? 'opacity-70' : ''
-            }`}
-            disabled={isLocating}
-            onPress={() => void handleCaptureLocation()}
+            className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSaving ? 'opacity-70' : ''}`}
+            disabled={isSaving}
+            onPress={() => void handleSave()}
           >
-            {isLocating ? (
-              <ActivityIndicator color="#FF6B00" />
+            {isSaving ? (
+              <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="font-semibold text-brand">Telefon konumunu kullan</Text>
+              <Text className="text-base font-semibold text-white">
+                {store ? 'Güncelle' : 'Mağazayı Oluştur'}
+              </Text>
             )}
           </Pressable>
-        </View>
 
-        <Pressable
-          className={`mb-4 items-center rounded-xl bg-brand py-3.5 ${isSaving ? 'opacity-70' : ''}`}
-          disabled={isSaving}
-          onPress={() => void handleSave()}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-base font-semibold text-white">
-              {store ? 'Güncelle' : 'Mağazayı Oluştur'}
-            </Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3.5"
-          onPress={() => navigation.getParent()?.navigate('About' as never)}
-        >
-          <View
-            className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
-            style={{ backgroundColor: ui.brandSoft }}
+          <Pressable
+            className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3.5"
+            onPress={() => (navigation.getParent() as any)?.navigate('About')}
           >
-            <Ionicons name="information-circle-outline" size={22} color={ui.brand} />
-          </View>
-          <View className="flex-1">
-            <Text className="text-base font-semibold text-stone-900">Hakkında</Text>
-            <Text className="mt-0.5 text-xs text-stone-500">
-              Credits · lisanslar · bize ulaşın
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#a8a29e" />
-        </Pressable>
+            <View
+              className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
+              style={{ backgroundColor: ui.brandSoft }}
+            >
+              <Ionicons name="information-circle-outline" size={22} color={ui.brand} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-stone-900">Hakkında</Text>
+              <Text className="mt-0.5 text-xs text-stone-500">
+                Credits · lisanslar · bize ulaşın
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#a8a29e" />
+          </Pressable>
 
-        <Pressable
-          className={`mb-10 items-center rounded-xl border border-red-200 bg-red-50 py-3.5 ${isSigningOut ? 'opacity-70' : ''}`}
-          disabled={isSigningOut}
-          onPress={handleSignOut}
-        >
-          {isSigningOut ? (
-            <ActivityIndicator color="#DC2626" />
-          ) : (
-            <Text className="text-base font-semibold text-red-600">Çıkış Yap</Text>
-          )}
-        </Pressable>
+          <Pressable
+            className={`mb-3 items-center rounded-xl border border-red-200 bg-red-50 py-3.5 ${isSigningOut ? 'opacity-70' : ''}`}
+            disabled={isSigningOut}
+            onPress={handleSignOut}
+          >
+            {isSigningOut ? (
+              <ActivityIndicator color="#DC2626" />
+            ) : (
+              <Text className="text-base font-semibold text-red-600">Çıkış Yap</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            disabled={isDeletingAccount}
+            onPress={handleDeleteAccount}
+            className="mb-10 py-3 items-center rounded-xl border border-red-200 bg-white"
+          >
+            <Text className="text-xs font-bold text-red-700">
+              {isDeletingAccount
+                ? 'Hesap Siliniyor...'
+                : 'Hesabımı ve Verilerimi Kalıcı Olarak Sil'}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -474,3 +541,4 @@ function Field({
     </View>
   );
 }
+

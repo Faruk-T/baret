@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -38,13 +39,30 @@ export function getPublicUrl(bucket: string, path: string): string {
 }
 
 /**
- * Read a local gallery URI (file:// or content://) into an ArrayBuffer.
- * Android cannot reliably fetch() local URIs — use FileSystem instead.
+ * Read a local gallery URI (file://, content://, or blob:/data: on Web) into an ArrayBuffer.
+ * On Web, fetch(localUri).arrayBuffer() works natively.
+ * On Android/iOS, copy to FileSystem.cacheDirectory and decode Base64.
  */
 async function readLocalImageAsArrayBuffer(localUri: string): Promise<ArrayBuffer> {
+  if (
+    Platform.OS === 'web' ||
+    localUri.startsWith('blob:') ||
+    localUri.startsWith('data:') ||
+    localUri.startsWith('http://') ||
+    localUri.startsWith('https://')
+  ) {
+    const res = await fetch(localUri);
+    if (!res.ok) {
+      throw new Error('Görsel tarayıcıdan okunamadı. Lütfen tekrar seçin.');
+    }
+    return await res.arrayBuffer();
+  }
+
   const cacheDir = FileSystem.cacheDirectory;
   if (!cacheDir) {
-    throw new Error('Görsel okunamadı. Önbellek kullanılamıyor.');
+    // Fallback to fetch if cacheDirectory is unavailable
+    const res = await fetch(localUri);
+    return await res.arrayBuffer();
   }
 
   const tempPath = `${cacheDir}product-upload-${Date.now()}`;

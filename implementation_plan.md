@@ -1131,3 +1131,316 @@ Proje **tamamlanmış** sayılır ancak aşağıdaki kriterlerin tümü sağland
 ---
 
 > **Bu doküman canlıdır.** Her faz tamamlandıkça ilgili bölümler güncellenmelidir. Değişiklik yaparken "Son güncelleme" tarihini ve ilerleme yüzdelerini güncelleyin.
+
+---
+
+# 🪖 Baret — Tam Kapsamlı Kod Analizi, B2B Ticarileştirme Araştırması ve Uçtan Uca Uygulama Planı (`implementation_plan.md`)
+
+Bu doküman; **Baret (İnşaat & Nalbur Pazaryeri)** projesinin mevcut kaynak kodunun ve veritabanı mimarisinin satır satır analizini, global/yerel B2B inşaat tedarik pazarı araştırmasını, mevcut kodda tespit edilen **kritik teknik/mantıksal hataları** ve uygulamayı **Android + iOS (App Store) + Kurumsal B2B Web Portalı** olarak ticarileştirecek **8 Fazlı Başlangıçtan Bitişe Mühendislik Planını** içerir.
+
+---
+
+## BÖLÜM 1: Mevcut Projenin Baştan Sona Teknik Analizi
+
+### 1.1. Teknoloji Yığını ve Mimari Özeti
+* **Çerçeve & 런타임:** Expo SDK 57 (`~57.0.25`), React Native `0.86.3`, React `19.2.3`, TypeScript `~6.0.3` ([`package.json`](file:///c:/Users/user/baret/package.json#L5-L43)).
+* **Stil & UI:** NativeWind v4 (`^4.2.6`) + TailwindCSS v3 (`^3.4.19`) ve ortak tasarım tokenları ([`src/theme/ui.ts`](file:///c:/Users/user/baret/src/theme/ui.ts#L1-L26)).
+* **Navigasyon:** React Navigation v7 (`native-stack` + `bottom-tabs`), rol bazlı koşullu yönlendirme ([`src/navigation/RootNavigator.tsx`](file:///c:/Users/user/baret/src/navigation/RootNavigator.tsx#L15-L48)).
+* **Backend & Veritabanı:** Supabase (`@supabase/supabase-js` v2.110.7) — PostgreSQL, Row Level Security (RLS), PL/pgSQL RPC fonksiyonları, Trigger'lar, Realtime kanalları ve `product-images` Storage bucket'ı ([`database.sql`](file:///c:/Users/user/baret/database.sql#L1-L1158)).
+* **Durum Yönetimi:** `AuthContext` ([`src/context/AuthContext.tsx`](file:///c:/Users/user/baret/src/context/AuthContext.tsx)) ve `AsyncStorage` destekli tek mağaza kısıtlı `CartContext` ([`src/context/CartContext.tsx`](file:///c:/Users/user/baret/src/context/CartContext.tsx)).
+* **Tanıtım Sitesi:** `landing/` dizininde GSAP + Lenis ile hazırlanmış statik tanıtım, gizlilik ve hesap silme sayfaları ([`landing/index.html`](file:///c:/Users/user/baret/landing/index.html)).
+
+```mermaid
+flowchart TB
+    subgraph Clients["İstemci Katmanı (Hedef: Tek Kod Tabanı / 3 Platform)"]
+        AND["📱 Android App (Google Play)"]
+        IOS["🍎 iOS App (App Store / TestFlight)"]
+        WEB["💻 Kurumsal B2B Web Portalı (Desktop & Mobil Web)"]
+    end
+
+    subgraph AppCore["Uygulama Çekirdeği (src/)"]
+        NAV["Adaptive Navigation Shell\n(Mobile Tabs vs Web Sidebar/MegaHeader)"]
+        CTX["State & Context\n(Auth, Multi-Line Cart, Active Jobsite, Modals)"]
+        SRV["Servis Katmanı\n(catalog, orders, rfq, plans, storage, admin)"]
+    end
+
+    subgraph Supabase["Supabase Backend & B2B Engine"]
+        AUTH["Supabase Auth\n(Email, Apple Sign-In, Recovery)"]
+        DB[("PostgreSQL + RLS\n(users, stores, products, orders, order_items, rfqs, quotes)")]
+        RT["Supabase Realtime\n(Sipariş, Teklif & Bildirim Köprüsü)"]
+        ST["Supabase Storage\n(product-images, Vergi Levhası / İrsaliye)"]
+    end
+
+    AND --> NAV
+    IOS --> NAV
+    WEB --> NAV
+    NAV --> CTX
+    CTX --> SRV
+    SRV --> AUTH
+    SRV --> DB
+    SRV --> RT
+    SRV --> ST
+```
+
+---
+
+### 1.2. Kod Denetiminde Tespit Edilen Kritik Hatalar (Acil Düzeltilmesi Gerekenler)
+
+> [!CAUTION]
+> Mevcut kod tabanında ve [`database.sql`](file:///c:/Users/user/baret/database.sql) dosyasında canlı kullanımı ve ticarileştirmeyi doğrudan engelleyen **8 kritik teknik bulgu** tespit edilmiştir:
+
+1. **Lisans Anahtarı Aktivasyonunu Bozan SQL Trigger Çakışması (Kritik Bug):**
+   * [`redeem_license_key()`](file:///c:/Users/user/baret/database.sql#L367-L375) fonksiyonu `PERFORM set_config('baret.allow_license_update', 'on', true);` çalıştırıp `stores.license_expires_at` sütununu güncelliyor.
+   * Ancak dosyanın sonunda yer alan [`protect_store_admin_columns()`](file:///c:/Users/user/baret/database.sql#L1113-L1135) trigger'ı `current_setting('baret.allow_license_update', true)` değerini **kontrol etmiyor**! Satıcı admin olmadığı için `NEW.license_expires_at := OLD.license_expires_at` diyerek tarihi sessizce eski haline çeviriyor, fakat `license_keys` tablosunda anahtarı "kullanıldı" (`redeemed_at = NOW()`) olarak işaretliyor. Anahtar yanıyor ama mağaza lisansı uzamıyor!
+
+2. **Çift Yetkilendirme Karmaşası (`license_expires_at` vs `store_subscriptions`):**
+   * Projede önce "Lisans Anahtarı" (`stores.license_expires_at`) yapılmış, sonra "Abonelik Paketleri" (`store_subscriptions`) eklenmiş.
+   * Alıcı kataloğu ([`src/services/catalog.ts`](file:///c:/Users/user/baret/src/services/catalog.ts#L60)) ve RLS politikaları ([`database.sql`](file:///c:/Users/user/baret/database.sql#L244-L256)) hâlâ `stores.license_expires_at > NOW()` şartına bakarken; ürün ekleme trigger'ı ([`enforce_product_plan_limit`](file:///c:/Users/user/baret/database.sql#L976-L1005)) `store_subscriptions` tablosuna bakıyor.
+   * Admin [`AdminSubscriptionsScreen.tsx`](file:///c:/Users/user/baret/src/screens/admin/AdminSubscriptionsScreen.tsx) ekranından bir mağazaya Basic/Pro paket atadığında `stores.license_expires_at` güncellenmediği için satıcı ürün ekleyebiliyor ama **mağazası ve ürünleri alıcı kataloğunda görünmüyor**!
+
+3. **Abonelik Modeline Geçilmesine Rağmen Hâlâ %10 Komisyon Kesen Trigger:**
+   * Arayüzde *"komisyon yok (abonelik modeli)"* ([`SellerDashboardScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/SellerDashboardScreen.tsx#L247)) yazmasına rağmen, veritabanında [`trg_orders_create_commission`](file:///c:/Users/user/baret/database.sql#L431-L434) her yeni siparişte %10 komisyon kaydı oluşturmaya devam ediyor ve [`SellerOrdersScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/SellerOrdersScreen.tsx#L336-L357) satıcıya *"Platform -₺... (%10)"* gösteriyor.
+
+4. **Satıcı Sipariş Aksiyonlarında Çift (Duplicate) Bildirim Gönderimi:**
+   * Hem servis katmanındaki [`updateSellerOrderStatus` / `cancelSellerOrder` / `confirmOrderPickup`](file:///c:/Users/user/baret/src/services/orders.ts#L272-L304) fonksiyonları hem de ekran katmanındaki [`SellerOrdersScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/SellerOrdersScreen.tsx#L98-L188) aynı anda `notifyBuyerOrderStatus` çağırıyor. Alıcıya her durum değişiminde **2 adet aynı bildirim** düşüyor.
+
+5. **Sepetteki Her Ürün İçin Ayrı Sipariş Satırı ve Ayrı Teslim Kodu Üretilmesi:**
+   * `order_items` tablosu olmadığı için [`createOrdersFromCart`](file:///c:/Users/user/baret/src/services/orders.ts#L85-L103) sepetteki 5 farklı ürün için `orders` tablosuna 5 bağımsız sipariş kaydı açıyor. Satıcı 5 kez "Hazırlanıyor -> Yola Çıktı" yapmak ve alıcı mağazada **5 ayrı 6 haneli teslim kodu** söylemek zorunda kalıyor.
+
+6. **Ürünlerde Gerçek `category`, `unit` (Birim) ve `brand` Sütunu Olmaması:**
+   * [`products`](file:///c:/Users/user/baret/database.sql#L59-L72) tablosunda `category` sütunu yok! [`listCatalogProducts`](file:///c:/Users/user/baret/src/services/catalog.ts#L68-L71) kategori filtresini `name.ilike.%kategori%` ile yapıyor. Satıcı ürün adını *"Nuh 50kg CEM I 42.5"* yazarsa ve içinde *"Çimento"* kelimesi geçmezse ürün **Çimento kategorisinde çıkmıyor**. Ayrıca satıcı ürün eklerken kategori bile seçemiyor ([`ProductFormScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/ProductFormScreen.tsx)).
+
+7. **Web ve Android'de Kırılan `Alert.alert` Kullanımı:**
+   * [`OrdersScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/OrdersScreen.tsx#L129-L147) içindeki şikayet menüsü `Alert.alert` içine **4 buton** gönderiyor. Android native `AlertDialog` en fazla 3 butonu destekler (4. buton görünmez). Web'de ise `Alert.alert` çoklu buton callback'lerini **hiç çalıştırmaz** (sepet temizleme, sipariş iptali, mağaza çakışması onayları Web'de çalışmaz).
+
+8. **Web Platformunda Çöken Native Modüller:**
+   * **Görsel Yükleme:** [`src/services/storage.ts`](file:///c:/Users/user/baret/src/services/storage.ts#L44-L63) `expo-file-system/legacy` `FileSystem.cacheDirectory` kullanıyor. Web'de `cacheDirectory` `null` olduğu için satıcı Web'den ürün fotoğrafı yükleyemez (`"Görsel okunamadı. Önbellek kullanılamıyor."` hatası verir).
+   * **Tarih Seçici:** [`LicenseKeysScreen.tsx`](file:///c:/Users/user/baret/src/screens/admin/LicenseKeysScreen.tsx#L148-L157) `@react-native-community/datetimepicker` kullanıyor; Web'de desteklenmez.
+   * **Harita Yönlendirmesi:** [`src/utils/geo.ts`](file:///c:/Users/user/baret/src/utils/geo.ts#L54-L66) `Platform.OS === 'ios'` dışındaki tüm platformları Android varsayarak Web'de `geo:` protokolünü açmaya çalışıyor.
+   * **Шifre Sıfırlama & Auth URL:** [`src/services/supabase.ts`](file:///c:/Users/user/baret/src/services/supabase.ts#L22) `detectSessionInUrl: false` olarak sabitlenmiş.
+
+---
+
+## BÖLÜM 2: Web & Pazar Araştırması — Baret Nasıl "Arşa Çıkar" ve Ticarileşir?
+
+Globalde **Schüttflix** (Avrupa'nın en hızlı büyüyen inşaat malzemesi pazaryeri), **Ferguson**, **Grainger**, **Material Bank** ve Türkiye'deki B2B tedarik dinamikleri incelendiğinde; inşaat ve nalbur sektöründe bir uygulamanın "oyuncak" olmaktan çıkıp **milyonlarca TL hacim döndüren ticari bir B2B/B2C platforma** dönüşmesi için şu **6 Stratejik Sütun** şarttır:
+
+### 2.1. Teklif Usulü Satınalma (RFQ / Metraj & İhale Motoru) — *En Büyük B2B Farkı*
+İnşaat mühendisleri ve satınalma şefleri 1 adet çekiç alırken sepete ekler; ancak şantiyeye **300 torba çimento, 4 ton demir, 200 m² seramik** alırken katalog fiyatından sepete eklemez, **fiyat teklifi (RFQ - Request for Quote)** toplar!
+* **Nasıl Çalışacak?** Alıcı (Mühendis/Müteahhit) **"Toplu Teklif İste (İhale Aç)"** ekranından kalem kalem malzeme listesini, teslim edilecek şantiyeyi ve termin tarihini girer.
+* O şehirdeki onaylı nalburlara anında bildirim düşer: *"🔥 Yeni Şantiye İhalesi: Şehitkamil / Gaziantep — 14 Kalem Malzeme"*.
+* Nalburlar kendi özel iskontolu fiyatlarını ve nakliye şartlarını teklif olarak iletir. Mühendis gelen teklifleri yan yana karşılaştırır (Fiyat, Teslim Süresi, Mağaza Puanı) ve **tek tıkla siparişe dönüştürür**.
+
+### 2.2. Kademeli Toptan Fiyatlandırma (Tiered Pricing) & İnşaat Birim Sistemi
+Nalburiyede her ürün "Adet" ile satılmaz ve 1 adet alan ile 1 palet alan aynı fiyatı ödemez.
+* **Birim Desteği:** Her ürüne `unit` (`adet`, `torba`, `palet`, `ton`, `kg`, `m2`, `metre`, `koli`, `ova/teneke`) ve `min_order_quantity` (Minimum Sipariş Adedi) eklenecek.
+* **Kademeli Fiyat (Bulk Pricing Tiers):** Satıcı bir ürüne isteğe bağlı toptan fiyat basamakları tanımlayabilecek:
+  * `1 – 19 Torba:` **₺240 / torba**
+  * `20 – 49 Torba (1 Palet):` **₺220 / torba** (%8 İndirim)
+  * `50+ Torba:` **₺205 / torba** (%15 Şantiye İndirimi)
+  Sepette miktar arttıkça birim fiyat otomatik olarak ilgili kademeye düşecek!
+
+### 2.3. Çoklu Şantiye (Project / Jobsite) & Kurumsal الفatura Profilleri
+Bir inşaat firmasının aynı anda 3 farklı şantiyesi olabilir.
+* Alıcılar **"Şantiyelerim"** altında birden fazla teslimat noktası kaydedebilecek (Örn: *"Kuzeyşehir Konut Şantiyesi — Blok B"*, GPS Koordinatı, Şantiye Şefi Adı/Tel, *"Tır Girebilir / Forklift Var"* lojistik notu).
+* Kurumsal Fatura bilgileri (Firma Ünvanı, Vergi Dairesi, Vergi No, E-Fatura Mükellefi mi?) profilde tanımlanacak ve her siparişe otomatik eklenecek.
+
+### 2.4. Web'de "B2B Hızlı Sipariş Tablosu" (Excel Benzeri Quick-Order DataGrid)
+Daha önce geliştirdiğiniz B2B projesindeki gibi, kurumsal alıcılar ve satınalma uzmanları Web'de kart kart gezinmek yerine **yüksek yoğunluklu tablo görünümünü (DataGrid)** tercih eder:
+* Tek ekranda 25–50 satır ürün (SKU, Ürün Adı, Kategori, Mağaza, Birim, Kademeli Fiyat, Canlı Stok, Hızlı Miktar Kutusu `[ 0 ]` ve Toplu Sepete Ekle).
+* Satıcılar için de Web'de **Toplu Fiyat & Stok Güncelleme Tablosu** (Enflasyon/kur değişiminde tek ekrandan tüm ürünlere `%10 zam uygula` veya satır içi hızlı fiyat/stok değiştir).
+
+### 2.5. Gerçek Birleşik Sipariş (`orders` + `order_items`) & QR Teslim Kodu
+* Sepet onaylandığında tek bir ana `orders` kaydı (Sipariş No: `#BRT-2026-8492`) ve altında `order_items` satırları oluşacak.
+* Tek bir 6 haneli teslim kodu üretilecek; ayrıca hem Alıcı ekranında **QR Kod** gösterilecek hem de Web'den **Sipariş İrsaliye / Teklif PDF Çıktısı (Yazdır)** alınabilecek.
+
+### 2.6. Hibrit Gelir Modeli (SaaS Abonelik + Ödeme Geçidi + Öne Çıkan Vitrin)
+1. **Satıcı SaaS Aboneliği:** Basic / Pro / Kurumsal paketler (Yıllık ödemede 2 ay bedava kurgusu).
+2. **Ödeme Altyapısı (iyzico / PayTR Marketplace veya Havale/EFT Dekont + Nakit/Kredi Kartı Kapıda):** Alıcı siparişi oluştururken ödeme yöntemini seçer (*Online Kredi Kartı / Şantiyede POS / Havale-EFT / Cari Açık Hesap*).
+3. **Sponsorlu Ürün / Vitrin Mağaza:** Nalburların ürünlerini aramada en üstte çıkarması için ek gelir kalemi.
+
+---
+
+## BÖLÜM 3: iOS (App Store) Uyumluluk ve Kabul Stratejisi
+
+> [!IMPORTANT]
+> Apple App Store inceleme ekibi (App Review), pazaryeri ve B2B uygulamalarını **4 katı kurala** göre denetler. Mevcut haliyle uygulama App Store'a gönderilirse **kesin olarak red (rejection) alacağı** noktalar ve çözümlerimiz şunlardır:
+
+| Apple Kuralı | Mevcut Durum (Sorun) | Çözüm Planımız |
+| :--- | :--- | :--- |
+| **Guideline 5.1.1 — Zorunlu Giriş Duvarı (Login Wall)** | Uygulama açılır açılmaz `LoginScreen` geliyor. Kullanıcı ürünleri görmeden hesap açmaya zorlanıyor. | **Misafir Modu (Guest Mode):** Uygulama doğrudan Alıcı Kataloğu (`BuyerNavigator`) ile açılacak! Kullanıcı üye olmadan ürünleri arayabilecek, filtreleyebilecek, mağaza puanlarını görebilecek ve sepete ekleyebilecek. Yalnızca **Sipariş Ver (Checkout)**, **Teklif İste (RFQ)**, **Siparişlerim** veya **Satıcı Ol** dediğinde şık bir Giriş/Kayıt ekranına yönlendirilecek. |
+| **Guideline 5.1.1(v) — Uygulama İçi Hesap Silme** | Uygulama içinde hesap silme butonu yok; web sayfasında *"e-posta gönderin"* yazıyor. Apple e-posta ile silmeyi **kabul etmez**. | [`ProfileScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/ProfileScreen.tsx) ve [`StoreSettingsScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/StoreSettingsScreen.tsx) içine **"Hesabımı Kalıcı Olarak Sil"** butonu ve Supabase `delete_my_account()` RPC fonksiyonu eklenecek. |
+| **Guideline 3.1.1 & 3.1.3(e) — In-App Purchase (IAP) Tuzağı** | Satıcı ekranında `₺4.000/ay` paket fiyatları ve `BARET-XXXX-XXXX` lisans kodu kutusu var. Apple, dijital özellik/sekme açan kodları IAP (%30 Apple komisyonu) sayıp reddeder. | iOS (`Platform.OS === 'ios'`) üzerinde Satıcı paneli **"Kurumsal B2B Satıcı Terminali"** (Reader/Multiplatform B2B) olarak çalışacak: iOS içinde dış ödeme linki veya ücretli lisans kodu satın alma çağrısı gösterilmeyecek; kurumsal abonelik ve lisans işlemleri **Baret Web Portalı** üzerinden yönetilecek. Böylece Apple'a %30 komisyon ödemeden App Store'dan %100 onay alınacak! |
+| **Guideline 4.8 — Sign in with Apple / İzin Metinleri** | Yalnızca E-posta/Şifre var; iOS izin metinleri (`infoPlist`) eksik kamera izni içeriyor. | E-posta/Şifre tek başına Guideline 4.8'i ihlal etmez ancak iOS'ta kamera ile ürün fotoğrafı çekimi için `NSCameraUsageDescription` eklenecek ve iOS klavye/safe-area davranışları kusursuzlaştırılacak. |
+
+---
+
+## BÖLÜM 4: Kurumsal B2B Web Tasarım Sistemi ("Industrial Precision")
+
+Web sürümünde mobil ekranın masaüstünde sağa-sola çekilmiş amatör görüntüsü yerine, **20 yıllık kurumsal yazılım mimarisi standartlarında** duyarlı (responsive) bir **Web Application Shell** inşa edeceğiz:
+
+### 4.1. Tasarım Dili ve Estetik Kimlik
+* **Renk Paleti:**
+  * **Endüstriyel Koyu (Sidebar / Komuta Merkezi):** `#0B1220` (Derin Antrasit Lacivert), `#151D2E` (Kart Yüzeyi), `#1E293B` (Kenarlık).
+  * **Baret Turuncusu (Vurgu / Aksiyon):** `#FF6B00` (Birincil), `#E55F00` (Hover), `#FFF1E6` (Yumuşak Rozet Arka Planı).
+  * **Çalışma Alanı (Katalog & DataGrid):** `#F8FAFC` / `#FFF8F3` sıcak taş beyazı zemin, `#FFFFFF` yüksek kontrastlı kartlar ve tablolar.
+* **Tipografi & Yoğunluk:** Masaüstünde geniş ekranı (`max-width: 1440px`) kullanan çok sütunlu yapı, `tabular-nums` (fiyatların ve stokların virgül hizalı durması), klavye kısayolları ve pürüzsüz hover/focus geçişleri.
+
+### 4.2. Masaüstü (Web `>= 1024px`) vs Mobil (`< 768px`) Adaptif Yerleşim
+
+```mermaid
+flowchart LR
+    subgraph DesktopWeb["💻 Masaüstü B2B Web Görünümü (>= 1024px)"]
+        direction TB
+        TOP["Üst Kurumsal Mega-Bar: Logo | Şantiye Seçici | Global Arama | Görünüm (Kart / B2B Tablo) | Teklif İste (RFQ) | Sepet Drawer"]
+        subgraph MainArea["Ana Çalışma Alanı (1440px Grid)"]
+            SIDE["Sol Sabit Filtre & Kategori Paneli (280px)\n- Kategori Ağacı\n- Şehir / İlçe\n- Teslimat Tipi\n- Fiyat & Stok Filtresi"]
+            GRID["Sağ İçerik Alanı (Esnek)\n- Mod 1: 3-4 Sütunlu B2B Ürün Kartları\n- Mod 2: Excel Tipi Hızlı Sipariş Tablosu (DataGrid)"]
+        end
+        TOP --> MainArea
+    end
+
+    subgraph SellerWeb["🏭 Satıcı & Admin Web ERP Konsolu (>= 1024px)"]
+        direction LR
+        SSIDE["Sol Sabit Koyu ERP Menüsü (260px #0B1220)\n- Kontrol Merkezi\n- Hızlı Stok/Fiyat Matrisi\n- Sipariş Kanban Tahtası\n- İhale / Teklif (RFQ) Havuzu\n- Finans & Mağaza Ayarları"]
+        SMAIN["Sağ Geniş Operasyon Ekranı\n- 4'lü Bento KPI Kartları\n- Çok Sütunlu Tablo / Kanban\n- Sağdan Açılan Detay Drawer"]
+        SSIDE --> SMAIN
+    end
+```
+
+---
+
+## BÖLÜM 5: Adım Adım Uygulama Planı (8 Fazlı Yol Haritası)
+
+### FAZ 1: Veritabanı (Supabase SQL) Onarımı ve B2B Şema Yükseltmesi
+**Hedef:** Mevcut SQL bug'larını düzeltmek ve B2B/App Store özelliklerinin veritabanı altyapısını tek bir idempotent migration dosyası ile kurmak.
+* **Düzenlenecek / Eklenecek Dosyalar:**
+  * [`database.sql`](file:///c:/Users/user/baret/database.sql) ve yeni [`docs/baret-v2-commercial-upgrade.sql`](file:///c:/Users/user/baret/docs/baret-v2-commercial-upgrade.sql)
+  * [`src/types/database.ts`](file:///c:/Users/user/baret/src/types/database.ts)
+* **Yapılacak İşlemler:**
+  1. `protect_store_admin_columns()` fonksiyonuna `IF current_setting('baret.allow_license_update', true) = 'on' THEN RETURN NEW; END IF;` kontrolünün eklenmesi.
+  2. `store_subscriptions` tablosuna abonelik eklendiğinde/uzatıldığında `stores.license_expires_at` sütununu otomatik senkronize eden trigger (`trg_sync_store_license_from_subscription`) yazılması.
+  3. Abonelik modeline geçildiği için `trg_orders_create_commission` trigger'ının devre dışı bırakılması (veya `platform_settings.commission_rate = 0` varsayılanına çekilmesi).
+  4. `products` tablosuna B2B sütunlarının eklenmesi:
+     * `category TEXT` (Varsayılan kategorilerle senkron)
+     * `unit TEXT NOT NULL DEFAULT 'adet'` (`adet`, `torba`, `palet`, `ton`, `kg`, `m2`, `metre`, `koli`)
+     * `min_order_qty INTEGER NOT NULL DEFAULT 1`
+     * `bulk_pricing JSONB DEFAULT '[]'::jsonb` (`[{ "min_qty": 10, "unit_price": 220 }, { "min_qty": 50, "unit_price": 195 }]`)
+     * `sku TEXT`, `brand TEXT`, `vat_rate INTEGER DEFAULT 20`
+  5. **B2B Teklif (RFQ) Tabloları:**
+     * `public.rfq_requests` (Alıcının açtığı şantiye malzeme talebi: başlık, şehir, ilçe, şantiye adresi, termin tarihi, kalemler JSONB/tablo, durum `open | quoted | accepted | closed`).
+     * `public.rfq_quotes` (Onaylı nalburların verdiği fiyat teklifleri: toplam tutar, kalem fiyatları, teslimat şartı, geçerlilik süresi, not, durum `pending | accepted | rejected`).
+  6. **Şantiyelerim & Kurumsal Profil Alanları:**
+     * `public.buyer_sites` (Şantiye adı, şehir, ilçe, açık adres, koordinat, şantiye şefi tel, lojistik notu).
+     * `public.users` tablosuna `company_name`, `tax_office`, `tax_number` alanlarının eklenmesi.
+  7. **Apple App Store Hesap Silme RPC'si (`public.delete_my_account()`):**
+     * Aktif siparişi olmayan kullanıcının kişisel verilerini anonimleştirip `auth.users` ve `public.users` kaydını güvenli şekilde silen `SECURITY DEFINER` fonksiyonu.
+
+---
+
+### FAZ 2: Çapraz Platform (Web + iOS + Android) Çekirdek Altyapısı
+**Hedef:** Web ve iOS'ta kırılan tüm native çağrıları izole etmek ve uygulama genelinde çalışan modern UI bileşenleri kurmak.
+* **Eklenecek / Düzenlenecek Dosyalar:**
+  * `src/components/ui/ConfirmModal.tsx` (Yeni — `Alert.alert` yerine Web, iOS ve Android'de kusursuz çalışan şık B2B onay/aksiyon modalı)
+  * `src/components/ui/ToastNotice.tsx` (Yeni — "Sepete eklendi", "Kopyalandı" gibi bildirimler için üst/alt bildirim çubuğu)
+  * `src/components/ui/DatePickerField.tsx` (Yeni — Web'de `<input type="date">`, iOS/Android'de `@react-native-community/datetimepicker` kullanan ortak bileşen)
+  * [`src/services/storage.ts`](file:///c:/Users/user/baret/src/services/storage.ts) (Web'de `fetch(localUri).then(r => r.arrayBuffer())` desteği, mobilde `FileSystem` desteği)
+  * [`src/utils/geo.ts`](file:///c:/Users/user/baret/src/utils/geo.ts) (Web'de `https://www.google.com/maps/dir/...` yeni sekme yönlendirmesi ve HTML5 Geolocation API uyumu)
+  * [`src/services/supabase.ts`](file:///c:/Users/user/baret/src/services/supabase.ts) (Web'de `detectSessionInUrl: Platform.OS === 'web'` ve SSR güvenli storage)
+  * [`src/services/orders.ts`](file:///c:/Users/user/baret/src/services/orders.ts) (Çift bildirim hatasının giderilmesi, toptan kademeli fiyat hesaplaması)
+
+---
+
+### FAZ 3: Misafir Modu (Guest Browsing), Web URL Routing ve Kimlik Doğrulama
+**Hedef:** Hem Apple Guideline 5.1.1 uyumu hem de Web SEO/dönüşüm başarısı için zorunlu giriş duvarını kaldırmak.
+* **Düzenlenecek Dosyalar:**
+  * [`src/navigation/RootNavigator.tsx`](file:///c:/Users/user/baret/src/navigation/RootNavigator.tsx)
+  * [`src/navigation/BuyerNavigator.tsx`](file:///c:/Users/user/baret/src/navigation/BuyerNavigator.tsx)
+  * [`src/screens/auth/LoginScreen.tsx`](file:///c:/Users/user/baret/src/screens/auth/LoginScreen.tsx), [`RegisterScreen.tsx`](file:///c:/Users/user/baret/src/screens/auth/RegisterScreen.tsx), [`RoleSelectScreen.tsx`](file:///c:/Users/user/baret/src/screens/auth/RoleSelectScreen.tsx)
+* **Yapılacak İşlemler:**
+  1. Oturum açmamış (`!session`) kullanıcılar doğrudan **Alıcı Kataloğu (`BuyerNavigator`)** ile karşılaşacak.
+  2. Web için React Navigation `linking` yapılandırması eklenecek (`/`, `/urun/:productId`, `/sepet`, `/teklif-iste`, `/siparislerim`, `/giris`, `/kayit`, `/satici`, `/admin`).
+  3. Misafir kullanıcı Katalogda gezinebilecek, ürün detayını inceleyebilecek ve Sepete ürün ekleyebilecek.
+  4. Misafir kullanıcı **Siparişe Geç**, **Teklif İste (RFQ)** veya **Profil** sekmesine tıkladığında; tek tıkla Giriş Yap / Alıcı Kaydı / Satıcı Kaydı ekranına yönlendirilecek ve giriş yaptıktan sonra sepeti korunarak kaldığı yerden devam edecek.
+  5. Web'de Giriş ve Kayıt ekranları masaüstünde sol tarafta endüstriyel Baret değer önerisi vitrini, sağ tarafta form kartı olan **Split-Screen Kurumsal Giriş** tasarımına kavuşacak.
+
+---
+
+### FAZ 4: Kurumsal B2B Web Layout Shell & Adaptive Navigation
+**Hedef:** Uygulama Web tarayıcısında açıldığında mobil tab bar yerine gerçek bir B2B Web Portalı deneyimi sunmak.
+* **Eklenecek / Düzenlenecek Dosyalar:**
+  * `src/hooks/useResponsiveLayout.ts` (Yeni — `isDesktop`, `isTablet`, `isMobile`, `width` kırılımları)
+  * `src/components/layout/WebPortalHeader.tsx` (Yeni — Alıcı Web üst barı: Logo, Aktif Şantiye Seçici, Hızlı Arama, Katalog/B2B Tablo/Tekliflerim menüsü, Sepet Özeti, Hesap/Giriş butonu)
+  * `src/components/layout/EnterpriseSidebarLayout.tsx` (Yeni — Satıcı ve Admin Web için koyu endüstriyel `#0B1220` sol menü + geniş çalışma alanı iskeleti)
+  * `src/components/layout/ResponsiveContainer.tsx` (Yeni — İçeriği masaüstünde dengeli grid içinde tutan kapsayıcı)
+
+---
+
+### FAZ 5: Alıcı (Mühendis / Şantiye) Deneyiminin B2B Seviyesine Çıkarılması
+**Hedef:** Alıcı tarafını hem mobilde hem Web'de birinci sınıf bir inşaat tedarik platformuna dönüştürmek.
+* **Eklenecek / Düzenlenecek Dosyalar:**
+  * [`src/screens/buyer/HomeScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/HomeScreen.tsx)
+  * `src/components/buyer/B2BQuickOrderTable.tsx` (Yeni — Web ve Tablet için Excel tarzı Hızlı Sipariş DataGrid görünümü)
+  * [`src/components/buyer/CatalogProductCard.tsx`](file:///c:/Users/user/baret/src/components/buyer/CatalogProductCard.tsx)
+  * [`src/screens/buyer/ProductDetailScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/ProductDetailScreen.tsx)
+  * `src/screens/buyer/RfqListScreen.tsx` & `src/screens/buyer/RfqCreateScreen.tsx` (Yeni — Şantiye İhale / Teklif İsteme modülü)
+  * [`src/screens/buyer/CheckoutScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/CheckoutScreen.tsx) & [`src/screens/buyer/OrdersScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/OrdersScreen.tsx)
+* **Yapılacak İşlemler:**
+  1. **Çift Görünüm Modu (Kart Grid vs B2B Hızlı Sipariş Tablosu):**
+     * Masaüstünde sol tarafta sabit filtre paneli, sağda 3-4 sütunlu ürün kartları veya **Hızlı Sipariş Tablosu (Tablo Görünümü)** seçimi.
+     * Tablo görünümünde mühendis tek ekrandan ürünlerin birimini (`Torba`, `Palet`, `Ton`), toptan kademe fiyatını, mağazasını ve stok durumunu görüp satır yanındaki kutudan adet girerek anında sepete ekleyebilecek.
+  2. **Ürün Detayda Toptan Fiyat Basamakları (Bulk Tier Table):**
+     * Ürün detay sayfasında masaüstünde 2 sütunlu (Sol: Büyük Görsel + Mağaza Güvence Kartı, Sağ: Teknik Özellikler, Birim, Kademeli Fiyat Tablosu, KDV Dahil/Hariç Gösterim, Hızlı Adet Butonları `+10`, `+50`).
+  3. **Şantiye Seçici & Kurumsal Checkout:**
+     * Checkout ekranında kayıtlı şantiyelerden birini tek tıkla seçme, Fatura Tipi (*Bireysel / Kurumsal Fatura — Vergi Dairesi & VKN*) ve Ödeme Tercihi (*Havale/EFT, Teslimatta Kredi Kartı/Nakit, Cari Hesap Talebi*).
+  4. **Sipariş Gruplama & Yazdırılabilir Sipariş Fişi:**
+     * Aynı anda verilen sipariş satırlarının gruplanarak gösterilmesi ve Web'de **"Sipariş / İrsaliye Fişi Yazdır (PDF)"** butonu.
+
+---
+
+### FAZ 6: Satıcı (Nalbur / Tedarikçi) ERP Paneli ve Teklif Yanıtlama
+**Hedef:** Nalburlara hem cepte hem de mağaza bilgisayarında (Web) kullanabilecekleri çok güçlü bir ticari panel sunmak.
+* **Düzenlenecek / Eklenecek Dosyalar:**
+  * [`src/screens/seller/SellerDashboardScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/SellerDashboardScreen.tsx)
+  * [`src/screens/seller/ProductsListScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/ProductsListScreen.tsx) & [`src/screens/seller/ProductFormScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/ProductFormScreen.tsx)
+  * [`src/screens/seller/SellerOrdersScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/SellerOrdersScreen.tsx)
+  * `src/screens/seller/SellerRfqPoolScreen.tsx` (Yeni — Bölgedeki şantiyelerden gelen malzeme teklif taleplerini görme ve fiyat verme ekranı)
+  * [`src/screens/seller/StoreSettingsScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/StoreSettingsScreen.tsx)
+* **Yapılacak İşlemler:**
+  1. **Zengin Ürün Formu:** Kategori seçici (`PRODUCT_CATEGORIES`), Birim seçici (`Adet`, `Torba`, `Palet`, `Ton`, `m²`, `Metre`), Marka/SKU ve **Toptan Kademeli Fiyat Ekleme** (`10+ alımda birim fiyat`, `50+ alımda birim fiyat`).
+  2. **Web'de Toplu Stok & Fiyat Düzenleme (Inline Matrix):** Satıcı bilgisayarından girdiğinde ürünlerinin fiyatını ve stoğunu liste üzerinden tek tıkla güncelleyebilecek.
+  3. **Sipariş Ekranı Temizliği & Kanban Görünümü:** Eski "%10 komisyon" kalıntılarının temizlenmesi; Web'de siparişlerin durum sütunlarıyla veya filtre sekmeleriyle hızlı işlenmesi.
+  4. **İhale / Teklif Havuzu (`SellerRfqPoolScreen`):** Nalbur kendi şehrindeki mühendislerin açtığı malzeme listelerine fiyat teklifi verebilecek.
+
+---
+
+### FAZ 7: Admin "Baret Control Tower" Web & Mobil Geliştirmeleri
+**Hedef:** Platform yöneticisinin (sizin) tüm ticari operasyonu tek ekrandan yönetmesi.
+* **Düzenlenecek Dosyalar:**
+  * [`src/screens/admin/AdminHomeScreen.tsx`](file:///c:/Users/user/baret/src/screens/admin/AdminHomeScreen.tsx)
+  * [`src/screens/admin/AdminSubscriptionsScreen.tsx`](file:///c:/Users/user/baret/src/screens/admin/AdminSubscriptionsScreen.tsx)
+  * [`src/screens/admin/LicenseKeysScreen.tsx`](file:///c:/Users/user/baret/src/screens/admin/LicenseKeysScreen.tsx)
+  * [`src/services/plans.ts`](file:///c:/Users/user/baret/src/services/plans.ts)
+* **Yapılacak İşlemler:**
+  1. Admin bir mağazaya abonelik (`assignStoreSubscription`) atadığında mağazanın `license_expires_at` tarihinin de otomatik olarak paket bitiş tarihine güncellenmesi (böylece mağaza anında katalogda yayına girer).
+  2. `LicenseKeysScreen` içindeki tarih seçicinin Web uyumlu `DatePickerField` ile değiştirilmesi ve Web'de tek tıkla panoya kopyalama (`Clipboard.setStringAsync`) desteği.
+  3. Web'de Admin panelinin sol sabit menülü (`EnterpriseSidebarLayout`) geniş ekran komuta merkezi olarak çalışması ve CSV dışa aktarma (`Share.share`) işleminin Web'de doğrudan `.csv` dosyası indirmesi (`Blob` + `<a download>`).
+
+---
+
+### FAZ 8: iOS App Store Hazırlığı, Hesap Silme ve Web/Mobil Build Doğrulaması
+**Hedef:** Sıfır TypeScript hatası, sıfır platform kırılması ile iOS (`eas build -p ios`), Android (`eas build -p android`) ve Web (`npx expo export -p web`) çıktılarının yayına hazır hale getirilmesi.
+* **Düzenlenecek Dosyalar:**
+  * [`app.json`](file:///c:/Users/user/baret/app.json)
+  * [`src/screens/buyer/ProfileScreen.tsx`](file:///c:/Users/user/baret/src/screens/buyer/ProfileScreen.tsx) & [`src/screens/seller/StoreSettingsScreen.tsx`](file:///c:/Users/user/baret/src/screens/seller/StoreSettingsScreen.tsx)
+  * [`landing/index.html`](file:///c:/Users/user/baret/landing/index.html) & [`landing/account-deletion.html`](file:///c:/Users/user/baret/landing/account-deletion.html)
+* **Yapılacak İşlemler:**
+  1. **iOS `app.json` İyileştirmeleri:**
+     * `NSCameraUsageDescription` eklenecek ("Ürün ve irsaliye fotoğrafı çekmek için kamera erişimine izin verin.").
+     * Web meta/title/bundler ayarları (`output: "single"`, PWA/Favicon/ThemeColor) yapılandırılacak.
+  2. **Uygulama İçi Hesap Silme (Guideline 5.1.1(v)):**
+     * Alıcı ve Satıcı profil/ayar ekranlarına `ConfirmModal` ile korunan **"Hesabımı Kalıcı Olarak Sil"** butonu eklenecek.
+  3. **iOS Guideline 3.1.1 (IAP) Koruması:**
+     * `Platform.OS === 'ios'` iken satıcı ekranındaki aylık TL fiyat etiketleri ve lisans anahtarı satın alma yönlendirmeleri kurumsal B2B görünümüne ("Kurumsal üyelik durumunuz aktif / Web portalından yönetilir") uyarlanacak.
+  4. **Derleme & Tip Kontrolü:**
+     * `npx tsc --noEmit` ve `npx expo export --platform web` ile tüm kod tabanının uçtan uca doğrulanması.
