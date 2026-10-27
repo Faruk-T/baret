@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { setStyle as setNavigationBarStyle } from 'expo-navigation-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import * as SystemUI from 'expo-system-ui';
 
 import { ui } from '../theme/ui';
@@ -18,9 +18,7 @@ export async function configureEdgeToEdge(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
   try {
-    // "light" = light bar chrome with dark buttons (matches Baret light UI).
-    // Do not call setBackgroundColorAsync — deprecated under edge-to-edge.
-    setNavigationBarStyle('light');
+    (NavigationBar as any).setStyle?.('light');
   } catch {
     // ignore
   }

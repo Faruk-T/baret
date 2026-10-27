@@ -23,6 +23,20 @@ export function formatDistance(meters: number): string {
 }
 
 export async function getCurrentCoords(): Promise<Coords> {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
+    return new Promise<Coords>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          }),
+        () => reject(new Error('Tarayıcı konum izni verilmedi veya konum alınamadı.')),
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+    });
+  }
+
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
     throw new Error('Konum izni verilmedi. Ayarlardan konum erişimini aç.');
@@ -39,7 +53,7 @@ export async function getCurrentCoords(): Promise<Coords> {
 }
 
 /**
- * Open a maps app / browser directions.
+ * Open a maps app / browser directions across Web, iOS, and Android.
  * Avoid Linking.canOpenURL on Android — https maps URLs often return false
  * without QUERY_ALL_PACKAGES / intent queries even when openURL would work.
  */
@@ -50,18 +64,28 @@ export async function openMapsTo(
   const name = encodeURIComponent(label || 'Mağaza');
   const { latitude, longitude } = dest;
   const query = `${latitude},${longitude}`;
+  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      window.open(webUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    await Linking.openURL(webUrl);
+    return;
+  }
 
   const candidates =
     Platform.OS === 'ios'
       ? [
           `maps:0,0?q=${name}@${query}`,
           `http://maps.apple.com/?daddr=${query}&q=${name}`,
-          `https://www.google.com/maps/dir/?api=1&destination=${query}`,
+          webUrl,
         ]
       : [
           `geo:${query}?q=${query}(${name})`,
           `google.navigation:q=${query}`,
-          `https://www.google.com/maps/dir/?api=1&destination=${query}`,
+          webUrl,
           `https://www.google.com/maps/search/?api=1&query=${query}`,
         ];
 
