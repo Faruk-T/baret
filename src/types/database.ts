@@ -16,6 +16,11 @@ export type DeliveryOption = 'kargo' | 'gel_al' | 'aracla_teslim';
 
 export type AdminRole = 'super' | 'support' | 'finance';
 
+export type BulkPriceTier = {
+  min_qty: number;
+  unit_price: number;
+};
+
 /** Use `type` (not `interface`) so rows satisfy postgrest `Record<string, unknown>`. */
 export type User = {
   id: string;
@@ -25,6 +30,9 @@ export type User = {
   role: UserRole;
   admin_role?: AdminRole | null;
   avatar_url: string | null;
+  company_name?: string | null;
+  tax_office?: string | null;
+  tax_number?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -130,6 +138,13 @@ export type Product = {
   delivery_options: DeliveryOption[];
   expiry_date: string | null;
   is_active: boolean;
+  category?: string | null;
+  unit?: string;
+  min_order_qty?: number;
+  bulk_pricing?: BulkPriceTier[] | null;
+  sku?: string | null;
+  brand?: string | null;
+  vat_rate?: number;
   created_at: string;
   updated_at: string;
 };
@@ -214,6 +229,64 @@ export type PlatformReport = {
   updated_at: string;
 };
 
+export type BuyerSite = {
+  id: string;
+  user_id: string;
+  name: string;
+  city: string;
+  district: string | null;
+  address: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  logistics_note: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RfqLineItem = {
+  name: string;
+  category?: string;
+  quantity: number;
+  unit: string;
+  spec?: string;
+};
+
+export type RfqRequestStatus = 'open' | 'quoted' | 'accepted' | 'closed';
+
+export type RfqRequest = {
+  id: string;
+  buyer_id: string;
+  title: string;
+  city: string;
+  district: string | null;
+  delivery_address: string;
+  delivery_option: DeliveryOption;
+  needed_by: string | null;
+  notes: string | null;
+  items: RfqLineItem[];
+  status: RfqRequestStatus;
+  accepted_quote_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RfqQuoteStatus = 'pending' | 'accepted' | 'rejected';
+
+export type RfqQuote = {
+  id: string;
+  rfq_id: string;
+  store_id: string;
+  total_amount: number;
+  delivery_days: number;
+  valid_until: string | null;
+  note: string | null;
+  line_prices: Array<{ item_index: number; unit_price: number; line_total: number }>;
+  status: RfqQuoteStatus;
+  created_at: string;
+  updated_at: string;
+};
+
 /** Supabase `Database` shape for typed client queries (postgrest-js GenericTable). */
 export type Database = {
   public: {
@@ -227,6 +300,9 @@ export type Database = {
           phone?: string | null;
           role?: UserRole;
           avatar_url?: string | null;
+          company_name?: string | null;
+          tax_office?: string | null;
+          tax_number?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -397,6 +473,13 @@ export type Database = {
           delivery_options?: DeliveryOption[];
           expiry_date?: string | null;
           is_active?: boolean;
+          category?: string | null;
+          unit?: string;
+          min_order_qty?: number;
+          bulk_pricing?: BulkPriceTier[] | null;
+          sku?: string | null;
+          brand?: string | null;
+          vat_rate?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -553,6 +636,79 @@ export type Database = {
         Update: Partial<Omit<PlatformReport, 'id'>>;
         Relationships: [];
       };
+      buyer_sites: {
+        Row: BuyerSite;
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          city: string;
+          district?: string | null;
+          address: string;
+          contact_name?: string | null;
+          contact_phone?: string | null;
+          logistics_note?: string | null;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<BuyerSite, 'id'>>;
+        Relationships: [];
+      };
+      rfq_requests: {
+        Row: RfqRequest;
+        Insert: {
+          id?: string;
+          buyer_id: string;
+          title: string;
+          city: string;
+          district?: string | null;
+          delivery_address: string;
+          delivery_option?: DeliveryOption;
+          needed_by?: string | null;
+          notes?: string | null;
+          items?: RfqLineItem[];
+          status?: RfqRequestStatus;
+          accepted_quote_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<RfqRequest, 'id'>>;
+        Relationships: [];
+      };
+      rfq_quotes: {
+        Row: RfqQuote;
+        Insert: {
+          id?: string;
+          rfq_id: string;
+          store_id: string;
+          total_amount: number;
+          delivery_days?: number;
+          valid_until?: string | null;
+          note?: string | null;
+          line_prices?: Array<{ item_index: number; unit_price: number; line_total: number }>;
+          status?: RfqQuoteStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<RfqQuote, 'id'>>;
+        Relationships: [
+          {
+            foreignKeyName: 'rfq_quotes_rfq_id_fkey';
+            columns: ['rfq_id'];
+            isOneToOne: false;
+            referencedRelation: 'rfq_requests';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'rfq_quotes_store_id_fkey';
+            columns: ['store_id'];
+            isOneToOne: false;
+            referencedRelation: 'stores';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -601,6 +757,10 @@ export type Database = {
       get_order_pickup_code: {
         Args: { p_order_id: string };
         Returns: string | null;
+      };
+      delete_my_account: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
       };
     };
     CompositeTypes: {
