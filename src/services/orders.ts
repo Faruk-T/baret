@@ -1,5 +1,6 @@
 import type { CartItem } from '../context/CartContext';
 import type { DeliveryOption, Order, OrderStatus } from '../types/database';
+import { resolveEffectiveUnitPrice } from '../utils/pricing';
 import { supabase } from './supabase';
 import { notifyBuyerOrderStatus } from './adminOps';
 
@@ -59,11 +60,11 @@ export async function createOrdersFromCart(input: CheckoutInput): Promise<Order[
     throw new Error('Bu teslimat için adres gerekli.');
   }
 
-  // Re-validate live price/stock (server also overwrites price)
+  // Re-validate live price/stock (server also computes bulk tier price if migrated)
   const productIds = items.map((i) => i.productId);
   const { data: liveProducts, error: liveError } = await supabase
     .from('products')
-    .select('id, price, stock, is_active, store_id')
+    .select('*')
     .in('id', productIds);
   if (liveError) throw liveError;
   const byId = new Map((liveProducts ?? []).map((p) => [p.id, p]));
@@ -80,12 +81,15 @@ export async function createOrdersFromCart(input: CheckoutInput): Promise<Order[
     }
   }
 
-  // Schema: one orders row per product line (no order_items table yet).
-  // unit_price is overwritten by DB trigger from products.price
+  // Schema: one orders row per product line.
   const rows = items.map((item) => {
     const live = byId.get(item.productId)!;
-    const unitPrice = Number(live.price);
     const quantity = item.quantity;
+    const unitPrice = resolveEffectiveUnitPrice(
+      Number(live.price),
+      quantity,
+      live.bulk_pricing ?? item.bulkPricing
+    );
     return {
       buyer_id: buyerId,
       store_id: item.storeId,

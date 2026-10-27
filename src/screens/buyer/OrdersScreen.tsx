@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { OrderProgressStepper } from '../../components/buyer/OrderProgressStepper';
 import { OrderReviewBlock } from '../../components/buyer/OrderReviewBlock';
 import { OrderStoreContactCard } from '../../components/buyer/OrderStoreContactCard';
+import { WebPortalFooter } from '../../components/layout/WebPortalFooter';
+import { WebPortalHeader } from '../../components/layout/WebPortalHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { OrderStatusChip } from '../../components/ui/OrderStatusChip';
 import { UiCard } from '../../components/ui/UiCard';
@@ -26,6 +29,7 @@ import {
   ORDER_STATUS_HINTS,
 } from '../../constants/enums';
 import { useAuth } from '../../context/AuthContext';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import {
   cancelBuyerOrder,
   listBuyerOrders,
@@ -39,16 +43,25 @@ import { listReviewsForOrders } from '../../services/reviews';
 import type { Review } from '../../types/database';
 import type { BuyerTabParamList } from '../../types/navigation.types';
 import { canRevealStoreContact } from '../../utils/contactFilter';
+import { usePageSeo } from '../../utils/seo';
 import { ui } from '../../theme/ui';
 
 export function OrdersScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<BuyerTabParamList>>();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const { isDesktop } = useResponsiveLayout();
   const [orders, setOrders] = useState<OrderWithProduct[]>([]);
   const [reviewsByOrder, setReviewsByOrder] = useState<Record<string, Review>>({});
   const [tab, setTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  usePageSeo({
+    title: 'Siparişlerim & İrsaliye Takibi | Baret Yapı Tedarik',
+    description:
+      'Şantiye siparişlerinizi, güvenli teslimat PIN kodlarınızı ve irsaliye özetlerinizi takip edin.',
+    canonicalPath: '/orders',
+  });
 
   const activeOrders = useMemo(
     () => orders.filter((o) => ['pending', 'preparing', 'shipped'].includes(o.status)),
@@ -128,7 +141,7 @@ export function OrdersScreen() {
 
     Alert.alert(
       'Şikayet et',
-      'Neden bildiriyorsun? Platform dışı telefon / WhatsApp teklifleri komisyon kaçağıdır.',
+      'Neden bildiriyorsun? Platform dışı telefon / WhatsApp teklifleri kullanım kurallarına aykırıdır.',
       [
         { text: 'Vazgeç', style: 'cancel' },
         {
@@ -167,232 +180,352 @@ export function OrdersScreen() {
         'Hata',
         error instanceof Error
           ? error.message
-          : 'Şikayet gönderilemedi. anti-leakage SQL kuruldu mu?'
+          : 'Şikayet gönderilemedi.'
       );
     }
   };
 
+  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+    const parent = navigation.getParent() as any;
+    if (mode === 'register') {
+      parent?.navigate('Auth', { screen: 'RoleSelect' });
+    } else {
+      parent?.navigate('Auth');
+    }
+  };
+
+  const handleNavigatePortalTab = (
+    targetTab: 'catalog' | 'quick_order' | 'rfq' | 'orders' | 'profile'
+  ) => {
+    if (targetTab === 'catalog' || targetTab === 'quick_order') {
+      navigation.navigate('Home');
+    } else if (targetTab === 'rfq') {
+      navigation.navigate('Rfq');
+    } else if (targetTab === 'profile') {
+      navigation.navigate('Profile');
+    }
+  };
+
+  const desktopHeader = isDesktop ? (
+    <WebPortalHeader
+      activeTab="orders"
+      onSelectTab={handleNavigatePortalTab}
+      onOpenCart={() => navigation.navigate('Cart')}
+      onOpenAuth={openAuthModal}
+    />
+  ) : null;
+
+  if (!session || !user) {
+    return (
+      <View className="flex-1 bg-zinc-50">
+        {desktopHeader}
+        <ScrollView contentContainerClassName="flex-grow justify-between">
+          <View className="py-12">
+            <EmptyState
+              icon="receipt-outline"
+              title="Siparişlerinizi görmek için giriş yapın"
+              description="Şantiye siparişlerinizi, teslimat kodlarınızı ve irsaliye özetlerinizi takip etmek için hesabınıza giriş yapın."
+              actionLabel="Giriş Yap / Kayıt Ol"
+              onAction={() => openAuthModal('login')}
+            />
+          </View>
+          {isDesktop ? (
+            <WebPortalFooter
+              onNavigateTab={handleNavigatePortalTab}
+              onOpenAuth={openAuthModal}
+            />
+          ) : null}
+        </ScrollView>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
-        <ActivityIndicator color={ui.brand} />
+      <View className="flex-1 bg-zinc-50">
+        {desktopHeader}
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={ui.brand} />
+        </View>
       </View>
     );
   }
 
   if (orders.length === 0) {
     return (
-      <View className="flex-1 bg-[#FFF8F3]">
-        <EmptyState
-          icon="receipt-outline"
-          title="Henüz sipariş yok"
-          description="Sepetten checkout yapınca siparişlerin burada renkli durum etiketleriyle listelenir."
-          actionLabel="Alışverişe git"
-          onAction={() => navigation.navigate('Home')}
-        />
+      <View className="flex-1 bg-zinc-50">
+        {desktopHeader}
+        <ScrollView contentContainerClassName="flex-grow justify-between">
+          <View className="py-12">
+            <EmptyState
+              icon="receipt-outline"
+              title="Henüz sipariş yok"
+              description="Sepetten sipariş oluşturduğunuzda tüm teslimat ve irsaliye adımları burada listelenir."
+              actionLabel="Kataloğa Git"
+              onAction={() => navigation.navigate('Home')}
+            />
+          </View>
+          {isDesktop ? (
+            <WebPortalFooter
+              onNavigateTab={handleNavigatePortalTab}
+              onOpenAuth={openAuthModal}
+            />
+          ) : null}
+        </ScrollView>
       </View>
     );
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-[#FFF8F3]"
-      data={displayedOrders}
-      keyExtractor={(item) => item.id}
-      contentContainerClassName="px-4 py-4"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            void load();
-          }}
-          tintColor={ui.brand}
-        />
-      }
-      ListHeaderComponent={
-        <View className="mb-3">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-            <Pressable
-              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
-                tab === 'all' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
-              }`}
-              onPress={() => setTab('all')}
-            >
-              <Text className={`text-xs font-bold ${tab === 'all' ? 'text-white' : 'text-stone-700'}`}>
-                Tümü ({orders.length})
+    <View className="flex-1 bg-zinc-50">
+      {desktopHeader}
+      <FlatList
+        className="flex-1"
+        data={displayedOrders}
+        keyExtractor={(item) => item.id}
+        contentContainerClassName="px-4 py-6"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load();
+            }}
+            tintColor={ui.brand}
+          />
+        }
+        ListHeaderComponent={
+          <View
+            style={{ maxWidth: 960, width: '100%', alignSelf: 'center' }}
+            className="mb-4"
+          >
+            <View className="mb-4">
+              <Text className="text-xl font-bold text-zinc-900">
+                Siparişlerim & İrsaliye Takibi
               </Text>
-            </Pressable>
-
-            <Pressable
-              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
-                tab === 'active' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
-              }`}
-              onPress={() => setTab('active')}
-            >
-              <Text className={`text-xs font-bold ${tab === 'active' ? 'text-white' : 'text-stone-700'}`}>
-                Aktif ({activeOrders.length})
-              </Text>
-            </Pressable>
-
-            <Pressable
-              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
-                tab === 'delivered' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
-              }`}
-              onPress={() => setTab('delivered')}
-            >
-              <Text className={`text-xs font-bold ${tab === 'delivered' ? 'text-white' : 'text-stone-700'}`}>
-                Teslim Edilen ({deliveredOrders.length})
-              </Text>
-            </Pressable>
-
-            <Pressable
-              className={`mr-2 rounded-full px-3.5 py-1.5 border ${
-                tab === 'cancelled' ? 'border-brand bg-brand' : 'border-stone-200 bg-white'
-              }`}
-              onPress={() => setTab('cancelled')}
-            >
-              <Text className={`text-xs font-bold ${tab === 'cancelled' ? 'text-white' : 'text-stone-700'}`}>
-                İptal ({cancelledOrders.length})
-              </Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-      }
-      ListEmptyComponent={
-        <View className="my-8 items-center justify-center p-4">
-          <Ionicons name="receipt-outline" size={40} color="#d6d3d1" />
-          <Text className="mt-2 text-sm font-bold text-stone-700">
-            {tab === 'active'
-              ? 'Aktif sipariş bulunmuyor.'
-              : tab === 'delivered'
-              ? 'Henüz teslim edilmiş siparişiniz yok.'
-              : tab === 'cancelled'
-              ? 'İptal edilmiş siparişiniz yok.'
-              : 'Henüz sipariş bulunmuyor.'}
-          </Text>
-        </View>
-      }
-      renderItem={({ item }) => (
-        <UiCard className="mb-3" padded={false}>
-          <View className="p-4">
-            <View className="mb-3 flex-row items-start">
-              {item.products?.image_url ? (
-                <Image
-                  source={{ uri: item.products.image_url }}
-                  className="mr-3 h-16 w-16 rounded-xl bg-stone-100"
-                />
-              ) : (
-                <View className="mr-3 h-16 w-16 items-center justify-center rounded-xl bg-orange-50">
-                  <Text className="text-xs text-brand">Görsel</Text>
-                </View>
-              )}
-              <View className="flex-1">
-                <View className="mb-1 flex-row items-start justify-between gap-2">
-                  <Text
-                    className="flex-1 text-base font-bold text-stone-900"
-                    numberOfLines={2}
-                  >
-                    {item.products?.name ?? 'Ürün'}
-                  </Text>
-                  <OrderStatusChip status={item.status} />
-                </View>
-                <Text className="text-sm text-stone-500">
-                  {item.stores?.name ?? 'Mağaza'}
-                </Text>
-                <Text className="mt-1 text-base font-bold text-brand">
-                  ₺
-                  {Number(item.total_amount).toLocaleString('tr-TR', {
-                    minimumFractionDigits: 2,
-                  })}{' '}
-                  · {item.quantity} adet
-                </Text>
-              </View>
-            </View>
-            <Text className="mb-1 text-xs text-stone-500">
-              {DELIVERY_OPTION_LABELS[item.delivery_option]}
-            </Text>
-            {item.delivery_address ? (
-              <Text className="mb-2 text-xs text-stone-500" numberOfLines={2}>
-                {item.delivery_address}
-              </Text>
-            ) : null}
-            <Text className="text-xs text-stone-400">
-              {new Date(item.created_at).toLocaleString('tr-TR')}
-            </Text>
-
-            {/* Visual Order Stepper */}
-            <OrderProgressStepper
-              status={item.status}
-              deliveryOption={item.delivery_option}
-            />
-
-            <View className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
-              <Text className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                Şimdi ne olacak?
-              </Text>
-              <Text className="mt-1 text-xs leading-4 text-stone-600">
-                {ORDER_STATUS_HINTS[item.status]}
+              <Text className="text-xs text-zinc-500 mt-0.5">
+                Şantiye sevkiyat durumlarını ve güvenli teslimat PIN kodlarınızı buradan yönetebilirsiniz
               </Text>
             </View>
 
-            <OrderStoreContactCard
-              orderId={item.id}
-              unlocked={canRevealStoreContact(item.status)}
-            />
-
-            {item.status === 'shipped' && item.pickup_code ? (
-              <View className="mt-3 rounded-2xl border border-brand bg-orange-50 p-4">
-                <Text className="mb-1 text-xs font-bold uppercase tracking-wide text-brand">
-                  Teslim kodun
-                </Text>
-                <Text className="text-center font-mono text-3xl font-bold tracking-[6px] text-stone-900">
-                  {item.pickup_code}
-                </Text>
+            <View className="flex-row items-center justify-between flex-wrap gap-2">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                 <Pressable
-                  className="mt-3 flex-row items-center justify-center rounded-xl bg-brand py-2.5"
-                  onPress={() => {
-                    void Clipboard.setStringAsync(item.pickup_code ?? '').then(() => {
-                      Alert.alert('Kopyalandı', 'Teslim kodu panoya alındı.');
-                    });
-                  }}
+                  className={`mr-2 rounded-lg px-3.5 py-2 border ${
+                    tab === 'all' ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-200 bg-white'
+                  }`}
+                  onPress={() => setTab('all')}
                 >
-                  <Ionicons name="copy-outline" size={16} color="#fff" />
-                  <Text className="ml-1.5 text-sm font-bold text-white">Kodu kopyala</Text>
+                  <Text className={`text-xs font-semibold ${tab === 'all' ? 'text-white' : 'text-zinc-700'}`}>
+                    Tümü ({orders.length})
+                  </Text>
                 </Pressable>
-                <Text className="mt-2 text-center text-xs leading-4 text-stone-600">
-                  {item.delivery_option === 'gel_al'
-                    ? 'Mağazaya gittiğinde bu kodu satıcıya göster. Okutulunca sipariş teslim edildi olur.'
-                    : 'Teslimatta bu kodu söyle / göster. Satıcı doğrulayınca sipariş tamamlanır.'}
-                </Text>
-              </View>
-            ) : null}
 
-            <View className="mt-3 flex-row flex-wrap gap-3">
-              {item.status === 'pending' ? (
-                <Pressable onPress={() => onCancel(item)}>
-                  <Text className="text-sm font-bold text-red-600">İptal et</Text>
+                <Pressable
+                  className={`mr-2 rounded-lg px-3.5 py-2 border ${
+                    tab === 'active' ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-200 bg-white'
+                  }`}
+                  onPress={() => setTab('active')}
+                >
+                  <Text className={`text-xs font-semibold ${tab === 'active' ? 'text-white' : 'text-zinc-700'}`}>
+                    Aktif ({activeOrders.length})
+                  </Text>
                 </Pressable>
-              ) : null}
-              {item.status !== 'cancelled' ? (
-                <Pressable onPress={() => onReport(item)}>
-                  <Text className="text-sm font-bold text-stone-500">Şikayet et</Text>
+
+                <Pressable
+                  className={`mr-2 rounded-lg px-3.5 py-2 border ${
+                    tab === 'delivered' ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-200 bg-white'
+                  }`}
+                  onPress={() => setTab('delivered')}
+                >
+                  <Text className={`text-xs font-semibold ${tab === 'delivered' ? 'text-white' : 'text-zinc-700'}`}>
+                    Teslim Edilen ({deliveredOrders.length})
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  className={`mr-2 rounded-lg px-3.5 py-2 border ${
+                    tab === 'cancelled' ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-200 bg-white'
+                  }`}
+                  onPress={() => setTab('cancelled')}
+                >
+                  <Text className={`text-xs font-semibold ${tab === 'cancelled' ? 'text-white' : 'text-zinc-700'}`}>
+                    İptal ({cancelledOrders.length})
+                  </Text>
+                </Pressable>
+              </ScrollView>
+
+              {Platform.OS === 'web' ? (
+                <Pressable
+                  onPress={() => {
+                    if (typeof window !== 'undefined' && window.print) {
+                      window.print();
+                    }
+                  }}
+                  className="flex-row items-center rounded-lg border border-zinc-200 bg-white px-3.5 py-2"
+                >
+                  <Ionicons name="print-outline" size={15} color="#18181B" />
+                  <Text className="ml-1.5 text-xs font-semibold text-zinc-800">
+                    İrsaliye / Sipariş Özeti Yazdır
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
-
-            {item.status === 'delivered' && user ? (
-              <OrderReviewBlock
-                buyerId={user.id}
-                storeId={item.store_id}
-                orderId={item.id}
-                existing={reviewsByOrder[item.id] ?? null}
-                onSaved={() => void load()}
-              />
-            ) : null}
           </View>
-        </UiCard>
-      )}
-    />
+        }
+        ListEmptyComponent={
+          <View className="my-8 items-center justify-center p-4">
+            <Ionicons name="receipt-outline" size={40} color="#D4D4D8" />
+            <Text className="mt-2 text-sm font-semibold text-zinc-700">
+              {tab === 'active'
+                ? 'Aktif sipariş bulunmuyor.'
+                : tab === 'delivered'
+                ? 'Henüz teslim edilmiş siparişiniz yok.'
+                : tab === 'cancelled'
+                ? 'İptal edilmiş siparişiniz yok.'
+                : 'Henüz sipariş bulunmuyor.'}
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          isDesktop ? (
+            <View className="mt-8 -mx-4">
+              <WebPortalFooter
+                onNavigateTab={handleNavigatePortalTab}
+                onOpenAuth={openAuthModal}
+              />
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <View style={{ maxWidth: 960, width: '100%', alignSelf: 'center' }}>
+            <UiCard className="mb-3" padded={false}>
+              <View className="p-4">
+                <View className="mb-3 flex-row items-start">
+                  {item.products?.image_url ? (
+                    <Image
+                      source={{ uri: item.products.image_url }}
+                      className="mr-3 h-16 w-16 rounded-lg bg-zinc-100"
+                    />
+                  ) : (
+                    <View className="mr-3 h-16 w-16 items-center justify-center rounded-lg bg-zinc-100">
+                      <Text className="text-xs text-zinc-500">Görsel</Text>
+                    </View>
+                  )}
+                  <View className="flex-1">
+                    <View className="mb-1 flex-row items-start justify-between gap-2">
+                      <Text
+                        className="flex-1 text-base font-bold text-zinc-900"
+                        numberOfLines={2}
+                      >
+                        {item.products?.name ?? 'Ürün'}
+                      </Text>
+                      <OrderStatusChip status={item.status} />
+                    </View>
+                    <Text className="text-sm text-zinc-500">
+                      {item.stores?.name ?? 'Mağaza'}
+                    </Text>
+                    <Text className="mt-1 text-base font-bold text-zinc-900">
+                      ₺
+                      {Number(item.total_amount).toLocaleString('tr-TR', {
+                        minimumFractionDigits: 2,
+                      })}{' '}
+                      · {item.quantity} birim
+                    </Text>
+                  </View>
+                </View>
+                <Text className="mb-1 text-xs text-zinc-500">
+                  {DELIVERY_OPTION_LABELS[item.delivery_option]}
+                </Text>
+                {item.delivery_address ? (
+                  <Text className="mb-1 text-xs text-zinc-500" numberOfLines={2}>
+                    {item.delivery_address}
+                  </Text>
+                ) : null}
+                {item.notes ? (
+                  <Text className="mb-2 text-xs text-zinc-600" numberOfLines={2}>
+                    {item.notes}
+                  </Text>
+                ) : null}
+                <Text className="text-xs text-zinc-400">
+                  Sipariş No: #{item.id.slice(0, 8).toUpperCase()} ·{' '}
+                  {new Date(item.created_at).toLocaleString('tr-TR')}
+                </Text>
+
+                {/* Visual Order Stepper */}
+                <OrderProgressStepper
+                  status={item.status}
+                  deliveryOption={item.delivery_option}
+                />
+
+                <View className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+                  <Text className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+                    Şimdi ne olacak?
+                  </Text>
+                  <Text className="mt-1 text-xs leading-4 text-zinc-600">
+                    {ORDER_STATUS_HINTS[item.status]}
+                  </Text>
+                </View>
+
+                <OrderStoreContactCard
+                  orderId={item.id}
+                  unlocked={canRevealStoreContact(item.status)}
+                />
+
+                {item.status === 'shipped' && item.pickup_code ? (
+                  <View className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                    <Text className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+                      Güvenli Teslimat PIN Kodun
+                    </Text>
+                    <Text className="text-center font-mono text-3xl font-bold tracking-[6px] text-zinc-900">
+                      {item.pickup_code}
+                    </Text>
+                    <Pressable
+                      className="mt-3 flex-row items-center justify-center rounded-lg bg-zinc-900 py-2.5"
+                      onPress={() => {
+                        void Clipboard.setStringAsync(item.pickup_code ?? '').then(() => {
+                          Alert.alert('Kopyalandı', 'Teslim kodu panoya alındı.');
+                        });
+                      }}
+                    >
+                      <Ionicons name="copy-outline" size={16} color="#fff" />
+                      <Text className="ml-1.5 text-sm font-semibold text-white">Kodu kopyala</Text>
+                    </Pressable>
+                    <Text className="mt-2 text-center text-xs leading-4 text-zinc-600">
+                      {item.delivery_option === 'gel_al'
+                        ? 'Mağazaya gittiğinde bu kodu satıcıya göster. Okutulunca sipariş teslim edildi olur.'
+                        : 'Teslimatta bu kodu söyle / göster. Satıcı doğrulayınca sipariş tamamlanır.'}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <View className="mt-3 flex-row flex-wrap gap-3">
+                  {item.status === 'pending' ? (
+                    <Pressable onPress={() => onCancel(item)}>
+                      <Text className="text-sm font-semibold text-red-600">İptal et</Text>
+                    </Pressable>
+                  ) : null}
+                  {item.status !== 'cancelled' ? (
+                    <Pressable onPress={() => onReport(item)}>
+                      <Text className="text-sm font-semibold text-zinc-500">Şikayet et</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                {item.status === 'delivered' && user ? (
+                  <OrderReviewBlock
+                    buyerId={user.id}
+                    storeId={item.store_id}
+                    orderId={item.id}
+                    existing={reviewsByOrder[item.id] ?? null}
+                    onSaved={() => void load()}
+                  />
+                ) : null}
+              </View>
+            </UiCard>
+          </View>
+        )}
+      />
+    </View>
   );
 }

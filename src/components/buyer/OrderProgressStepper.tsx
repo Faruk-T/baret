@@ -53,7 +53,6 @@ export function OrderProgressStepper({ status, deliveryOption }: Props) {
         {STEPS.map((step, idx) => {
           const isCompleted = idx < currentIdx;
           const isCurrent = idx === currentIdx;
-          const isFuture = idx > currentIdx;
 
           // Customize third step text if gel_al
           let stepTitle = step.title;
