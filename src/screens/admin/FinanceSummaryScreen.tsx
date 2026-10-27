@@ -4,14 +4,13 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Share,
   Text,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getMonthlyFinance, type MonthFinance } from '../../services/adminOps';
-import { toCsv } from '../../utils/csv';
+import { exportCsvFile, toCsv } from '../../utils/csv';
 import { ui } from '../../theme/ui';
 
 function money(n: number): string {
@@ -56,7 +55,7 @@ export function FinanceSummaryScreen() {
         r.collectedAmount,
       ])
     );
-    void Share.share({ message: csv, title: 'baret-finans.csv' });
+    void exportCsvFile('baret-finans.csv', csv, 'baret-finans.csv');
   };
 
   if (loading) {
@@ -82,51 +81,53 @@ export function FinanceSummaryScreen() {
         />
       }
     >
-      <View className="mb-4 flex-row items-center justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="text-2xl font-bold text-stone-900">Finans özeti</Text>
-          <Text className="mt-1 text-sm text-stone-500">Son 6 ay · tahsilat dengesi</Text>
-        </View>
-        <Pressable
-          className="rounded-xl bg-brand px-3 py-2"
-          onPress={exportCsv}
-        >
-          <Text className="text-xs font-bold text-white">CSV</Text>
-        </Pressable>
-      </View>
-
-      {error ? <Text className="mb-3 text-sm text-red-600">{error}</Text> : null}
-
-      {rows.map((r) => (
-        <View
-          key={r.monthKey}
-          className="mb-3 rounded-3xl border border-stone-200 bg-white p-4"
-        >
-          <Text className="text-lg font-bold capitalize text-stone-900">
-            {r.label}
-          </Text>
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            <Pill label="Sipariş" value={String(r.orderCount)} />
-            <Pill label="İptal" value={`%${r.cancelRate}`} />
-            <Pill label="Ciro" value={money(r.grossAmount)} />
-            <Pill label="Komisyon" value={money(r.commissionAmount)} />
-            <Pill label="Bekleyen" value={money(r.unsettledAmount)} hot />
-            <Pill label="Alınan" value={money(r.collectedAmount)} ok />
+      <View style={{ maxWidth: 960, width: '100%', alignSelf: 'center' }}>
+        <View className="mb-4 flex-row items-center justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="text-2xl font-bold text-stone-900">Finans özeti</Text>
+            <Text className="mt-1 text-sm text-stone-500">Son 6 ay · tahsilat dengesi</Text>
           </View>
-          {r.topStores.length > 0 ? (
-            <View className="mt-3 border-t border-stone-100 pt-3">
-              <Text className="mb-1 text-xs font-bold uppercase text-stone-500">
-                Top satıcılar
-              </Text>
-              {r.topStores.map((s) => (
-                <Text key={s.storeId} className="text-sm text-stone-700">
-                  {s.name} · {money(s.commission)}
-                </Text>
-              ))}
-            </View>
-          ) : null}
+          <Pressable
+            className="rounded-xl bg-brand px-3.5 py-2"
+            onPress={exportCsv}
+          >
+            <Text className="text-xs font-bold text-white">CSV İndir</Text>
+          </Pressable>
         </View>
-      ))}
+
+        {error ? <Text className="mb-3 text-sm text-red-600">{error}</Text> : null}
+
+        {rows.map((r) => (
+          <View
+            key={r.monthKey}
+            className="mb-3 rounded-3xl border border-stone-200 bg-white p-4"
+          >
+            <Text className="text-lg font-bold capitalize text-stone-900">
+              {r.label}
+            </Text>
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              <Pill label="Sipariş" value={String(r.orderCount)} />
+              <Pill label="İptal" value={`%${r.cancelRate}`} />
+              <Pill label="Ciro" value={money(r.grossAmount)} />
+              <Pill label="Komisyon" value={money(r.commissionAmount)} />
+              <Pill label="Bekleyen" value={money(r.unsettledAmount)} hot />
+              <Pill label="Alınan" value={money(r.collectedAmount)} ok />
+            </View>
+            {r.topStores.length > 0 ? (
+              <View className="mt-3 border-t border-stone-100 pt-3">
+                <Text className="mb-1 text-xs font-bold uppercase text-stone-500">
+                  Top satıcılar
+                </Text>
+                {r.topStores.map((s) => (
+                  <Text key={s.storeId} className="text-sm text-stone-700">
+                    {s.name} · {money(s.commission)}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ))}
+      </View>
     </ScrollView>
   );
 }

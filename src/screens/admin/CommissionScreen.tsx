@@ -354,43 +354,6 @@ function Section({
   );
 }
 
-function TierCard({
-  badge,
-  color,
-  border,
-  title,
-  hint,
-  children,
-}: {
-  badge: string;
-  color: string;
-  border: string;
-  title: string;
-  hint: string;
-  children: ReactNode;
-}) {
-  return (
-    <View
-      className="mb-3 rounded-2xl border bg-white p-4"
-      style={{ borderColor: border, backgroundColor: '#fff' }}
-    >
-      <View className="mb-2 flex-row items-center gap-2">
-        <View
-          className="rounded-full px-2.5 py-1"
-          style={{ backgroundColor: color }}
-        >
-          <Text className="text-[10px] font-bold uppercase text-stone-800">
-            {badge}
-          </Text>
-        </View>
-        <Text className="flex-1 text-sm font-bold text-stone-900">{title}</Text>
-      </View>
-      <Text className="mb-3 text-xs text-stone-500">{hint}</Text>
-      {children}
-    </View>
-  );
-}
-
 function StatCard({
   label,
   value,

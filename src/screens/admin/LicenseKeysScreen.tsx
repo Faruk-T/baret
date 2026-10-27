@@ -11,9 +11,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { DatePickerField } from '../../components/ui/DatePickerField';
 import { useAuth } from '../../context/AuthContext';
 import {
   createLicenseKey,
@@ -34,7 +35,6 @@ export function LicenseKeysScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [expiresAt, setExpiresAt] = useState(() => addDays(new Date(), 30));
-  const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +61,16 @@ export function LicenseKeysScreen() {
     }, [load])
   );
 
+  const shareOrCopyKey = async (code: string, expiryLabel?: string) => {
+    const msg = `Baret satıcı lisansı${expiryLabel ? ` (bitiş: ${expiryLabel})` : ''}:\n${code}`;
+    if (Platform.OS === 'web') {
+      await Clipboard.setStringAsync(code);
+      Alert.alert('Kopyalandı', `Lisans anahtarı panoya kopyalandı:\n${code}`);
+      return;
+    }
+    await Share.share({ message: msg });
+  };
+
   const handleCreate = async () => {
     if (!user?.id) return;
     try {
@@ -74,11 +84,9 @@ export function LicenseKeysScreen() {
       const label = expiresAt.toLocaleDateString('tr-TR');
       Alert.alert('Anahtar oluşturuldu', created.code, [
         {
-          text: 'Paylaş',
+          text: Platform.OS === 'web' ? 'Kodu Kopyala' : 'Paylaş',
           onPress: () => {
-            void Share.share({
-              message: `Baret satıcı lisansı (bitiş: ${label}):\n${created.code}`,
-            });
+            void shareOrCopyKey(created.code, label);
           },
         },
         { text: 'Tamam' },
@@ -118,7 +126,7 @@ export function LicenseKeysScreen() {
         />
       }
       ListHeaderComponent={
-        <View className="mb-4">
+        <View style={{ maxWidth: 860, width: '100%', alignSelf: 'center' }} className="mb-4">
           <View className="mb-4 rounded-2xl border border-stone-200 bg-white p-4">
             <Text className="mb-1 text-base font-semibold text-stone-900">
               Yeni lisans anahtarı
@@ -128,36 +136,14 @@ export function LicenseKeysScreen() {
               geçerli olur; sonrasında yeni anahtar olmadan panele giremez.
             </Text>
 
-            <Text className="mb-2 text-xs font-semibold uppercase text-stone-500">
-              Bitiş tarihi
-            </Text>
-            <Pressable
-              className="mb-2 rounded-xl border border-stone-200 bg-[#FFF8F3] px-3 py-3"
-              onPress={() => setShowPicker(true)}
-            >
-              <Text className="text-base font-bold text-stone-900">
-                {expiresAt.toLocaleDateString('tr-TR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </Text>
-            </Pressable>
+            <DatePickerField
+              label="Bitiş tarihi"
+              value={expiresAt}
+              minimumDate={addDays(new Date(), 1)}
+              onChange={setExpiresAt}
+            />
 
-            {showPicker ? (
-              <DateTimePicker
-                value={expiresAt}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                minimumDate={addDays(new Date(), 1)}
-                onChange={(_, date) => {
-                  if (Platform.OS === 'android') setShowPicker(false);
-                  if (date) setExpiresAt(date);
-                }}
-              />
-            ) : null}
-
-            <Text className="mb-1 mt-2 text-xs font-semibold uppercase text-stone-500">
+            <Text className="mb-1 mt-3 text-xs font-semibold uppercase text-stone-500">
               Not (opsiyonel)
             </Text>
             <TextInput
@@ -195,7 +181,10 @@ export function LicenseKeysScreen() {
       renderItem={({ item }) => {
         const used = Boolean(item.redeemed_at);
         return (
-          <View className="mb-3 rounded-2xl border border-stone-200 bg-white p-4">
+          <View
+            style={{ maxWidth: 860, width: '100%', alignSelf: 'center' }}
+            className="mb-3 rounded-2xl border border-stone-200 bg-white p-4"
+          >
             <View className="mb-2 flex-row items-start justify-between">
               <Text
                 className="flex-1 pr-2 font-mono text-base font-bold text-stone-900"
@@ -230,16 +219,17 @@ export function LicenseKeysScreen() {
               <Pressable
                 className="mt-3 items-center rounded-xl border border-brand bg-orange-50 py-2.5"
                 onPress={() =>
-                  void Share.share({
-                    message: `Baret satıcı lisansı${
-                      item.expires_at
-                        ? ` (bitiş: ${new Date(item.expires_at).toLocaleDateString('tr-TR')})`
-                        : ''
-                    }:\n${item.code}`,
-                  })
+                  void shareOrCopyKey(
+                    item.code,
+                    item.expires_at
+                      ? new Date(item.expires_at).toLocaleDateString('tr-TR')
+                      : undefined
+                  )
                 }
               >
-                <Text className="text-sm font-semibold text-brand">Paylaş</Text>
+                <Text className="text-sm font-semibold text-brand">
+                  {Platform.OS === 'web' ? 'Kodu Kopyala' : 'Paylaş'}
+                </Text>
               </Pressable>
             ) : null}
           </View>

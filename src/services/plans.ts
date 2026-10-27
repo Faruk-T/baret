@@ -130,6 +130,12 @@ export async function assignStoreSubscription(input: {
 
   if (error) throw error;
 
+  // Also sync stores.license_expires_at so approved stores become visible in buyer catalog immediately
+  await supabase
+    .from('stores')
+    .update({ license_expires_at: ends.toISOString() })
+    .eq('id', input.storeId);
+
   void writeAuditLog({
     actorId: input.adminId,
     action: 'assign_plan',

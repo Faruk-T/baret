@@ -11,8 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -23,17 +22,13 @@ import {
   type AdminSubscriptionItem,
 } from '../../services/plans';
 import type { SellerPlan } from '../../types/database';
-import type { AdminStackParamList } from '../../types/navigation.types';
 import { ui } from '../../theme/ui';
-
-type Nav = NativeStackNavigationProp<AdminStackParamList, 'AdminSubscriptions'>;
 
 function money(val: number): string {
   return `₺${val.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`;
 }
 
 export function AdminSubscriptionsScreen() {
-  const navigation = useNavigation<Nav>();
   const { user } = useAuth();
 
   const [items, setItems] = useState<AdminSubscriptionItem[]>([]);
@@ -590,3 +585,4 @@ function PlanBadge({ planCode, planName }: { planCode: string; planName: string 
     </View>
   );
 }
+
