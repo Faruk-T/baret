@@ -29,6 +29,7 @@ export type BuyerProfileStackParamList = {
 export type BuyerTabParamList = {
   Home: undefined;
   Cart: undefined;
+  Rfq: undefined;
   Orders: undefined;
   Profile: undefined;
 };
@@ -36,6 +37,7 @@ export type BuyerTabParamList = {
 export type SellerTabParamList = {
   Dashboard: undefined;
   Products: undefined;
+  RfqPool: undefined;
   Orders: undefined;
   StoreSettings: undefined;
 };
@@ -74,8 +76,8 @@ export type AdminStackParamList = {
 } & AboutStackParamList;
 
 export type RootStackParamList = {
-  Auth: undefined;
   Buyer: undefined;
+  Auth: { screen?: keyof AuthStackParamList; params?: any } | undefined;
   Seller: undefined;
   Admin: undefined;
 };

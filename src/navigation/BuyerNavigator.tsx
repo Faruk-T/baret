@@ -7,7 +7,9 @@ import { BuyerProfileNavigator } from './BuyerProfileNavigator';
 import { tabIcon } from './tabIcons';
 import { getTabBarScreenOptions } from './tabBarOptions';
 import { OrdersScreen } from '../screens/buyer/OrdersScreen';
+import { RfqScreen } from '../screens/buyer/RfqScreen';
 import { useCart } from '../context/CartContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import type { BuyerTabParamList } from '../types/navigation.types';
 
 const Tab = createBottomTabNavigator<BuyerTabParamList>();
@@ -15,16 +17,34 @@ const Tab = createBottomTabNavigator<BuyerTabParamList>();
 export function BuyerNavigator() {
   const { itemCount } = useCart();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsiveLayout();
+  const baseOptions = getTabBarScreenOptions(insets);
 
   return (
-    <Tab.Navigator screenOptions={getTabBarScreenOptions(insets)}>
+    <Tab.Navigator
+      tabBar={isDesktop ? () => null : undefined}
+      screenOptions={{
+        ...baseOptions,
+        headerShown: isDesktop ? false : baseOptions.headerShown,
+      }}
+    >
       <Tab.Screen
         name="Home"
         component={BuyerHomeNavigator}
         options={{
-          title: 'Ana Sayfa',
+          title: 'Katalog',
           headerShown: false,
           tabBarIcon: tabIcon('home-outline', 'home'),
+        }}
+      />
+      <Tab.Screen
+        name="Rfq"
+        component={RfqScreen}
+        options={{
+          title: 'İhale / Teklif',
+          headerTitle: 'Şantiye İhalesi (Teklif İste)',
+          headerShown: !isDesktop,
+          tabBarIcon: tabIcon('document-text-outline', 'document-text'),
         }}
       />
       <Tab.Screen
@@ -42,6 +62,7 @@ export function BuyerNavigator() {
         component={OrdersScreen}
         options={{
           title: 'Siparişlerim',
+          headerShown: !isDesktop,
           tabBarIcon: tabIcon('receipt-outline', 'receipt'),
         }}
       />

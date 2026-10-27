@@ -9,9 +9,11 @@ import { ContactScreen } from '../screens/about/ContactScreen';
 import { LicensesScreen } from '../screens/about/LicensesScreen';
 import { NotificationBellButton } from '../components/notifications/NotificationBellButton';
 import { useAuth } from '../context/AuthContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { SellerDashboardScreen } from '../screens/seller/SellerDashboardScreen';
 import { SellerNotificationsScreen } from '../screens/seller/SellerNotificationsScreen';
 import { SellerOrdersScreen } from '../screens/seller/SellerOrdersScreen';
+import { SellerRfqPoolScreen } from '../screens/seller/SellerRfqPoolScreen';
 import { StoreSettingsScreen } from '../screens/seller/StoreSettingsScreen';
 import { countUnreadNotifications } from '../services/adminOps';
 import {
@@ -36,6 +38,7 @@ const LockedTab = createBottomTabNavigator();
 function SellerTabs() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsiveLayout();
   const [pendingCount, setPendingCount] = useState(0);
   const [unread, setUnread] = useState(0);
   const [licenseOk, setLicenseOk] = useState<boolean | null>(null);
@@ -87,16 +90,24 @@ function SellerTabs() {
 
   if (licenseOk === null) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#FFF8F3]">
+      <View className="flex-1 items-center justify-center bg-[#FAFAFA]">
         <ActivityIndicator color={ui.brand} />
       </View>
     );
   }
 
+  const baseTabOptions = getTabBarScreenOptions(insets);
+
   // License expired: Mağaza + (açık sipariş varsa) Siparişler — fulfillment kilitlenmesin
   if (hasStore && !licenseOk) {
     return (
-      <LockedTab.Navigator screenOptions={getTabBarScreenOptions(insets)}>
+      <LockedTab.Navigator
+        tabBar={isDesktop ? () => null : undefined}
+        screenOptions={{
+          ...baseTabOptions,
+          headerShown: isDesktop ? false : baseTabOptions.headerShown,
+        }}
+      >
         {openFulfillment ? (
           <LockedTab.Screen
             name="Orders"
@@ -105,7 +116,7 @@ function SellerTabs() {
               title: 'Siparişler',
               tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
               tabBarBadgeStyle: {
-                backgroundColor: '#FF6B00',
+                backgroundColor: '#18181B',
                 color: '#fff',
                 fontSize: 11,
                 fontWeight: '700',
@@ -119,7 +130,7 @@ function SellerTabs() {
           name="StoreSettings"
           component={StoreSettingsScreen}
           options={{
-            title: 'Lisans gerekli',
+            title: 'Mağaza Yetkisi',
             tabBarIcon: tabIcon('key-outline', 'key'),
           }}
           listeners={{ focus: () => void refresh() }}
@@ -130,7 +141,11 @@ function SellerTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={getTabBarScreenOptions(insets)}
+      tabBar={isDesktop ? () => null : undefined}
+      screenOptions={{
+        ...baseTabOptions,
+        headerShown: isDesktop ? false : baseTabOptions.headerShown,
+      }}
       screenListeners={{
         focus: () => {
           void refresh();
@@ -147,7 +162,7 @@ function SellerTabs() {
             <NotificationBellButton
               unread={unread}
               onPress={() =>
-                navigation.getParent()?.navigate('Notifications' as never)
+                (navigation.getParent() as any)?.navigate('Notifications')
               }
             />
           ),
@@ -163,13 +178,22 @@ function SellerTabs() {
         }}
       />
       <Tab.Screen
+        name="RfqPool"
+        component={SellerRfqPoolScreen}
+        options={{
+          title: 'İhaleler',
+          headerTitle: 'Şantiye İhale Havuzu (RFQ)',
+          tabBarIcon: tabIcon('document-text-outline', 'document-text'),
+        }}
+      />
+      <Tab.Screen
         name="Orders"
         component={SellerOrdersScreen}
         options={({ navigation }) => ({
           title: 'Siparişler',
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarBadgeStyle: {
-            backgroundColor: '#FF6B00',
+            backgroundColor: '#18181B',
             color: '#fff',
             fontSize: 11,
             fontWeight: '700',
@@ -179,7 +203,7 @@ function SellerTabs() {
             <NotificationBellButton
               unread={unread}
               onPress={() =>
-                navigation.getParent()?.navigate('Notifications' as never)
+                (navigation.getParent() as any)?.navigate('Notifications')
               }
             />
           ),
@@ -201,11 +225,11 @@ export function SellerNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerTintColor: '#FF6B00',
-        headerStyle: { backgroundColor: '#FFF8F3' },
+        headerTintColor: '#18181B',
+        headerStyle: { backgroundColor: '#FFFFFF' },
         headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700', color: '#1C1917' },
-        contentStyle: { backgroundColor: '#FFF8F3' },
+        headerTitleStyle: { fontWeight: '700', color: '#18181B' },
+        contentStyle: { backgroundColor: '#FAFAFA' },
       }}
     >
       <Stack.Screen
@@ -222,11 +246,11 @@ export function SellerNavigator() {
         name="About"
         component={AboutScreen}
         options={{
-          title: 'Credits',
-          headerStyle: { backgroundColor: '#0B1220' },
-          headerTintColor: '#FF6B00',
+          title: 'Hakkında',
+          headerStyle: { backgroundColor: '#18181B' },
+          headerTintColor: '#F59E0B',
           headerTitleStyle: { fontWeight: '700', color: '#fff' },
-          contentStyle: { backgroundColor: '#0B1220' },
+          contentStyle: { backgroundColor: '#18181B' },
         }}
       />
       <Stack.Screen

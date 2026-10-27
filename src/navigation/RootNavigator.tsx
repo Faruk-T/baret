@@ -1,5 +1,5 @@
-import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { ActivityIndicator, Platform, View } from 'react-native';
+import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,43 @@ import { BuyerNavigator } from './BuyerNavigator';
 import { SellerNavigator } from './SellerNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['baret://', 'https://baret.app', 'http://localhost:8081'],
+  config: {
+    screens: {
+      Buyer: {
+        screens: {
+          Home: {
+            screens: {
+              HomeList: '',
+              ProductDetail: 'urun/:productId',
+            },
+          },
+          Cart: {
+            screens: {
+              CartList: 'sepet',
+              Checkout: 'odeme',
+            },
+          },
+          Rfq: 'ihale-teklif',
+          Orders: 'siparislerim',
+          Profile: {
+            screens: {
+              ProfileHome: 'profil',
+              About: 'hakkinda',
+              Licenses: 'lisanslar',
+              Contact: 'iletisim',
+            },
+          },
+        },
+      },
+      Auth: 'hesap',
+      Seller: 'satici',
+      Admin: 'yonetim',
+    },
+  },
+};
 
 export function RootNavigator() {
   const { session, user, role, isLoading, isPasswordRecovery } = useAuth();
@@ -32,10 +69,26 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      linking={Platform.OS === 'web' ? linking : undefined}
+      documentTitle={{
+        formatter: (options) =>
+          options?.title
+            ? `${options.title} | Baret B2B Yapı & Nalbur Pazaryeri`
+            : 'Baret | İnşaat, Şantiye & Nalbur Pazaryeri',
+      }}
+    >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!session || !user ? (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <>
+            {/* Guest Mode enabled by default for Web SEO/conversion & Apple Guideline 5.1.1 */}
+            <Stack.Screen name="Buyer" component={BuyerNavigator} />
+            <Stack.Screen
+              name="Auth"
+              component={AuthNavigator}
+              options={{ presentation: 'card' }}
+            />
+          </>
         ) : role === 'seller' ? (
           <Stack.Screen name="Seller" component={SellerNavigator} />
         ) : role === 'admin' ? (
