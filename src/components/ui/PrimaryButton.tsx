@@ -1,5 +1,4 @@
-import { Pressable, Text, View, type PressableProps } from 'react-native';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, Text, type PressableProps } from 'react-native';
 
 import { ui } from '../../theme/ui';
 
@@ -21,9 +20,9 @@ export function PrimaryButton({
 
   const styles =
     variant === 'primary'
-      ? 'bg-brand'
+      ? 'bg-zinc-900'
       : variant === 'secondary'
-        ? 'border border-brand bg-orange-50'
+        ? 'border border-zinc-300 bg-white'
         : variant === 'danger'
           ? 'border border-red-200 bg-red-50'
           : 'bg-transparent';
@@ -33,11 +32,11 @@ export function PrimaryButton({
       ? 'text-white'
       : variant === 'danger'
         ? 'text-red-600'
-        : 'text-brand';
+        : 'text-zinc-900';
 
   return (
     <Pressable
-      className={`items-center rounded-2xl py-3.5 ${styles} ${
+      className={`items-center rounded-xl py-3 ${styles} ${
         isDisabled ? 'opacity-60' : ''
       } ${className ?? ''}`}
       disabled={isDisabled}
@@ -46,10 +45,10 @@ export function PrimaryButton({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? '#fff' : ui.brand}
+          color={variant === 'primary' ? '#fff' : ui.ink}
         />
       ) : (
-        <Text className={`text-base font-bold ${text}`}>{label}</Text>
+        <Text className={`text-sm font-semibold ${text}`}>{label}</Text>
       )}
     </Pressable>
   );

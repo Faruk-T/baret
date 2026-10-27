@@ -10,7 +10,7 @@ type Props = {
   compact?: boolean;
 };
 
-/** Brand-forward orange hero strip used on auth and hub screens. */
+/** Architectural charcoal hero header used on mobile/tablet hub & auth screens. */
 export function BrandHero({
   title,
   subtitle,
@@ -20,54 +20,32 @@ export function BrandHero({
 }: Props) {
   return (
     <LinearGradient
-      colors={['#FF6B00', '#E55F00', '#C2410C']}
+      colors={['#18181B', '#27272A']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
         paddingHorizontal: compact ? 20 : 24,
-        paddingTop: compact ? 40 : 56,
-        paddingBottom: compact ? 24 : 40,
+        paddingTop: compact ? 36 : 48,
+        paddingBottom: compact ? 24 : 36,
         overflow: 'hidden',
       }}
     >
-      <View
-        style={{
-          position: 'absolute',
-          right: -32,
-          top: -40,
-          height: 144,
-          width: 144,
-          borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.12)',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          right: 40,
-          bottom: -40,
-          height: 112,
-          width: 112,
-          borderRadius: 999,
-          backgroundColor: 'rgba(0,0,0,0.12)',
-        }}
-      />
-      <View className="flex-row items-start justify-between">
+      <View className="flex-row items-start justify-between max-w-[1120px] w-full self-center">
         <View className="flex-1 pr-3">
           {eyebrow ? (
-            <Text className="mb-2 text-xs font-bold uppercase tracking-[2px] text-orange-100">
+            <Text className="mb-1.5 text-[11px] font-bold uppercase tracking-[1.5px] text-amber-400">
               {eyebrow}
             </Text>
           ) : null}
           <Text
-            className={`font-bold text-white ${
-              compact ? 'text-2xl' : 'text-4xl'
+            className={`font-bold text-white tracking-tight ${
+              compact ? 'text-2xl' : 'text-3xl'
             }`}
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text className="mt-2 text-base leading-6 text-orange-50">
+            <Text className="mt-1.5 text-sm leading-5 text-zinc-300">
               {subtitle}
             </Text>
           ) : null}
